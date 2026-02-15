@@ -7,6 +7,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User, Shield, Wrench, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
+import { InArticleAd } from "@/components/adsense";
+
+// Ad slot IDs - Replace with your actual AdSense slot IDs from https://www.google.com/adsense
+// 1. Go to AdSense > Ads > By ad unit
+// 2. Create "In-article ads" unit
+// 3. Copy the data-ad-slot value
+const AD_SLOTS = {
+  inArticle: "1234567890",  // Replace with your actual slot ID
+  sidebar: "0987654321",    // Replace with your actual slot ID
+};
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -146,6 +156,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </div>
 
         <Separator className="my-8" />
+
+        {/* In-Article Ad */}
+        <InArticleAd slot={AD_SLOTS.inArticle} />
 
         {/* Internal Backlinks / Related Resources */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
