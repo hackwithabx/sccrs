@@ -3,6 +3,10 @@ import nodemailer from "nodemailer";
 import connectDB from "@/lib/mongodb";
 import Contact from "@/models/Contact";
 
+// Check if MongoDB is configured
+const isMongoConfigured = !!process.env.MONGODB_URI;
+const isSmtpConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_PASSWORD);
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -33,24 +37,41 @@ export async function POST(request: Request) {
     const cleanSubject = sanitize(subject);
     const cleanMessage = sanitize(message);
 
-    // Connect to MongoDB first (save message regardless of email status)
-    await connectDB();
+    // Check MongoDB configuration
+    if (!isMongoConfigured) {
+      console.error("MongoDB not configured - MONGODB_URI missing");
+      // Fall through to email-only mode if SMTP is configured
+      if (!isSmtpConfigured) {
+        return NextResponse.json(
+          { error: "Contact form is not configured. Please email us directly at support@securecodereviews.com" },
+          { status: 503 }
+        );
+      }
+    }
 
-    let contactDoc;
-    try {
-      contactDoc = await Contact.create({
-        name: cleanName,
-        email,
-        subject: cleanSubject,
-        message: cleanMessage,
-        status: "new",
-      });
-    } catch (dbError) {
-      console.error("Database error:", dbError);
-      return NextResponse.json(
-        { error: "Failed to save your message. Please try again." },
-        { status: 500 }
-      );
+    let contactDoc = null;
+    
+    // Save to MongoDB if configured
+    if (isMongoConfigured) {
+      try {
+        await connectDB();
+        contactDoc = await Contact.create({
+          name: cleanName,
+          email,
+          subject: cleanSubject,
+          message: cleanMessage,
+          status: "new",
+        });
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        // Continue without DB if email is configured
+        if (!isSmtpConfigured) {
+          return NextResponse.json(
+            { error: "Failed to save your message. Please try again." },
+            { status: 500 }
+          );
+        }
+      }
     }
 
     // Configure SMTP transport
@@ -148,18 +169,20 @@ ${cleanMessage}
       // Continue anyway - message is already saved to DB
     }
 
-    // Update contact document with email status
-    try {
-      await Contact.findByIdAndUpdate(
-        contactDoc._id,
-        {
-          emailSent,
-          emailError: emailError || null,
-        },
-        { new: true }
-      );
-    } catch (err) {
-      console.error("Failed to update contact status:", err);
+    // Update contact document with email status (only if saved to DB)
+    if (contactDoc) {
+      try {
+        await Contact.findByIdAndUpdate(
+          contactDoc._id,
+          {
+            emailSent,
+            emailError: emailError || null,
+          },
+          { new: true }
+        );
+      } catch (err) {
+        console.error("Failed to update contact status:", err);
+      }
     }
 
     // Return success if message is saved (even if email failed)

