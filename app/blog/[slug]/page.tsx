@@ -67,6 +67,35 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="py-16">
+      {/* JSON-LD Article structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: post.title,
+            description: post.excerpt,
+            author: {
+              "@type": "Person",
+              name: post.author,
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "SecureCodeReviews",
+              url: "https://securecodereviews.com",
+            },
+            datePublished: post.date,
+            dateModified: post.date,
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": `https://securecodereviews.com/blog/${post.slug}`,
+            },
+            keywords: post.tags.join(", "),
+            articleSection: post.category,
+          }),
+        }}
+      />
       <ReadingProgress />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex gap-8">

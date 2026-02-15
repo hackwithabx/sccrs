@@ -1,11 +1,36 @@
-
-
 import React from "react";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Node.js Security Guide | SecureCodeReviews.com",
+export const metadata: Metadata = {
+  title: "Node.js Security Guide — Best Practices & Vulnerability Prevention",
   description:
     "Comprehensive Node.js security best practices, common vulnerabilities, and secure coding techniques for developers. Learn how to protect your Node.js applications from attacks.",
+  keywords: [
+    "Node.js security",
+    "Node.js vulnerabilities",
+    "Node.js secure coding",
+    "Express.js security",
+    "npm audit security",
+    "Node.js injection prevention",
+    "server-side JavaScript security",
+    "Node.js authentication security",
+  ],
+  openGraph: {
+    title: "Node.js Security Guide | SecureCodeReviews",
+    description:
+      "Complete Node.js security guide: best practices, common vulnerabilities, and secure coding techniques.",
+    url: "https://securecodereviews.com/nodejs-security-guide",
+    type: "article",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Node.js Security Guide | SecureCodeReviews",
+    description:
+      "Secure your Node.js apps — best practices, common vulnerabilities, and prevention techniques.",
+  },
+  alternates: {
+    canonical: "/nodejs-security-guide",
+  },
 };
 
 export default function NodeJsSecurityGuidePage() {

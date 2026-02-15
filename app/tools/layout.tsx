@@ -15,6 +15,22 @@ export const metadata: Metadata = {
     "free security tools",
     "online security testing",
   ],
+  openGraph: {
+    title: "Free Security Tools | SecureCodeReviews",
+    description:
+      "Free online security tools: Header Analyzer, CSP Generator, JWT Decoder, Hash Generator, and more.",
+    url: "https://securecodereviews.com/tools",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Free Security Tools | SecureCodeReviews",
+    description:
+      "Security Header Analyzer, CSP Generator, JWT Decoder, and more — free, no sign-up.",
+  },
+  alternates: {
+    canonical: "/tools",
+  },
 };
 
 export default function ToolsLayout({

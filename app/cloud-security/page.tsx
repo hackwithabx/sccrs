@@ -34,6 +34,22 @@ export const metadata: Metadata = {
     "cloud data breach",
     "zero trust cloud",
   ],
+  openGraph: {
+    title: "Cloud Security Guide — AWS, Azure, GCP | SecureCodeReviews",
+    description:
+      "Comprehensive cloud security guide: IAM, network security, data encryption, compliance, and real-world breach case studies.",
+    url: "https://securecodereviews.com/cloud-security",
+    type: "article",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cloud Security Guide | SecureCodeReviews",
+    description:
+      "AWS, Azure, GCP security best practices — IAM, encryption, compliance, and CSPM.",
+  },
+  alternates: {
+    canonical: "/cloud-security",
+  },
 };
 
 const providers = [
