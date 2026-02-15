@@ -1,5 +1,11 @@
 // Blog post data for the platform
 import { extendedBlogPosts } from "./blog-data-extended";
+import { aiSecurityArticles } from "./articles-ai-security";
+import { owaspArticles } from "./articles-owasp";
+import { apiSecurityArticles } from "./articles-api-security";
+import { devsecopsArticles } from "./articles-devsecops";
+import { tier2ArticlesPart1 } from "./articles-tier2-part1";
+import { tier2ArticlesPart2 } from "./articles-tier2-part2";
 
 export interface BlogPost {
   slug: string;
@@ -3721,4 +3727,12 @@ app.post('/api/refresh', async (req, res) => {
   },
   // Add extended blog posts
   ...extendedBlogPosts,
+  // Tier 1 articles
+  ...aiSecurityArticles,
+  ...owaspArticles,
+  ...apiSecurityArticles,
+  ...devsecopsArticles,
+  // Tier 2 articles
+  ...tier2ArticlesPart1,
+  ...tier2ArticlesPart2,
 ];
