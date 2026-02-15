@@ -9,25 +9,45 @@ interface MarkdownRendererProps {
 }
 
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
+  const slugify = (text: string) =>
+    String(text)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .trim();
+
   const components: Components = {
     h1: ({ children }) => (
-      <h1 className="text-3xl font-bold mt-10 mb-5 text-foreground border-b border-border pb-3">
+      <h1
+        id={slugify(String(children))}
+        className="text-3xl font-bold mt-10 mb-5 text-foreground border-b border-border pb-3 scroll-mt-20"
+      >
         {children}
       </h1>
     ),
     h2: ({ children }) => (
-      <h2 className="text-2xl font-bold mt-10 mb-4 text-foreground flex items-center gap-2">
+      <h2
+        id={slugify(String(children))}
+        className="text-2xl font-bold mt-10 mb-4 text-foreground flex items-center gap-2 scroll-mt-20"
+      >
         <span className="inline-block w-1 h-7 bg-primary rounded-full" />
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3 className="text-xl font-semibold mt-7 mb-3 text-foreground">
+      <h3
+        id={slugify(String(children))}
+        className="text-xl font-semibold mt-7 mb-3 text-foreground scroll-mt-20"
+      >
         {children}
       </h3>
     ),
     h4: ({ children }) => (
-      <h4 className="text-lg font-semibold mt-5 mb-2 text-foreground">
+      <h4
+        id={slugify(String(children))}
+        className="text-lg font-semibold mt-5 mb-2 text-foreground scroll-mt-20"
+      >
         {children}
       </h4>
     ),

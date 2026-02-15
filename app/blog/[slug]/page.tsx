@@ -9,6 +9,9 @@ import { ArrowLeft, ArrowRight, Calendar, Clock, User, Shield, Wrench, BookOpen 
 import type { Metadata } from "next";
 import { InArticleAd } from "@/components/adsense";
 import MarkdownRenderer from "@/components/markdown-renderer";
+import { ReadingProgress } from "@/components/reading-progress";
+import { TableOfContents } from "@/components/table-of-contents";
+import { ShareButtons } from "@/components/share-buttons";
 
 // Ad slot IDs - Replace with your actual AdSense slot IDs from https://www.google.com/adsense
 // 1. Go to AdSense > Ads > By ad unit
@@ -64,49 +67,56 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="py-16">
-      <article className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <Link href="/blog">
-          <Button variant="ghost" className="gap-2 mb-8">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Blog
-          </Button>
-        </Link>
+      <ReadingProgress />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex gap-8">
+          {/* Main article column */}
+          <article className="min-w-0 max-w-3xl flex-1">
+            <Link href="/blog">
+              <Button variant="ghost" className="gap-2 mb-8">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Blog
+              </Button>
+            </Link>
 
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Badge>{post.category}</Badge>
-            {post.tags.map((tag) => (
-              <Badge key={tag} variant="outline">
-                {tag}
-              </Badge>
-            ))}
-          </div>
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge>{post.category}</Badge>
+                {post.tags.map((tag) => (
+                  <Badge key={tag} variant="outline">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
 
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            {post.title}
-          </h1>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                {post.title}
+              </h1>
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <User className="h-4 w-4" />
-              {post.author}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    {post.author}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(post.date).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {post.readTime}
+                  </div>
+                </div>
+                <ShareButtons title={post.title} slug={post.slug} />
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              {new Date(post.date).toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              {post.readTime}
-            </div>
-          </div>
-        </div>
 
-        <Separator className="my-8" />
+            <Separator className="my-8" />
 
         <div className="prose prose-neutral dark:prose-invert max-w-none">
           <MarkdownRenderer content={post.content} />
@@ -210,7 +220,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </Button>
           </Link>
         </div>
-      </article>
+          </article>
+
+          {/* Table of Contents sidebar */}
+          <aside className="hidden xl:block w-64 shrink-0">
+            <TableOfContents content={post.content} />
+          </aside>
+        </div>
+      </div>
     </div>
   );
 }
