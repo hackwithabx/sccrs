@@ -817,9 +817,9 @@ SQL injection is one of the most critical web vulnerabilities, affecting 39% of 
 ### 1. Error-Based SQL Injection
 Displays database errors to extract information.
 
-\`\`\`sql
+```sql
 -- Vulnerable Query
-SELECT * FROM users WHERE username = '${username}' AND password = '${password}'
+SELECT * FROM users WHERE username = 'admin' AND password = 'pass'
 
 -- Attack Input
 username: admin' OR '1'='1
@@ -827,33 +827,33 @@ password: anything
 
 -- Executed Query (bypasses authentication)
 SELECT * FROM users WHERE username = 'admin' OR '1'='1' AND password = 'anything'
-\`\`\`
+```
 
 ### 2. Union-Based SQL Injection
 Merges attacker's query with original query.
 
-\`\`\`sql
+```sql
 -- Vulnerable: Get product details
-SELECT product_id, product_name, price FROM products WHERE id = ${id}
+SELECT product_id, product_name, price FROM products WHERE id = 1
 
 -- Attack Input
 id: 1 UNION SELECT user_id, username, password FROM users--
 
 -- Executed (leaks user credentials)
-SELECT product_id, product_name, price FROM products WHERE id = 1 
+SELECT product_id, product_name, price FROM products WHERE id = 1
 UNION SELECT user_id, username, password FROM users--
-\`\`\`
+```
 
 ### 3. Blind SQL Injection
 No direct error feedback. Attacker infers data via response times/behavior.
 
 \`\`\`sql
 -- Vulnerable login
-SELECT * FROM users WHERE email = '${email}' AND password = '${password}'
+SELECT * FROM users WHERE email = 'admin@mail.com' AND password = 'pass'
 
 -- Time-based blind injection
-email: admin@mail.com' AND (SELECT * FROM (SELECT(SLEEP(5)))a)--
-password: anything
+-- email: admin@mail.com' AND (SELECT * FROM (SELECT(SLEEP(5)))a)--
+-- password: anything
 
 -- If response takes 5+ seconds, injection succeeded
 \`\`\`
@@ -916,7 +916,7 @@ app.post('/search', (req, res) => {
   const searchTerm = req.body.search;
   
   // VULNERABLE: Direct query string interpolation
-  const query = \`SELECT * FROM products WHERE name LIKE '%\${searchTerm}%'\`;
+  const query = 'SELECT * FROM products WHERE name LIKE \'%' + searchTerm + '%\'';
   
   conn.query(query, (err, results) => {
     if (err) throw err;
