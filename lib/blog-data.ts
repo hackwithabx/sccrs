@@ -274,6 +274,474 @@ Container security is a shared responsibility between development and operations
     readTime: "6 min read",
   },
   {
+    slug: "devsecops-complete-guide-2025",
+    title: "DevSecOps: The Complete Guide 2025-2026",
+    excerpt:
+      "Master DevSecOps with comprehensive practices, automation strategies, real-world examples, and the latest trends shaping secure development in 2025.",
+    content: `## What is DevSecOps?
+
+DevSecOps integrates security practices throughout the entire software development lifecycle (SDLC). Rather than treating security as an afterthought, it becomes a shared responsibility from planning through production.
+
+**Key Statistics:**
+- 84% of organizations view DevSecOps as critical (Gartner, 2025)
+- Companies implementing DevSecOps reduce time-to-remediate vulnerabilities by 60%
+- Security bugs detected early cost 5-10x less to fix than in production
+
+## The DevSecOps Pipeline Lifecycle
+
+### Phase 1: Plan & Design
+- Threat modeling (STRIDE, PASTA)
+- Security requirements definition
+- Risk assessment
+- Architecture review
+
+### Phase 2: Develop
+- Secure coding practices
+- IDE security plugins
+- Pre-commit hooks
+- Dependency scanning (SCA)
+
+### Phase 3: Test
+- SAST (Static Application Security Testing)
+- DAST (Dynamic Application Security Testing)
+- Container scanning
+- API security testing
+
+### Phase 4: Build & Deploy
+- Image scanning
+- SBOM generation
+- Infrastructure-as-Code scanning
+- Secrets management
+
+### Phase 5: Operate & Monitor
+- Runtime security monitoring
+- Log aggregation & analysis
+- Vulnerability management
+- Incident response
+
+---
+
+## DevSecOps Implementation Architecture
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│                    Development Pipeline                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  Code Commit → SAST → SCA → Build → Container Scan → Registry   │
+│                │         │         │         │                  │
+│                └─ Security Checks ─────────────                 │
+│                                                                   │
+│  Deploy → DAST → WAF Rules → Runtime Monitoring → Alert → Action │
+│            │         │            │                              │
+│            └─────── Continuous Security ──────────────           │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+---
+
+## 1. Secure Coding & Shift-Left Security
+
+### Principle
+Move security testing to the earliest stages of development.
+
+### Implementation Example
+
+**Bad Practice:**
+\`\`\`javascript
+// Finding SQL injection vulnerability in production
+const query = \`SELECT * FROM users WHERE id = \${userId}\`;
+db.query(query);
+\`\`\`
+
+**Better Practice:**
+\`\`\`javascript
+// Pre-commit hook catches vulnerability
+const query = \`SELECT * FROM users WHERE id = ?\`;
+db.query(query, [userId]); // Parameterized query
+
+// SonarQube catches before commit
+// ESLint security plugin: eslint-plugin-security
+\`\`\`
+
+### Tools for Shift-Left:
+- **Pre-commit hooks**: Husky + custom security checks
+- **IDE plugins**: SonarLint, Checkmarx
+- **SAST**: SonarQube, Snyk, Semgrep
+
+---
+
+## 2. Dependency & Supply Chain Security
+
+**Challenge:** 77% of vulnerabilities come from third-party libraries (NIST)
+
+### Implementation
+
+\`\`\`yaml
+# .github/workflows/dependency-check.yml
+name: Dependency Security Check
+
+on: [pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Snyk scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: \${{ secrets.SNYK_TOKEN }}
+          
+      - name: Generate SBOM
+        run: npm sbom --format cyclonedx > sbom.json
+        
+      - name: Check licenses
+        run: npm audit --json > audit.json
+\`\`\`
+
+### Current Trend (2025)
+- **Zero-trust supply chain**: Verify every artifact
+- **SBOM adoption**: CycloneDX, SPDX standards mandatory
+- **Software transparency**: OpenSSF Scorecard
+
+---
+
+## 3. Container & Infrastructure Security
+
+### Dockerfile Best Practices
+
+\`\`\`dockerfile
+# Multi-stage build minimizes attack surface
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+FROM node:20-alpine
+RUN apk add --no-cache dumb-init
+
+# Non-root user
+RUN addgroup -g 1001 -S nodegroup && \\
+    adduser -S nodeuser -u 1001 -G nodegroup
+
+COPY --from=builder --chown=nodeuser:nodegroup /app .
+
+# Security hardening
+RUN chmod -R 755 /app && \\
+    echo "node:*:1001:1001::/app:/sbin/nologin" >> /etc/passwd
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \\
+  CMD node healthcheck.js
+
+USER nodeuser
+EXPOSE 3000
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["node", "dist/server.js"]
+\`\`\`
+
+### Container Scanning Pipeline
+
+\`\`\`bash
+# Scan before registry push
+trivy image --severity HIGH,CRITICAL myapp:latest
+
+docker scout cves myapp:latest
+
+syft myapp:latest > sbom.json
+\`\`\`
+
+### Kubernetes Security
+
+\`\`\`yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    fsReadOnlyRootFilesystem: true
+  containers:
+  - name: app
+    image: myapp:latest
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+    resources:
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 3000
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  networkPolicy:
+    backend-isolation: true
+\`\`\`
+
+---
+
+## 4. CI/CD Pipeline Security
+
+### Comprehensive GitHub Actions Workflow
+
+\`\`\`yaml
+name: Secure CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: \${{ github.repository }}
+
+jobs:
+  security-checks:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Code checkout
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      # 2. SAST - Static analysis
+      - name: Run SonarQube
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: \${{ secrets.SONAR_TOKEN }}
+      
+      # 3. Dependency scanning
+      - name: Snyk dependency scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: \${{ secrets.SNYK_TOKEN }}
+      
+      # 4. Secret scanning
+      - name: Detect secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: \${{ github.event.repository.default_branch }}
+          head: HEAD
+      
+      # 5. SBOM generation
+      - name: Generate SBOM
+        run: npm sbom --format cyclonedx > sbom.json
+      
+      # 6. Lint security
+      - name: Security lint
+        run: npm run lint:security
+  
+  build-and-push:
+    needs: security-checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      # 7. Build image
+      - name: Build Docker image
+        run: docker build -t \${{ env.IMAGE_NAME }}:latest .
+      
+      # 8. Scan image
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: \${{ env.IMAGE_NAME }}:latest
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      # 9. Upload SARIF
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      # 10. Push to registry (only on main)
+      - name: Push image
+        if: github.ref == 'refs/heads/main'
+        run: docker push \${{ env.IMAGE_NAME }}:latest
+  
+  dast:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: OWASP ZAP scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'https://staging.example.com'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+\`\`\`
+
+---
+
+## 5. Secrets Management
+
+### Implementation
+
+\`\`\`bash
+# Never commit secrets
+git-secrets --install
+echo 'providers:
+  - type: File
+    filename: .env' >> ~/.gitsecrets/patterns
+
+# Use environment-based secrets
+export API_KEY=\$(aws secretsmanager get-secret-value \\
+  --secret-id prod/api-key \\
+  --region us-east-1 \\
+  --query SecretString \\
+  --output text)
+
+# Rotate secrets regularly
+aws secretsmanager rotate-secret --secret-id prod/api-key
+\`\`\`
+
+### Tools
+- AWS Secrets Manager
+- HashiCorp Vault
+- GitHub Secrets
+- 1Password for Teams
+
+---
+
+## 6. Monitoring & Incident Response
+
+### Real-time Security Monitoring
+
+\`\`\`javascript
+// Application security monitoring
+const securityMonitoring = {
+  trackFailedAuth: (username, ip) => {
+    if (failureCount[ip] > 5) {
+      rateLimit(ip);
+      alertSecurityTeam(\`Brute force attempt from \${ip}\`);
+    }
+  },
+  
+  trackAnomalies: (event) => {
+    if (event.severity > THRESHOLD) {
+      createIncident(event);
+      notifyOnCall();
+    }
+  },
+  
+  auditLog: {
+    userAction: (userId, action, resource, timestamp) => {
+      logToSIEM({
+        user_id: userId,
+        action,
+        resource,
+        ip: getClientIP(),
+        timestamp,
+        status: 'completed'
+      });
+    }
+  }
+};
+\`\`\`
+
+---
+
+## Current Trends & Future Directions (2025-2026)
+
+### 1. **AI-Powered Security**
+- Automated vulnerability detection using ML
+- Behavioral anomaly detection
+- Intelligent threat prediction
+
+### 2. **Zero Trust by Default**
+- Remove trust boundaries
+- Verify every request
+- Least privilege access everywhere
+
+### 3. **Software Supply Chain Security**
+- SBOM as standard
+- Artifact verification
+- OpenSSF Scorecard adoption
+
+### 4. **Cloud-Native Security**
+- Runtime security (Falco, Tracee)
+- eBPF-based monitoring
+- Kubernetes security standards
+
+### 5. **FinOps + SecOps**
+- Cost of security incidents
+- ROI-driven security investments
+- Budget optimization
+
+---
+
+## Key DevSecOps Metrics
+
+Track these metrics to measure DevSecOps maturity:
+
+| Metric | Target | Industry Benchmark |
+|--------|--------|-------------------|
+| Mean Time to Remediate (MTTR) | < 30 days | 90 days |
+| High Severity Vulnerabilities | 0 | 5-10 per app |
+| Security Issues in Code Review | > 80% | 50% |
+| Incident Response Time | < 1 hour | 4-6 hours |
+| Security Training Completion | 100% | 60% |
+
+---
+
+## Getting Started: 5-Step Implementation Plan
+
+### Month 1-2: Foundation
+1. [ ] Establish security champions
+2. [ ] Implement SAST in CI/CD
+3. [ ] Set up dependency scanning
+4. [ ] Create security guidelines
+
+### Month 3-4: Automation
+1. [ ] Add automated testing
+2. [ ] Implement container scanning
+3. [ ] Set up secret management
+4. [ ] Enable security monitoring
+
+### Month 5-6: Maturity
+1. [ ] DAST integration
+2. [ ] Threat modeling process
+3. [ ] Incident response drills
+4. [ ] Advanced SBOM/supply chain
+
+---
+
+## Conclusion
+
+DevSecOps is not a tool or framework—it's a cultural shift that makes security everyone's responsibility. Start small, automate relentlessly, and iterate based on your organization's risk profile.
+
+**Resources:**
+- NIST Cyber Security Framework
+- OWASP DevSecOps Top 10
+- Cloud Security Alliance guidelines
+- OpenSSF Best Practices`,
+    date: "2026-02-15",
+    author: "SCR Team",
+    category: "DevSecOps",
+    tags: ["DevSecOps", "CI/CD", "Security Automation", "Best Practices", "2025 Trends"],
+    readTime: "15 min read",
+  },
+  {
     slug: "secure-code-review-checklist",
     title: "The Ultimate Secure Code Review Checklist",
     excerpt:
