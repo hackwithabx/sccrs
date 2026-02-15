@@ -817,280 +817,109 @@ SQL injection is one of the most critical web vulnerabilities, affecting 39% of 
 ### 1. Error-Based SQL Injection
 Displays database errors to extract information.
 
-```sql
--- Vulnerable Query
+**Example SQL:**
+\`\`\`
 SELECT * FROM users WHERE username = 'admin' AND password = 'pass'
-
--- Attack Input
-username: admin' OR '1'='1
-password: anything
-
--- Executed Query (bypasses authentication)
-SELECT * FROM users WHERE username = 'admin' OR '1'='1' AND password = 'anything'
-```
+-- Attack: admin' OR '1'='1
+-- Result: Bypasses authentication
+\`\`\`
 
 ### 2. Union-Based SQL Injection
-Merges attacker's query with original query.
-
-```sql
--- Vulnerable: Get product details
-SELECT product_id, product_name, price FROM products WHERE id = 1
-
--- Attack Input
-id: 1 UNION SELECT user_id, username, password FROM users--
-
--- Executed (leaks user credentials)
-SELECT product_id, product_name, price FROM products WHERE id = 1
-UNION SELECT user_id, username, password FROM users--
-```
+Merges attacker's query with original query to extract data.
 
 ### 3. Blind SQL Injection
 No direct error feedback. Attacker infers data via response times/behavior.
 
-\`\`\`sql
--- Vulnerable login
-SELECT * FROM users WHERE email = 'admin@mail.com' AND password = 'pass'
-
--- Time-based blind injection
--- email: admin@mail.com' AND (SELECT * FROM (SELECT(SLEEP(5)))a)--
--- password: anything
-
--- If response takes 5+ seconds, injection succeeded
-\`\`\`
-
 ### 4. Stacked Queries
-Executes multiple SQL statements.
+Executes multiple SQL statements (if supported by database).
 
+---
+
+## Prevention Methods
+
+### Method 1: Parameterized Queries (BEST)
+Use parameter placeholders instead of string concatenation.
+
+**Python Example:**
+\`\`\`python
+cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+\`\`\`
+
+**Node.js Example:**
+\`\`\`javascript
+connection.query('SELECT * FROM users WHERE id = ?', [userId])
+\`\`\`
+
+**Java Example:**
+\`\`\`java
+PreparedStatement stmt = connection.prepareStatement("SELECT * FROM users WHERE id = ?");
+stmt.setString(1, userId);
+ResultSet rs = stmt.executeQuery();
+\`\`\`
+
+### Method 2: Input Validation
+Validate all user inputs server-side:
+- Allowlist expected characters
+- Enforce data types
+- Limit input length
+
+### Method 3: Web Application Firewall
+Deploy WAF rules to detect SQL injection patterns:
+\`\`\`
+SecRule ARGS "@rx (?i:union.*select|select.*from|insert.*into|delete)"
+\`\`\`
+
+### Method 4: Least Privilege Database Users
+Create database users with minimal necessary permissions:
 \`\`\`sql
--- Vulnerable with stacked query support
-user_id: 1; DROP TABLE users;--
-
--- Executes:
-SELECT * FROM users WHERE id = 1; 
-DROP TABLE users;--
+CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'strong_password';
+GRANT SELECT, INSERT, UPDATE ON database.* TO 'app_user'@'localhost';
+-- Never grant DROP, ALTER, or administrative privileges
 \`\`\`
-
----
-
-## Vulnerable Code Examples
-
-### Python (Flask - VULNERABLE)
-\`\`\`python
-from flask import Flask, request
-import sqlite3
-
-app = Flask(__name__)
-
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form['username']
-    password = request.form['password']
-    
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    
-    # VULNERABLE: String concatenation
-    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
-    cursor.execute(query)
-    
-    user = cursor.fetchone()
-    if user:
-        return "Login successful!"
-    return "Invalid credentials"
-\`\`\`
-
-### Node.js (Express - VULNERABLE)
-\`\`\`javascript
-const express = require('express');
-const mysql = require('mysql');
-
-const app = express();
-const conn = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'pass',
-  database: 'appdb'
-});
-
-app.post('/search', (req, res) => {
-  const searchTerm = req.body.search;
-  
-  // VULNERABLE: Direct query string interpolation
-  const query = 'SELECT * FROM products WHERE name LIKE \'%' + searchTerm + '%\'';
-  
-  conn.query(query, (err, results) => {
-    if (err) throw err;
-    res.json(results);
-  });
-});
-\`\`\`
-
-### Java (JDBC - VULNERABLE)
-\`\`\`java
-public User authenticateUser(String username, String password) {
-    String query = "SELECT * FROM users WHERE username = '" + username + 
-                   "' AND password = '" + password + "'";
-    
-    // VULNERABLE: String concatenation
-    Statement stmt = connection.createStatement();
-    ResultSet rs = stmt.executeQuery(query);
-    
-    if (rs.next()) {
-        return new User(rs);
-    }
-    return null;
-}
-\`\`\`
-
----
-
-## Secure Implementation
-
-### Solution 1: Parameterized Queries (BEST)
-
-**Python (Secure)**
-\`\`\`python
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form['username']
-    password = request.form['password']
-    
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    
-    # SECURE: Parameterized query
-    query = "SELECT * FROM users WHERE username = ? AND password = ?"
-    cursor.execute(query, (username, password))
-    
-    user = cursor.fetchone()
-    return "Login successful!" if user else "Invalid credentials"
-\`\`\`
-
-**Node.js (Secure)**
-\`\`\`javascript
-app.post('/search', (req, res) => {
-  const searchTerm = req.body.search;
-  
-  // SECURE: Parameterized query with ?
-  const query = 'SELECT * FROM products WHERE name LIKE ?';
-  
-  conn.query(query, [\`%\${searchTerm}%\`], (err, results) => {
-    if (err) throw err;
-    res.json(results);
-  });
-});
-\`\`\`
-
-**Java (Secure)**
-\`\`\`java
-public User authenticateUser(String username, String password) {
-    // SECURE: Prepared statement
-    String query = "SELECT * FROM users WHERE username = ? AND password = ?";
-    PreparedStatement stmt = connection.prepareStatement(query);
-    
-    stmt.setString(1, username);
-    stmt.setString(2, password);
-    
-    ResultSet rs = stmt.executeQuery();
-    
-    if (rs.next()) {
-        return new User(rs);
-    }
-    return null;
-}
-\`\`\`
-
-### Solution 2: ORMs (Object-Relational Mapping)
-
-**Sequelize (Node.js)**
-\`\`\`javascript
-const User = sequelize.define('User', {
-  username: DataTypes.STRING,
-  password: DataTypes.STRING
-});
-
-// Safe from SQL injection
-const user = await User.findOne({
-  where: { username: inputUsername, password: inputPassword }
-});
-\`\`\`
-
-**Hibernate (Java)**
-\`\`\`java
-@Entity
-public class User {
-    @Id private Long id;
-    private String username;
-    private String password;
-}
-
-// Safe from SQL injection
-User user = session.createQuery(
-  "FROM User WHERE username = :username AND password = :password", User.class)
-  .setParameter("username", username)
-  .setParameter("password", password)
-  .uniqueResult();
-\`\`\`
-
----
-
-## SQL Injection Prevention Checklist
-
-- [ ] Use parameterized queries/prepared statements
-- [ ] Implement stored procedures (with parameterization)
-- [ ] Use ORM frameworks when possible
-- [ ] Input validation (whitelist allowed characters)
-- [ ] Principle of least privilege (DB user permissions)
-- [ ] Escape special characters if parameterization is unavailable
-- [ ] Use Web Application Firewall (WAF) rules
-- [ ] Enable SQL error suppression in production
-- [ ] Implement comprehensive logging/monitoring
-- [ ] Regular penetration testing
-- [ ] Security code reviews
-- [ ] Update database drivers/libraries regularly
 
 ---
 
 ## Detection & Testing
 
 ### Using OWASP ZAP
+OWASP ZAP automatically scans for SQL injection vulnerabilities.
+
+### Using SQLMap
+Command-line tool for detecting SQL injection:
 \`\`\`bash
-# Automated SQL injection scanning
-zaproxy.sh -cmd -quickurl http://target.com -quickout report.html
+sqlmap -u "http://target.com/page?id=1" --dbs
 \`\`\`
 
-### Burp Suite Testing
-1. Burp Scanner (Automated detection)
-2. Intruder (Manual payload testing)
-3. Repeater (Test payloads: ' OR '1'='1)
-
-### SQLMap (Powerful CLI Tool)
-\`\`\`bash
-# Detect SQL injection vulnerabilities
-sqlmap -u "http://target.com/products?id=" --dbs
-
-# Extract data
-sqlmap -u "http://target.com/products?id=" --tables --dump
-\`\`\`
+### Manual Testing Payloads
+- \`' OR '1'='1\`
+- \`admin' --\`
+- \`1 UNION SELECT NULL, NULL\`
+- \`' AND SLEEP(5) --\`
 
 ---
 
-## Web Application Firewall (WAF) Rules
+## SQL Injection Prevention Checklist
 
-\`\`\`
-# Detect common SQL injection patterns
-SecRule ARGS "@rx (?i:union.*select|select.*from|insert.*into|delete.*from|drop|exec|execute|declare)"
-\`\`\`
+- [ ] Use parameterized queries exclusively
+- [ ] Implement server-side input validation
+- [ ] Use ORMs when possible (Sequelize, Hibernate, SQLAlchemy)
+- [ ] Apply principle of least privilege to DB users
+- [ ] Enable SQL error suppression in production
+- [ ] Deploy Web Application Firewall
+- [ ] Implement comprehensive logging
+- [ ] Regular penetration testing
+- [ ] Security code reviews
+- [ ] Keep database software updated
 
 ---
 
 ## Key Takeaways
 
-1. **Always use parameterized queries** - No exceptions
-2. **Input validation is NOT sufficient** - Use as defense-in-depth
-3. **Database user should have minimal privileges** - Prevent data exfiltration
-4. **Monitor for suspicious database activity** - Catch attacks early
-5. **Regular security testing** - Automated scans + manual testing
+1. **Always use parameterized queries** - No exceptions, no concatenation
+2. **Input validation is NOT enough** - Use as defense-in-depth only
+3. **Database user permissions matter** - Limit what app can do
+4. **Monitor for suspicious activity** - Detection is critical
+5. **Test regularly** - Automated + manual testing essential
 
 ---
 
@@ -1098,8 +927,8 @@ SecRule ARGS "@rx (?i:union.*select|select.*from|insert.*into|delete.*from|drop|
 
 - OWASP SQL Injection: https://owasp.org/www-community/attacks/SQL_Injection
 - CWE-89: SQL Injection
-- NIST Secure Coding Standards
-- PortSwigger SQL Injection Guide`,
+- PortSwigger SQL Injection Guide
+- NIST Secure Coding Standards`,
     date: "2026-02-16",
     author: "SCR Team",
     category: "Web Security",
