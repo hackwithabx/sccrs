@@ -21,7 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/cloud-security`, changeFrequency: "monthly" as const, priority: 0.8 },
   ];
 
-  // Blog post slugs
+  // Blog post slugs - All articles
   const blogSlugs = [
     "owasp-top-10-2025",
     "secure-api-design-patterns",
@@ -32,6 +32,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "cloud-security-aws-azure-gcp",
     "major-cyberattacks-2024-2025",
     "ai-security-llm-threats",
+    "sql-injection-prevention-guide",
+    "xss-cross-site-scripting-prevention",
+    "password-security-hashing-bcrypt-argon2",
+    "cloud-security-aws-azure-misconfiguration",
+    "jwt-security-vulnerabilities-best-practices",
   ];
 
   const blogPages = blogSlugs.map((slug) => ({
