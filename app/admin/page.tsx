@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,11 +25,29 @@ import {
   AlertTriangle,
   LogOut,
   Globe,
+  RefreshCw,
+  Mail,
+  MessageSquare,
+  Clock,
 } from "lucide-react";
 import { blogPosts } from "@/lib/blog-data";
 
+interface ContactSubmission {
+  _id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: "new" | "read" | "replied";
+  emailSent: boolean;
+  emailError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -42,6 +60,16 @@ export default function AdminPage() {
   const [newPostContent, setNewPostContent] = useState("");
   const [newPostCategory, setNewPostCategory] = useState("");
   const [newPostTags, setNewPostTags] = useState("");
+
+  // Contacts state
+  const [contacts, setContacts] = useState<ContactSubmission[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [contactsError, setContactsError] = useState("");
+  const [contactsTotal, setContactsTotal] = useState(0);
+  const [contactsPage, setContactsPage] = useState(1);
+  const [contactsTotalPages, setContactsTotalPages] = useState(1);
+  const [contactsFilter, setContactsFilter] = useState<string>("");
+  const [expandedContact, setExpandedContact] = useState<string | null>(null);
 
   // Simulated analytics
   const [analytics] = useState({
@@ -59,12 +87,77 @@ export default function AdminPage() {
       { page: "/secure-code", views: 2341 },
       { page: "/cloud-security", views: 1876 },
     ],
-    recentContacts: [
-      { name: "John Smith", email: "john@example.com", subject: "Pen Testing Inquiry", date: "2025-06-18" },
-      { name: "Sarah Chen", email: "sarah@corp.io", subject: "Enterprise Security Review", date: "2025-06-17" },
-      { name: "DevOps Team", email: "devops@startup.com", subject: "CI/CD Security Integration", date: "2025-06-16" },
-    ],
   });
+
+  // Fetch contacts from MongoDB
+  const fetchContacts = useCallback(async () => {
+    if (!adminPassword) return;
+    setContactsLoading(true);
+    setContactsError("");
+    try {
+      const params = new URLSearchParams({
+        page: contactsPage.toString(),
+        limit: "20",
+      });
+      if (contactsFilter) params.set("status", contactsFilter);
+
+      const res = await fetch(`/api/admin/contacts?${params}`, {
+        headers: { "x-admin-auth": adminPassword },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to fetch contacts");
+      }
+
+      const data = await res.json();
+      setContacts(data.contacts);
+      setContactsTotal(data.total);
+      setContactsTotalPages(data.totalPages);
+    } catch (err) {
+      setContactsError(err instanceof Error ? err.message : "Failed to load contacts");
+    } finally {
+      setContactsLoading(false);
+    }
+  }, [adminPassword, contactsPage, contactsFilter]);
+
+  // Update contact status
+  const updateContactStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch("/api/admin/contacts", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-auth": adminPassword,
+        },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) {
+        setContacts((prev) =>
+          prev.map((c) => (c._id === id ? { ...c, status: status as ContactSubmission["status"] } : c))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  };
+
+  // Delete a contact
+  const deleteContact = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this contact submission?")) return;
+    try {
+      const res = await fetch(`/api/admin/contacts?id=${id}`, {
+        method: "DELETE",
+        headers: { "x-admin-auth": adminPassword },
+      });
+      if (res.ok) {
+        setContacts((prev) => prev.filter((c) => c._id !== id));
+        setContactsTotal((prev) => prev - 1);
+      }
+    } catch (err) {
+      console.error("Failed to delete contact:", err);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,14 +165,16 @@ export default function AdminPage() {
 
     // Client-side admin check
     const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "support@securecodereviews.com";
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "Lambda123456@#";
+    const expectedPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "Lambda123456@#";
     
     if (
       email === adminEmail &&
-      password === adminPassword
+      password === expectedPassword
     ) {
       setAuthenticated(true);
+      setAdminPassword(password);
       localStorage.setItem("scr-admin", "true");
+      localStorage.setItem("scr-admin-pw", password);
     } else {
       setLoginError("Invalid credentials. Please check your email and password.");
     }
@@ -87,12 +182,25 @@ export default function AdminPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("scr-admin");
-    if (stored === "true") setAuthenticated(true);
+    const storedPw = localStorage.getItem("scr-admin-pw");
+    if (stored === "true" && storedPw) {
+      setAuthenticated(true);
+      setAdminPassword(storedPw);
+    }
   }, []);
+
+  // Fetch contacts when authenticated
+  useEffect(() => {
+    if (authenticated && adminPassword) {
+      fetchContacts();
+    }
+  }, [authenticated, adminPassword, fetchContacts]);
 
   const handleLogout = () => {
     setAuthenticated(false);
+    setAdminPassword("");
     localStorage.removeItem("scr-admin");
+    localStorage.removeItem("scr-admin-pw");
   };
 
   // Login screen
@@ -420,31 +528,240 @@ export default function AdminPage() {
 
           {/* Contacts Tab */}
           <TabsContent value="contacts">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Recent Contact Submissions</CardTitle>
-                <CardDescription>
-                  Contact form submissions are also sent to support@securecodereviews.com via email.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analytics.recentContacts.map((contact) => (
-                    <div key={contact.email} className="rounded-lg border p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-primary" />
-                          <span className="font-semibold text-sm">{contact.name}</span>
+            <div className="space-y-6">
+              {/* Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={contactsFilter === "" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => { setContactsFilter(""); setContactsPage(1); }}
+                  >
+                    All ({contactsTotal})
+                  </Button>
+                  <Button
+                    variant={contactsFilter === "new" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => { setContactsFilter("new"); setContactsPage(1); }}
+                  >
+                    <Mail className="h-3 w-3 mr-1" /> New
+                  </Button>
+                  <Button
+                    variant={contactsFilter === "read" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => { setContactsFilter("read"); setContactsPage(1); }}
+                  >
+                    <Eye className="h-3 w-3 mr-1" /> Read
+                  </Button>
+                  <Button
+                    variant={contactsFilter === "replied" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => { setContactsFilter("replied"); setContactsPage(1); }}
+                  >
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> Replied
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchContacts}
+                  disabled={contactsLoading}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${contactsLoading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+              </div>
+
+              {/* Error */}
+              {contactsError && (
+                <Card className="border-destructive">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      {contactsError}
+                    </p>
+                    {contactsError.includes("MongoDB not configured") && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Set the <code>MONGODB_URI</code> environment variable in your Vercel project settings to enable contact storage.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Loading */}
+              {contactsLoading && (
+                <div className="text-center py-12">
+                  <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mt-3">Loading contacts...</p>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {!contactsLoading && !contactsError && contacts.length === 0 && (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30" />
+                    <p className="text-lg font-semibold mt-4">No contact submissions yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {contactsFilter
+                        ? `No contacts with status "${contactsFilter}". Try a different filter.`
+                        : "When users submit the contact form, their messages will appear here."}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Contact list */}
+              {!contactsLoading && contacts.length > 0 && (
+                <div className="space-y-3">
+                  {contacts.map((contact) => (
+                    <Card
+                      key={contact._id}
+                      className={`transition-colors ${
+                        contact.status === "new" ? "border-primary/50 bg-primary/5" : ""
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div
+                            className="flex-1 cursor-pointer min-w-0"
+                            onClick={() =>
+                              setExpandedContact(
+                                expandedContact === contact._id ? null : contact._id
+                              )
+                            }
+                          >
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Users className="h-4 w-4 text-primary shrink-0" />
+                              <span className="font-semibold text-sm">{contact.name}</span>
+                              <Badge
+                                variant={
+                                  contact.status === "new"
+                                    ? "default"
+                                    : contact.status === "replied"
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                                className="text-xs"
+                              >
+                                {contact.status}
+                              </Badge>
+                              {contact.emailSent === false && contact.emailError && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Email failed
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              <a href={`mailto:${contact.email}`} className="hover:underline">
+                                {contact.email}
+                              </a>
+                            </p>
+                            <p className="text-sm mt-1">
+                              <strong>Subject:</strong> {contact.subject}
+                            </p>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {new Date(contact.createdAt).toLocaleString()}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {contact.status === "new" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="Mark as read"
+                                onClick={() => updateContactStatus(contact._id, "read")}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {contact.status !== "replied" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="Mark as replied"
+                                onClick={() => updateContactStatus(contact._id, "replied")}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              title="Delete"
+                              onClick={() => deleteContact(contact._id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <span className="text-xs text-muted-foreground">{contact.date}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{contact.email}</p>
-                      <p className="text-sm"><strong>Subject:</strong> {contact.subject}</p>
-                    </div>
+
+                        {/* Expanded message */}
+                        {expandedContact === contact._id && (
+                          <div className="mt-4 pt-4 border-t">
+                            <div className="rounded-lg bg-muted/50 p-4 text-sm whitespace-pre-wrap">
+                              {contact.message}
+                            </div>
+                            {contact.emailError && (
+                              <p className="text-xs text-destructive mt-2">
+                                <strong>Email error:</strong> {contact.emailError}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1"
+                                onClick={() =>
+                                  window.open(
+                                    `mailto:${contact.email}?subject=Re: ${encodeURIComponent(
+                                      contact.subject
+                                    )}`,
+                                    "_blank"
+                                  )
+                                }
+                              >
+                                <Mail className="h-3 w-3" /> Reply via Email
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+
+              {/* Pagination */}
+              {contactsTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={contactsPage <= 1}
+                    onClick={() => setContactsPage((p) => p - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {contactsPage} of {contactsTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={contactsPage >= contactsTotalPages}
+                    onClick={() => setContactsPage((p) => p + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* SEO Tab */}
