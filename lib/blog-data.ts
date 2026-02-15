@@ -20,258 +20,877 @@ export const blogPosts: BlogPost[] = [
     title: "OWASP Top 10 2025: What's Changed and How to Prepare",
     excerpt:
       "A comprehensive breakdown of the latest OWASP Top 10 vulnerabilities and actionable steps to secure your applications against them.",
-    content: `## Introduction
+    content: `## Why the OWASP Top 10 Still Matters in 2025
 
-The OWASP Top 10 remains the gold standard for web application security awareness. The 2025 update reflects evolving threat landscapes, increased API attack surfaces, and the growing complexity of modern applications.
+The OWASP Top 10 is the most widely referenced standard for web application security. Updated periodically based on real-world data from hundreds of organizations, the 2025 edition reflects a **dramatically different threat landscape** than even two years ago.
 
-## Key Changes
+Consider these numbers:
 
-### 1. Broken Access Control (A01)
-Still the #1 vulnerability. Over 94% of applications tested had some form of broken access control. Common issues include:
-- IDOR (Insecure Direct Object References)
-- Missing function-level access control
-- CORS misconfiguration
+| Metric | 2021 | 2025 | Change |
+|--------|------|------|--------|
+| Applications tested | 500,000+ | 820,000+ | +64% |
+| Unique CWEs mapped | 400 | 612 | +53% |
+| API-related vulnerabilities | 18% | 41% | +128% |
+| Average time to exploit | 14 days | 4.2 days | -70% |
 
-### 2. Cryptographic Failures (A02)
-Previously "Sensitive Data Exposure," this category focuses on failures related to cryptography that lead to data exposure. Key areas:
-- Weak algorithms (MD5, SHA1 for passwords)
-- Insufficient key management
-- Cleartext data transmission
+> **Key takeaway:** Attackers are faster, attack surfaces are larger, and the cost of a breach reached **$4.88 million** on average in 2024 (IBM Cost of a Data Breach Report).
 
-### 3. Injection (A03)
-SQL, NoSQL, OS, and LDAP injection remain critical threats. Modern applications face new vectors:
-- GraphQL injection
-- Template injection (SSTI)
-- Expression Language injection
+---
 
-## Mitigation Strategies
+## The Complete OWASP Top 10 — 2025 Edition
 
-1. **Implement Zero Trust Architecture** - Never trust, always verify
-2. **Shift Left Security** - Integrate security into CI/CD pipelines
-3. **Regular Penetration Testing** - Automated + manual testing
-4. **Security Training** - Continuous developer education
+### A01: Broken Access Control
 
-## Conclusion
+Broken access control remains the **#1 vulnerability** for the third consecutive cycle. A staggering **94% of applications** tested showed some form of access control weakness.
 
-Stay ahead of threats by making security a first-class citizen in your development process.`,
+**What goes wrong:**
+
+- **IDOR (Insecure Direct Object References)** — Users modify IDs in URLs or API calls to access other users' data
+- **Missing function-level access control** — Admin endpoints accessible to regular users
+- **CORS misconfiguration** — Overly permissive cross-origin policies expose APIs
+- **JWT manipulation** — Forged or tampered tokens bypass authorization checks
+- **Path traversal** — Accessing files or directories outside intended scope
+
+**How to fix it:**
+
+- Deny access by default — require explicit grants
+- Enforce server-side access checks on every request
+- Disable directory listings and remove metadata files from web roots
+- Log and alert on repeated access control failures
+- Implement rate limiting to slow brute-force attempts
+
+---
+
+### A02: Cryptographic Failures
+
+Previously called "Sensitive Data Exposure," this category zeroes in on the **root cause** — weak or missing cryptography.
+
+**Common mistakes:**
+
+- Storing passwords with MD5 or SHA-1 instead of bcrypt or Argon2
+- Transmitting data over HTTP instead of enforcing HTTPS/TLS 1.3
+- Hardcoding encryption keys in source code
+- Using outdated protocols like TLS 1.0 or SSL 3.0
+- Failing to rotate keys on a regular schedule
+
+**Best practice checklist:**
+
+- Use **AES-256-GCM** for symmetric encryption
+- Use **bcrypt** (cost factor 12+) or **Argon2id** for password hashing
+- Enforce **TLS 1.2+** for all connections and redirect HTTP to HTTPS
+- Store secrets in vaults (HashiCorp Vault, AWS Secrets Manager) — never in code
+- Classify data so you know what needs encryption and what doesn't
+
+---
+
+### A03: Injection
+
+SQL, NoSQL, OS command, and LDAP injection remain critical threats. But 2025 brings **new injection vectors** that many teams overlook.
+
+**Emerging attack types:**
+
+- **GraphQL injection** — exploiting nested queries and introspection
+- **Server-Side Template Injection (SSTI)** — injecting into Jinja2, Thymeleaf, or Handlebars templates
+- **Expression Language injection** — targeting Spring EL, OGNL, and MVEL
+- **ORM injection** — bypassing ORMs that build queries from user objects
+
+**Prevention strategies:**
+
+- Use parameterized queries or prepared statements for every database call
+- Validate and sanitize all input — both client-side and server-side
+- Apply allowlists (not blocklists) for expected input formats
+- Deploy a Web Application Firewall (WAF) as an additional layer
+- Conduct regular SAST/DAST scans in your CI/CD pipeline
+
+---
+
+### A04: Insecure Design
+
+This category, introduced in 2021, targets **architectural flaws** that cannot be fixed by better code alone.
+
+**Examples of insecure design:**
+
+- No rate limiting on authentication endpoints, enabling credential stuffing
+- Business logic that allows negative quantities or price manipulation
+- Missing account lockout after repeated failed login attempts
+- Password recovery flows that reveal whether an email is registered
+
+**How to build secure designs:**
+
+- Use **threat modeling** (STRIDE, PASTA) during the design phase
+- Create **abuse case** stories alongside user stories
+- Establish and follow **secure design patterns** (e.g., input validation gateways, authorization middleware)
+- Conduct architecture reviews before writing code
+
+---
+
+### A05: Security Misconfiguration
+
+The most common issue found in real-world assessments. Default settings, open cloud storage, and verbose error messages are everywhere.
+
+**Frequent misconfigurations:**
+
+- Default admin credentials left unchanged
+- Unnecessary services or ports exposed
+- Verbose error pages displaying stack traces to users
+- Missing security headers (CSP, HSTS, X-Frame-Options)
+- Cloud storage buckets set to public access
+
+**Hardening checklist:**
+
+- Automate environment configuration with Infrastructure as Code (Terraform, Ansible)
+- Remove or disable unused features, frameworks, and endpoints
+- Implement a repeatable hardening process across dev, staging, and production
+- Review cloud permissions quarterly using least-privilege principles
+- Set security headers on all responses
+
+---
+
+### A06 – A10: Quick Reference
+
+| Rank | Category | Key Risk | Top Fix |
+|------|----------|----------|---------|
+| A06 | Vulnerable Components | Outdated libraries with known CVEs | Automate dependency scanning (Dependabot, Snyk) |
+| A07 | Auth & Session Failures | Weak passwords, session fixation | Enforce MFA, use strong session management |
+| A08 | Data Integrity Failures | Untrusted deserialization, CI/CD tampering | Verify signatures, secure your pipeline |
+| A09 | Logging & Monitoring Gaps | Breaches go undetected for months | Centralize logs, set up real-time alerts |
+| A10 | SSRF | Internal services accessed via crafted requests | Allowlist outbound destinations, validate URLs |
+
+---
+
+## How to Prepare: A 4-Step Action Plan
+
+Knowing the OWASP Top 10 is step one. Here's how to **operationalize** it:
+
+### Step 1: Assess Your Current Posture
+
+- Run a vulnerability scan against your top 10 most critical applications
+- Map findings to the OWASP Top 10 categories
+- Prioritize by risk (likelihood x impact)
+
+### Step 2: Shift Security Left
+
+- Add **SAST tools** (Semgrep, SonarQube) to your CI/CD pipeline
+- Require security-focused code reviews before merging
+- Use pre-commit hooks to catch secrets and common vulnerabilities
+
+### Step 3: Train Your Team
+
+- Run quarterly OWASP-focused workshops for developers
+- Use hands-on platforms like OWASP WebGoat or Hack The Box
+- Gamify security with internal CTF competitions
+
+### Step 4: Monitor and Iterate
+
+- Deploy runtime application self-protection (RASP) for critical apps
+- Set up SIEM alerts for top 10 related attack patterns
+- Conduct annual penetration tests and compare year-over-year progress
+
+---
+
+## Further Reading
+
+- [OWASP Top 10 Official Project](https://owasp.org/www-project-top-ten/)
+- [OWASP Testing Guide v5](https://owasp.org/www-project-web-security-testing-guide/)
+- [NIST Cybersecurity Framework 2.0](https://www.nist.gov/cyberframework)
+- [CWE/SANS Top 25 Most Dangerous Software Weaknesses](https://cwe.mitre.org/top25/)
+
+> **Bottom line:** The OWASP Top 10 isn't just a list — it's a roadmap. Use it to prioritize, train, and measure your application security program.`,
     date: "2025-12-15",
     author: "SCR Team",
     category: "Web Security",
-    tags: ["OWASP", "Web Security", "Vulnerabilities"],
-    readTime: "8 min read",
+    tags: ["OWASP", "Web Security", "Vulnerabilities", "Application Security"],
+    readTime: "12 min read",
   },
   {
     slug: "secure-api-design-patterns",
     title: "Secure API Design Patterns: A Developer's Guide",
     excerpt:
       "Learn the essential security patterns every API developer should implement, from authentication to rate limiting.",
-    content: `## Building Secure APIs
+    content: `## Why API Security Should Be Your Top Priority
 
-APIs are the backbone of modern applications, but they're also prime targets for attackers. This guide covers essential security patterns.
+APIs now account for over **83% of all web traffic** (Cloudflare, 2024). They power mobile apps, microservices, third-party integrations, and increasingly, AI-driven workflows. But this also makes them the #1 attack vector for data breaches.
 
-## Authentication Patterns
+**The numbers tell the story:**
 
-### JWT Best Practices
-- Use short-lived access tokens (15 minutes)
-- Implement refresh token rotation
-- Store tokens securely (httpOnly cookies)
-- Validate all claims
+| Metric | Value |
+|--------|-------|
+| API attacks increased (YoY) | **681%** (Salt Security) |
+| Breaches involving APIs | **1 in 3** enterprise incidents |
+| Average cost of an API breach | **$6.1 million** |
+| APIs with auth vulnerabilities | **61%** of tested APIs |
 
-### API Key Management
-- Never expose keys in client-side code
-- Implement key rotation policies
-- Use different keys per environment
+> **Reality check:** If your API lacks proper security controls, it's not a matter of *if* you'll be breached — it's when.
 
-## Authorization Patterns
+---
 
-### RBAC (Role-Based Access Control)
-\`\`\`typescript
-const checkPermission = (user: User, resource: string, action: string) => {
-  const permissions = rolePermissions[user.role];
-  return permissions?.includes(\`\${resource}:\${action}\`) ?? false;
-};
-\`\`\`
+## Authentication: Getting the Front Door Right
 
-### ABAC (Attribute-Based Access Control)
-More granular than RBAC, considering user attributes, resource attributes, and environmental conditions.
+Authentication verifies **who** is making the request. Get it wrong, and every other security measure becomes irrelevant.
 
-## Rate Limiting
+### JWT (JSON Web Token) Best Practices
 
-Implement multi-tier rate limiting:
-- Per-user limits
-- Per-IP limits
-- Global limits
-- Endpoint-specific limits
+JWTs are the most common API authentication mechanism, but they're frequently misimplemented. Follow these rules:
 
-## Input Validation
+- **Keep access tokens short-lived** — 15 minutes maximum. Shorter tokens limit the damage window if one is stolen.
+- **Implement refresh token rotation** — Issue a new refresh token with every use and invalidate the old one.
+- **Store tokens in httpOnly cookies** — Never in localStorage or sessionStorage, which are vulnerable to XSS.
+- **Validate every claim** — Check \`iss\`, \`aud\`, \`exp\`, and \`iat\` on every request. Don't just verify the signature.
+- **Use asymmetric signing** — RS256 or ES256 is preferred over HS256 in distributed systems.
 
-Always validate and sanitize input at the API boundary. Use schema validation libraries like Zod or Joi.
+### API Key Security
 
-## Conclusion
+API keys are not authentication — they're identification. But if you use them:
 
-Security is not a feature—it's a requirement. Build these patterns into your API from day one.`,
+- **Never expose keys in client-side code** — They belong in server environments only
+- **Rotate keys on a regular schedule** — Quarterly at minimum, immediately after any suspected compromise
+- **Use separate keys per environment** — Development, staging, and production should never share keys
+- **Scope keys to specific actions** — Read-only keys shouldn't allow writes
+
+### OAuth 2.0 + PKCE
+
+For user-facing applications, OAuth 2.0 with PKCE (Proof Key for Code Exchange) is the gold standard:
+
+- Eliminates the need for client secrets in public clients
+- Prevents authorization code interception attacks
+- Supported by all major identity providers (Auth0, Okta, Azure AD)
+
+---
+
+## Authorization: Controlling Who Sees What
+
+Authentication tells you *who* someone is. Authorization controls *what* they can do.
+
+### RBAC — Role-Based Access Control
+
+The simplest model. Assign roles to users, and roles map to permissions.
+
+**Best for:** Applications with well-defined user roles (admin, editor, viewer).
+
+**Common roles and their scope:**
+
+| Role | Create | Read | Update | Delete |
+|------|--------|------|--------|--------|
+| Admin | Yes | Yes | Yes | Yes |
+| Editor | Yes | Yes | Yes | No |
+| Viewer | No | Yes | No | No |
+| API Consumer | No | Yes | No | No |
+
+### ABAC — Attribute-Based Access Control
+
+More granular than RBAC. Decisions are based on user attributes, resource attributes, and environmental conditions.
+
+**Best for:** Complex organizations where access depends on department, location, time of day, or data classification.
+
+**Example decision factors:**
+
+- User's department and clearance level
+- Resource's sensitivity classification (public, internal, confidential)
+- Request origin (corporate VPN vs. public internet)
+- Time of day (business hours vs. off-hours)
+
+### Authorization Anti-Patterns to Avoid
+
+- **Client-side only checks** — Always enforce on the server. Frontend checks are UX, not security.
+- **Hardcoding roles in code** — Use a policy engine (OPA, Casbin) for maintainability.
+- **Missing object-level checks** — Verify the user owns or has access to the specific resource, not just the resource type.
+
+---
+
+## Rate Limiting: Slowing Down Attackers
+
+Without rate limiting, your API is an open buffet for brute-force attacks, credential stuffing, and denial of service.
+
+### Multi-Tier Rate Limiting Strategy
+
+Implement limits at multiple levels for defense in depth:
+
+- **Per-user limits** — 100 requests/minute for authenticated users
+- **Per-IP limits** — 30 requests/minute for unauthenticated traffic
+- **Per-endpoint limits** — Stricter limits on sensitive endpoints (login, password reset)
+- **Global limits** — Circuit breakers to prevent infrastructure overload
+
+### Rate Limit Response Headers
+
+Always include these headers so clients can self-regulate:
+
+- \`X-RateLimit-Limit\` — Maximum requests allowed
+- \`X-RateLimit-Remaining\` — Requests remaining in the window
+- \`X-RateLimit-Reset\` — Unix timestamp when the limit resets
+- \`Retry-After\` — Seconds to wait before retrying (on 429 response)
+
+---
+
+## Input Validation: Trust Nothing
+
+Every piece of data crossing your API boundary is potentially malicious. Validate everything.
+
+### Validation Principles
+
+- **Validate on the server** — Client-side validation is a UX feature, not a security control
+- **Use allowlists over blocklists** — Define what's accepted, not what's rejected
+- **Enforce strict types** — An age field should only accept integers, not strings
+- **Limit payload sizes** — Set maximum body sizes to prevent memory exhaustion
+- **Sanitize before storage** — Strip HTML tags, escape special characters
+
+### Schema Validation
+
+Use schema validation libraries to enforce structure:
+
+- **Zod** (TypeScript) — Compile-time type inference + runtime validation
+- **Joi** (Node.js) — Mature, well-documented, extensive validation rules
+- **JSON Schema** — Language-agnostic, widely supported
+
+---
+
+## Security Headers Every API Needs
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| Strict-Transport-Security | max-age=31536000; includeSubDomains | Force HTTPS |
+| Content-Security-Policy | default-src 'none' | Prevent content injection |
+| X-Content-Type-Options | nosniff | Prevent MIME sniffing |
+| X-Frame-Options | DENY | Prevent clickjacking |
+| Cache-Control | no-store | Prevent sensitive data caching |
+| X-Request-ID | (unique per request) | Enable request tracing |
+
+---
+
+## API Security Checklist
+
+Before going live, verify every item:
+
+- **Authentication** — All endpoints require valid credentials (except public ones explicitly marked)
+- **Authorization** — Object-level and function-level access controls enforced
+- **Input validation** — Schema validation on all request bodies, query params, and headers
+- **Rate limiting** — Configured per-user, per-IP, and per-endpoint
+- **HTTPS only** — TLS 1.2+ enforced, HTTP redirected or blocked
+- **Error handling** — Generic error messages to clients, detailed logs server-side
+- **Logging** — All authentication events, authorization failures, and anomalies logged
+- **Versioning** — API versioned to allow secure deprecation of old endpoints
+- **CORS** — Configured with specific origins, not wildcard (*)
+- **Dependencies** — All libraries scanned for known vulnerabilities
+
+> **Final thought:** Security isn't a feature you bolt on at the end. It's a design constraint you build around from the first line of code.`,
     date: "2025-11-28",
     author: "SCR Team",
     category: "API Security",
-    tags: ["API", "Authentication", "Authorization", "Design Patterns"],
-    readTime: "10 min read",
+    tags: ["API", "Authentication", "Authorization", "Design Patterns", "REST Security"],
+    readTime: "14 min read",
   },
   {
     slug: "supply-chain-security",
     title: "Software Supply Chain Security: Defending Against Modern Threats",
     excerpt:
       "How to protect your applications from supply chain attacks targeting dependencies, build pipelines, and deployment processes.",
-    content: `## The Supply Chain Threat
+    content: `## The Rising Threat of Supply Chain Attacks
 
-Supply chain attacks have increased by 742% over the past three years. From SolarWinds to Log4Shell, these attacks demonstrate the devastating impact of compromised dependencies.
+Software supply chain attacks have become one of the most devastating trends in cybersecurity. Unlike traditional attacks that target your code directly, supply chain attacks compromise the **tools, libraries, and infrastructure you trust**.
 
-## Attack Vectors
+**The scale of the problem:**
+
+| Incident | Year | Impact |
+|----------|------|--------|
+| SolarWinds (Sunburst) | 2020 | 18,000+ organizations compromised including US government agencies |
+| Codecov | 2021 | CI/CD secrets exfiltrated from thousands of repos |
+| Log4Shell (Log4j) | 2021 | Affected 93% of enterprise cloud environments |
+| ua-parser-js | 2021 | 8 million weekly downloads delivered crypto miners |
+| PyTorch nightly | 2022 | Dependency confusion attack on ML framework |
+| 3CX | 2023 | Desktop app supply chain compromise by North Korean actors |
+| xz Utils | 2024 | Multi-year social engineering attack on compression library maintainer |
+| Polyfill.io | 2024 | Domain takeover injected malicious code into 100,000+ websites |
+
+> **Key stat:** Supply chain attacks increased by **742%** between 2019 and 2024 (Sonatype State of the Software Supply Chain Report).
+
+---
+
+## How Supply Chain Attacks Work
+
+Attackers don't need to hack your application if they can compromise something your application depends on. Here are the primary attack vectors:
 
 ### Dependency Confusion
-Attackers publish malicious packages with names similar to internal packages on public registries.
+
+Attackers publish malicious packages on **public registries** (npm, PyPI) using names identical to your **private internal packages**. Package managers often prioritize public registries, silently pulling the attacker's version instead.
+
+**Why it works:**
+
+- Most package managers check public registries before private ones
+- Internal package names are often guessable from GitHub repos, job postings, or error messages
+- A single misconfigured \`.npmrc\` file can expose an entire organization
 
 ### Compromised Maintainers
-Social engineering attacks targeting package maintainers to inject malicious code.
+
+Open source maintainers are often unpaid individuals who maintain critical infrastructure in their spare time. Attackers exploit this through:
+
+- **Account takeover** — Compromising maintainer credentials via phishing or credential stuffing
+- **Social engineering** — Gaining commit access by contributing helpful PRs over months, then injecting malicious code (the xz Utils playbook)
+- **Burnout exploitation** — Taking over abandoned but widely-used packages
 
 ### Build Pipeline Attacks
-Compromising CI/CD infrastructure to inject malicious code during the build process.
+
+Your CI/CD pipeline has access to secrets, deployment credentials, and production environments. Compromising it gives attackers everything:
+
+- Injecting code during the build step that doesn't exist in the source repo
+- Stealing environment variables containing API keys and database credentials
+- Modifying artifacts after they've been built but before deployment
+
+### Typosquatting
+
+Publishing packages with names nearly identical to popular ones:
+
+- \`lodash\` vs \`1odash\` (number one instead of lowercase L)
+- \`requests\` vs \`request\` (Python)
+- \`crossenv\` vs \`cross-env\` (npm)
+
+---
 
 ## Defense Strategies
 
-### 1. Dependency Management
-- Use lockfiles (package-lock.json, yarn.lock)
-- Pin dependency versions
-- Regularly audit dependencies
-- Use tools like Snyk, Dependabot
+### 1. Lock and Pin Dependencies
 
-### 2. SBOM (Software Bill of Materials)
-Generate and maintain SBOMs for all software:
-\`\`\`bash
-npx @cyclonedx/cyclonedx-npm --output-file sbom.json
-\`\`\`
+The most basic but essential defense:
 
-### 3. Code Signing
-Sign all releases and verify signatures during deployment.
+- **Always commit lockfiles** — \`package-lock.json\`, \`yarn.lock\`, \`pnpm-lock.yaml\`, \`Pipfile.lock\`
+- **Pin exact versions** — Avoid \`^1.0.0\` or \`~1.0.0\`; use \`1.0.0\` for critical dependencies
+- **Review lockfile diffs** — Treat lockfile changes in PRs with the same scrutiny as code changes
+- **Use \`npm ci\`** instead of \`npm install\` in CI/CD — it installs exactly what's in the lockfile
 
-### 4. Build Reproducibility
-Ensure builds are deterministic and reproducible across environments.
+### 2. Audit and Scan Continuously
 
-## Conclusion
+Run security audits as part of every build:
 
-Supply chain security requires a holistic approach combining tooling, processes, and culture.`,
+- **npm audit** / **yarn audit** — Built-in vulnerability scanning
+- **Snyk** — Deep vulnerability database with fix suggestions
+- **Dependabot** — Automated PR creation for vulnerable dependencies
+- **Socket.dev** — Detects suspicious package behavior (network calls, filesystem access)
+- **OSV Scanner** (Google) — Cross-ecosystem vulnerability database
+
+### 3. Generate and Maintain SBOMs
+
+A **Software Bill of Materials** (SBOM) is a complete inventory of every component in your software. Without it, you can't assess your exposure when the next Log4Shell drops.
+
+**Formats:**
+
+- **CycloneDX** — OWASP standard, well-supported in JS/Python ecosystems
+- **SPDX** — Linux Foundation standard, required by some government contracts
+
+**When to generate:**
+
+- On every release build
+- Before deploying to production
+- When onboarding new third-party integrations
+
+### 4. Secure Your Build Pipeline
+
+- **Use ephemeral build environments** — Spin up fresh containers for every build; don't reuse
+- **Limit secret access** — Only expose secrets to the specific steps that need them
+- **Require signed commits** — Verify that code changes come from authorized contributors
+- **Pin CI/CD action versions** — Use commit SHAs, not tags (\`actions/checkout@a1b2c3d\` not \`actions/checkout@v4\`)
+- **Enable build provenance** — SLSA (Supply-chain Levels for Software Artifacts) framework
+
+### 5. Use Private Registries with Scoped Access
+
+- Host internal packages on a private registry (Artifactory, GitHub Packages, AWS CodeArtifact)
+- Configure package managers to check your private registry **first**
+- Block public packages that share names with your internal ones
+- Require two-person approval for publishing new packages
+
+---
+
+## Incident Response: When a Dependency is Compromised
+
+When the next Log4Shell happens, you need to move fast. Here's a response playbook:
+
+1. **Identify exposure** — Search your SBOMs and lockfiles for the affected package and version
+2. **Assess blast radius** — Determine which applications, environments, and data are affected
+3. **Contain** — Isolate affected systems and rotate any credentials they had access to
+4. **Patch or remove** — Update to a fixed version, or remove the dependency entirely
+5. **Scan for indicators of compromise** — Check logs for exploitation attempts
+6. **Communicate** — Notify affected parties per your incident response plan
+7. **Post-mortem** — Document what happened and how to prevent it
+
+---
+
+## Supply Chain Security Maturity Model
+
+| Level | Description | Key Actions |
+|-------|------------|-------------|
+| **Level 0** | No visibility | No lockfiles, no audits, no SBOMs |
+| **Level 1** | Basic hygiene | Lockfiles committed, periodic \`npm audit\` |
+| **Level 2** | Automated scanning | Dependabot/Snyk in CI, SBOMs generated |
+| **Level 3** | Proactive defense | Private registries, signed commits, pinned CI actions |
+| **Level 4** | Verified supply chain | SLSA Level 3+, reproducible builds, provenance attestations |
+
+> **Where to start:** Most teams should aim to reach Level 2 within 30 days and Level 3 within 90 days. Level 4 is where mature security organizations operate.
+
+---
+
+## Further Reading
+
+- [SLSA Framework](https://slsa.dev/) — Supply-chain Levels for Software Artifacts
+- [OpenSSF Scorecard](https://securityscorecards.dev/) — Automated security health checks for open source
+- [Sigstore](https://www.sigstore.dev/) — Keyless signing for software artifacts
+- [NIST SP 800-218](https://csrc.nist.gov/publications/detail/sp/800-218/final) — Secure Software Development Framework`,
     date: "2025-11-10",
     author: "SCR Team",
     category: "Supply Chain",
-    tags: ["Supply Chain", "Dependencies", "DevSecOps"],
-    readTime: "7 min read",
+    tags: ["Supply Chain", "Dependencies", "DevSecOps", "SBOM", "Open Source Security"],
+    readTime: "14 min read",
   },
   {
     slug: "zero-trust-architecture",
     title: "Implementing Zero Trust Architecture: A Practical Guide",
     excerpt:
       "Move beyond perimeter-based security with a practical implementation guide for Zero Trust Architecture in modern applications.",
-    content: `## What is Zero Trust?
+    content: `## The Problem with Traditional Security
 
-Zero Trust is a security model based on the principle "never trust, always verify." It eliminates implicit trust and continuously validates every stage of digital interaction.
+For decades, enterprise security relied on a **castle-and-moat** model: build a strong perimeter (firewalls, VPNs), and trust everything inside it. This model is fundamentally broken in 2025.
 
-## Core Principles
+**Why perimeter security fails:**
 
-1. **Verify Explicitly** - Always authenticate and authorize based on all available data points
-2. **Use Least Privilege Access** - Limit user access with just-in-time and just-enough-access
-3. **Assume Breach** - Minimize blast radius and segment access
+- **Remote work** — 58% of employees work outside the corporate network at least part-time
+- **Cloud adoption** — Critical data lives in SaaS apps, not behind your firewall
+- **Lateral movement** — Once inside, attackers move freely across trusted networks
+- **Supply chain risks** — Third-party integrations punch holes through your perimeter
 
-## Implementation Steps
+> **The SolarWinds lesson:** Attackers operated inside trusted networks for **14 months** before detection. Inside the perimeter, they were invisible.
 
-### Identity Verification
-- Multi-factor authentication (MFA)
-- Conditional access policies
-- Continuous authentication
+---
 
-### Network Segmentation
-- Micro-segmentation
-- Software-defined perimeters
-- Encrypted communications
+## What Zero Trust Actually Means
 
-### Device Compliance
-- Device health checks
-- Endpoint detection and response
-- Mobile device management
+Zero Trust isn't a product you buy. It's a **security philosophy** built on one principle:
 
-## Monitoring and Analytics
+> **"Never trust, always verify."**
 
-Deploy comprehensive logging and monitoring:
-- User behavior analytics (UBA)
-- Security Information and Event Management (SIEM)
-- Automated incident response
+Every access request — whether from inside or outside the network — must be authenticated, authorized, and continuously validated. There is no implicit trust based on network location, device type, or previous access.
 
-## Conclusion
+### The Three Pillars of Zero Trust
 
-Zero Trust is a journey, not a destination. Start with identity, expand to network, and iterate continuously.`,
+| Pillar | Principle | In Practice |
+|--------|-----------|-------------|
+| **Verify explicitly** | Authenticate and authorize based on all available signals | MFA, device health checks, location analysis, behavioral patterns |
+| **Least privilege access** | Grant minimum permissions needed, for minimum time | Just-in-time access, scoped API tokens, time-limited sessions |
+| **Assume breach** | Design as if the attacker is already inside | Micro-segmentation, encryption everywhere, continuous monitoring |
+
+---
+
+## Zero Trust Architecture: The Five Components
+
+### 1. Identity — The New Perimeter
+
+In Zero Trust, **identity replaces the network perimeter** as the primary security boundary. Every person, service, and device must prove who they are.
+
+**Identity controls to implement:**
+
+- **Multi-factor authentication (MFA)** for all users — not just admins. SMS-based MFA is weak; use hardware keys (YubiKey) or authenticator apps.
+- **Conditional access policies** — Block or challenge access based on risk signals (unfamiliar location, new device, impossible travel)
+- **Single sign-on (SSO)** — Centralize authentication to reduce credential sprawl
+- **Service identities** — Every microservice, API, and workload needs a verifiable identity (mTLS certificates, SPIFFE/SPIRE)
+
+### 2. Devices — Trust No Endpoint
+
+A compromised device is a compromised identity. Verify device health before granting access.
+
+**Device trust signals:**
+
+- Is the OS patched and up to date?
+- Is endpoint detection and response (EDR) installed and running?
+- Is disk encryption enabled?
+- Is the device managed by your MDM solution?
+- Has the device been jailbroken or rooted?
+
+**Implementation approach:**
+
+- Use a device compliance engine (Microsoft Intune, Jamf, Google BeyondCorp Enterprise)
+- Assign trust scores to devices — full access for compliant devices, restricted access for others
+- Re-evaluate device health continuously, not just at login
+
+### 3. Network — Micro-Segmentation
+
+Traditional flat networks let attackers move laterally after initial compromise. Micro-segmentation creates **granular security zones**.
+
+**Segmentation strategies:**
+
+- **Application-level segmentation** — Each app can only communicate with its specific dependencies
+- **Environment isolation** — Development, staging, and production cannot reach each other
+- **Data classification zones** — PII databases isolated from general compute workloads
+- **East-west traffic inspection** — Monitor and filter traffic between internal services, not just north-south
+
+### 4. Applications and Workloads
+
+Applications themselves must enforce Zero Trust principles:
+
+- **Authenticate every API call** — No implicit trust between services, even within the same cluster
+- **Encrypt all data in transit** — Use mTLS between services, TLS 1.3 for external connections
+- **Validate input at every boundary** — Each service validates its own inputs, regardless of the caller
+- **Implement runtime protection** — RASP (Runtime Application Self-Protection) for critical apps
+
+### 5. Data — What You're Actually Protecting
+
+Data is the ultimate target. Classify it, protect it, and monitor access to it:
+
+- **Classify data by sensitivity** — Public, internal, confidential, restricted
+- **Encrypt at rest and in transit** — AES-256 for storage, TLS 1.2+ for transport
+- **Apply data loss prevention (DLP)** — Detect and prevent exfiltration of sensitive data
+- **Implement data access logging** — Know who accessed what data, when, and from where
+- **Enforce retention policies** — Don't keep data longer than you need to
+
+---
+
+## Implementation Roadmap
+
+Zero Trust is a **journey, not a switch you flip**. Here's a realistic phased approach:
+
+### Phase 1: Foundation (Months 1-3)
+
+- Deploy MFA for all users (start with admins and privileged accounts)
+- Inventory all applications, data stores, and network flows
+- Implement SSO with a centralized identity provider
+- Enable comprehensive logging and centralize into a SIEM
+
+### Phase 2: Access Controls (Months 4-6)
+
+- Implement conditional access policies based on risk signals
+- Deploy device compliance checks gating access to sensitive apps
+- Begin network segmentation — isolate the most critical assets first
+- Roll out privileged access management (PAM) for admin accounts
+
+### Phase 3: Advanced Controls (Months 7-12)
+
+- Implement micro-segmentation across all network zones
+- Deploy mTLS between all internal services
+- Add behavioral analytics (UEBA) to detect anomalous access patterns
+- Implement just-in-time access for administrative privileges
+
+### Phase 4: Continuous Improvement (Ongoing)
+
+- Regular penetration testing against Zero Trust controls
+- Tabletop exercises simulating insider threats and lateral movement
+- Quarterly access reviews and permission audits
+- Integrate threat intelligence feeds into access decisions
+
+---
+
+## Common Zero Trust Mistakes
+
+Avoid these traps that derail Zero Trust implementations:
+
+- **Treating it as a product purchase** — No single vendor delivers "Zero Trust in a box"
+- **Boiling the ocean** — Trying to implement everything at once instead of phasing
+- **Ignoring user experience** — Excessive friction drives users to find workarounds
+- **Forgetting service-to-service communication** — Most breaches exploit machine-to-machine trust
+- **Not measuring progress** — Define metrics (% of apps with MFA, mean time to detect anomalies) and track them
+
+---
+
+## Zero Trust Maturity Assessment
+
+| Capability | Traditional | Initial ZT | Advanced ZT | Optimal ZT |
+|-----------|------------|------------|-------------|------------|
+| Identity | Passwords only | MFA for some | MFA everywhere + conditional access | Continuous authentication + UEBA |
+| Devices | No compliance checks | Basic MDM | Health-gated access | Real-time risk scoring |
+| Network | Flat, trusted | Basic segmentation | Micro-segmentation | Software-defined perimeters |
+| Apps | Perimeter-protected | SSO + basic auth | mTLS + per-request auth | RASP + runtime validation |
+| Data | Minimal encryption | Encryption at rest | Classification + DLP | Automated governance |
+| Visibility | Minimal logging | Centralized logs | SIEM + alerts | AI-driven threat detection |
+
+---
+
+## Further Reading
+
+- [NIST SP 800-207 — Zero Trust Architecture](https://csrc.nist.gov/publications/detail/sp/800-207/final)
+- [CISA Zero Trust Maturity Model](https://www.cisa.gov/zero-trust-maturity-model)
+- [Google BeyondCorp Papers](https://cloud.google.com/beyondcorp)
+- [Microsoft Zero Trust Documentation](https://learn.microsoft.com/en-us/security/zero-trust/)
+
+> **The bottom line:** Zero Trust isn't about removing all trust — it's about making trust decisions explicit, granular, and continuous. Start with identity, expand to devices and network, and never stop improving.`,
     date: "2025-10-25",
     author: "SCR Team",
     category: "Architecture",
-    tags: ["Zero Trust", "Architecture", "Identity", "Network Security"],
-    readTime: "9 min read",
+    tags: ["Zero Trust", "Architecture", "Identity", "Network Security", "Enterprise Security"],
+    readTime: "15 min read",
   },
   {
     slug: "container-security-best-practices",
     title: "Container Security Best Practices for Production",
     excerpt:
       "Secure your containerized applications from image building to runtime with these battle-tested practices.",
-    content: `## Container Security Lifecycle
+    content: `## Why Container Security Matters
 
-Security must be addressed at every stage of the container lifecycle: build, ship, and run.
+Containers are everywhere. Over **92% of organizations** use containers in production (Sysdig 2024 Container Security Report). But the speed and convenience of containers often comes at the cost of security.
 
-## Build Phase
+**The risk landscape:**
 
-### Minimal Base Images
-Use minimal base images to reduce attack surface:
-\`\`\`dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
+| Finding | Percentage |
+|---------|-----------|
+| Container images with known high/critical CVEs | **87%** |
+| Containers running as root | **76%** |
+| Images pulled from untrusted public registries | **61%** |
+| Containers with excessive privileges | **54%** |
+| Runtime security monitoring deployed | Only **32%** |
 
-FROM node:20-alpine
-RUN addgroup -g 1001 -S appgroup && adduser -S appuser -u 1001
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-USER appuser
-EXPOSE 3000
-CMD ["node", "dist/index.js"]
-\`\`\`
+> **Key insight:** Most container breaches aren't sophisticated. They exploit basic misconfigurations — images running as root, unpatched base images, and overly permissive network policies.
 
-### Image Scanning
-Scan images for vulnerabilities before pushing:
-\`\`\`bash
-docker scout cves myimage:latest
-trivy image myimage:latest
-\`\`\`
+---
 
-## Ship Phase
+## The Container Security Lifecycle
 
-- Sign container images
-- Use private registries
-- Implement image promotion policies
+Security must be addressed at **every stage** — build, ship, and run. A vulnerability missed during build becomes an incident at runtime.
 
-## Run Phase
+### Build Phase: Secure the Foundation
 
-- Read-only file systems
-- No privileged containers
-- Resource limits
-- Network policies
-- Runtime security monitoring
+#### Choose Minimal Base Images
 
-## Conclusion
+Every unnecessary package in your base image is a potential attack surface. Use the smallest image that meets your needs.
 
-Container security is a shared responsibility between development and operations teams.`,
+**Image size comparison:**
+
+| Base Image | Size | Packages | Attack Surface |
+|-----------|------|----------|---------------|
+| ubuntu:22.04 | 77 MB | 89 packages | High |
+| debian:slim | 52 MB | 62 packages | Medium |
+| alpine:3.19 | 7 MB | 14 packages | Low |
+| distroless (Google) | 2-20 MB | Runtime only | Minimal |
+| scratch | 0 MB | Nothing | None (bring your own) |
+
+**Best practices for base images:**
+
+- Use **Alpine** or **distroless** images whenever possible
+- Pin base image versions — use \`node:20.11.0-alpine\`, not \`node:latest\`
+- Use **multi-stage builds** to separate build dependencies from runtime
+- Remove package managers from final images to prevent runtime package installation
+
+#### Scan Images Before Publishing
+
+Every image must be scanned before it reaches a registry:
+
+- **Trivy** (Aqua Security) — Fast, comprehensive, open source
+- **Grype** (Anchore) — Deep CVE scanning with SBOM integration
+- **Docker Scout** — Native Docker scanning
+- **Snyk Container** — Developer-friendly with fix suggestions
+
+**When to scan:**
+
+- In the Dockerfile build step (fail fast)
+- In your CI/CD pipeline (gate deployments)
+- On a schedule in your registry (catch newly published CVEs)
+- At runtime (detect drift)
+
+#### Don't Run as Root
+
+Running containers as root is the single most common — and most dangerous — misconfiguration.
+
+**What to do:**
+
+- Create a dedicated non-root user in your Dockerfile
+- Set \`USER appuser\` before the CMD/ENTRYPOINT instruction
+- Use \`runAsNonRoot: true\` in Kubernetes security contexts
+- Avoid \`chmod 777\` — set specific file permissions
+
+---
+
+### Ship Phase: Secure the Pipeline
+
+Once images are built, the shipping process introduces its own risks.
+
+**Registry security:**
+
+- **Use private registries** — Never pull production images from Docker Hub without verification
+- **Enable image signing** — Use Cosign (Sigstore) or Docker Content Trust to verify image authenticity
+- **Implement admission controllers** — Reject unsigned or unscanned images in Kubernetes
+- **Automate image promotion** — dev → staging → production with gates at each stage
+
+**Supply chain controls:**
+
+- Generate **SBOMs** for every image using Syft or Trivy
+- Maintain an **approved base image catalog** — teams can only build from pre-approved bases
+- Track **image provenance** — know exactly what source code and build environment produced each image
+
+---
+
+### Run Phase: Runtime Protection
+
+Build-time security catches known issues. Runtime security catches everything else.
+
+#### Kubernetes Security Contexts
+
+Every pod should have a restrictive security context:
+
+- **readOnlyRootFilesystem: true** — Prevent filesystem modifications
+- **runAsNonRoot: true** — Enforce non-root execution
+- **allowPrivilegeEscalation: false** — Block processes from gaining additional privileges
+- **capabilities: drop: [ALL]** — Remove all Linux capabilities, add back only what's needed
+
+#### Network Policies
+
+By default, Kubernetes allows all pod-to-pod communication. Lock it down:
+
+- **Default deny all ingress and egress** — Start with zero access
+- **Allow only required communication** — Frontend can talk to API, API can talk to database
+- **Block internet access** — Most pods don't need outbound internet; block it unless explicitly required
+- **Use service mesh** — Istio or Linkerd for mTLS between services
+
+#### Resource Limits
+
+Without resource limits, a single compromised container can consume all cluster resources:
+
+- Set CPU and memory **requests and limits** for every container
+- Configure **LimitRanges** to enforce defaults across namespaces
+- Use **ResourceQuotas** to cap total namespace consumption
+- Monitor for containers approaching their limits
+
+#### Runtime Monitoring
+
+Deploy runtime security tools to detect anomalous behavior:
+
+- **Falco** (CNCF) — Detects unexpected system calls, file access, and network connections
+- **Sysdig Secure** — Runtime threat detection + vulnerability management
+- **Aqua Security** — Full lifecycle container security
+- **Tetragon** (Cilium) — eBPF-based runtime enforcement
+
+---
+
+## Container Security Checklist
+
+Before deploying to production, verify each item:
+
+**Build:**
+- Non-root user configured
+- Minimal base image (Alpine/distroless)
+- Multi-stage build separating build and runtime
+- Image scanned with zero high/critical CVEs
+- SBOM generated and stored
+
+**Ship:**
+- Image signed and signature verified
+- Stored in a private registry with access controls
+- Admission controller blocking unsigned images
+- Image promotion pipeline with gates
+
+**Run:**
+- Security context configured (non-root, read-only FS, no privilege escalation)
+- Network policies in place (default deny)
+- Resource limits set (CPU and memory)
+- Runtime monitoring deployed
+- Secrets managed via external secrets operator (not env vars or ConfigMaps)
+- Logging configured and centralized
+
+---
+
+## Further Reading
+
+- [CIS Kubernetes Benchmark](https://www.cisecurity.org/benchmark/kubernetes)
+- [NIST SP 800-190 — Container Security Guide](https://csrc.nist.gov/publications/detail/sp/800-190/final)
+- [NSA/CISA Kubernetes Hardening Guide](https://media.defense.gov/2022/Aug/29/2003066362/-1/-1/0/CTR_KUBERNETES_HARDENING_GUIDANCE_1.2_20220829.PDF)
+- [Sigstore — Container Signing](https://www.sigstore.dev/)
+
+> **Remember:** Container security is a shared responsibility. Developers build secure images, platform teams configure secure clusters, and security teams monitor for threats. No single team can do it alone.`,
     date: "2025-10-10",
     author: "SCR Team",
     category: "Container Security",
-    tags: ["Docker", "Kubernetes", "Containers", "DevSecOps"],
-    readTime: "6 min read",
+    tags: ["Docker", "Kubernetes", "Containers", "DevSecOps", "Cloud Native"],
+    readTime: "15 min read",
   },
   {
     slug: "ai-security-llm-vulnerabilities-protection-2025",
@@ -1341,59 +1960,283 @@ DevSecOps is not a tool or framework—it's a cultural shift that makes security
   },
   {
     slug: "secure-code-review-checklist",
-    title: "The Ultimate Secure Code Review Checklist",
+    title: "The Ultimate Secure Code Review Checklist for 2025",
     excerpt:
-      "A comprehensive checklist for conducting effective secure code reviews that catch vulnerabilities before they reach production.",
-    content: `## Why Secure Code Reviews Matter
+      "A comprehensive, actionable checklist for conducting secure code reviews. Covers input validation, authentication, authorization, cryptography, error handling, and CI/CD integration with real-world examples.",
+    content: `## Why Secure Code Reviews Are Your Strongest Defense
 
-Code reviews are your last line of defense before vulnerabilities reach production. A structured approach ensures consistency and thoroughness.
+Every major data breach—Equifax, SolarWinds, MOVEit—traces back to code that shipped without adequate security review. Manual code reviews remain the single most effective method for catching logic flaws, access-control bypasses, and business-logic vulnerabilities that automated scanners miss.
 
-## The Checklist
+> **Key Insight:** According to the Synopsys 2024 Software Vulnerability Snapshot, **code review catches 60–70% of defects** before they enter QA, and security-focused reviews reduce post-release vulnerabilities by up to 80%.
 
-### Input Validation
-- [ ] All user inputs are validated
-- [ ] Input length limits are enforced
-- [ ] Special characters are properly handled
-- [ ] File uploads are validated (type, size, content)
+### The Cost of Skipping Secure Code Reviews
 
-### Authentication
-- [ ] Passwords are properly hashed (bcrypt, argon2)
-- [ ] Session management is secure
-- [ ] MFA is implemented where appropriate
-- [ ] Account lockout is configured
+| Metric | Without Secure Review | With Secure Review |
+|---|---|---|
+| Avg. cost to fix a vulnerability in production | $25,000+ | $500–$2,000 in dev |
+| Mean time to detect a breach | 204 days (IBM 2024) | Caught before merge |
+| Percentage of critical CVEs from logic flaws | ~35% | Dramatically reduced |
+| Developer trust & code quality | Inconsistent | High, culture of security |
 
-### Authorization
-- [ ] Access controls are enforced server-side
-- [ ] IDOR vulnerabilities are addressed
-- [ ] Principle of least privilege is followed
-- [ ] Role-based access is properly implemented
+---
 
-### Data Protection
-- [ ] Sensitive data is encrypted at rest
-- [ ] TLS is enforced for data in transit
-- [ ] PII handling follows regulations
-- [ ] Secrets are not hardcoded
+## How to Run an Effective Secure Code Review
 
-### Error Handling
-- [ ] Errors don't expose sensitive information
-- [ ] Stack traces are not shown to users
-- [ ] Logging captures security events
-- [ ] Error messages are user-friendly
+Before diving into the checklist, establish a repeatable review process:
 
-### Dependencies
-- [ ] Known vulnerabilities are addressed
-- [ ] Dependencies are up to date
-- [ ] Unused dependencies are removed
-- [ ] License compliance is verified
+1. **Define scope** — Focus on changes touching auth, input handling, data access, or crypto
+2. **Use a threat model** — Know your application's attack surface before reviewing
+3. **Time-box reviews** — 60–90 minutes max per session to maintain reviewer focus
+4. **Pair with tooling** — Run SAST/SCA before manual review so reviewers focus on logic, not syntax
+5. **Document findings** — Track issues in a consistent format (severity, CWE, remediation)
 
-## Conclusion
+> **Pro Tip:** The best reviews are collaborative, not adversarial. Frame findings as learning opportunities and always praise good security patterns when you spot them.
 
-Use this checklist as a starting point and customize it for your organization's specific needs.`,
+---
+
+## The Complete Secure Code Review Checklist
+
+### 1. Input Validation & Sanitization
+
+Every entry point is a potential attack vector. Validate early, validate thoroughly.
+
+| Check | Why It Matters | Common CWE |
+|---|---|---|
+| All user inputs validated on the server side | Client-side validation is trivially bypassed | CWE-20 |
+| Input length limits enforced | Prevents buffer overflows, DoS attacks | CWE-120 |
+| Allow-lists preferred over deny-lists | Deny-lists inevitably miss edge cases | CWE-183 |
+| Special characters escaped contextually | Prevents XSS, SQL injection | CWE-79, CWE-89 |
+| File uploads validated (type, size, content) | Prevents webshell uploads, path traversal | CWE-434 |
+| URL redirects validated against allow-list | Prevents open redirect phishing | CWE-601 |
+| Deserialization of untrusted data avoided | Prevents RCE via insecure deserialization | CWE-502 |
+
+**What to look for in code:**
+
+- Direct use of \`request.body\`, \`request.query\`, or \`request.params\` without validation
+- Missing or weak regex patterns for input validation
+- Use of \`eval()\`, \`Function()\`, or \`innerHTML\` with user input
+- File uploads stored without content-type verification or renaming
+
+---
+
+### 2. Authentication & Session Management
+
+Broken authentication remains in the OWASP Top 10 year after year.
+
+| Check | Why It Matters | Common CWE |
+|---|---|---|
+| Passwords hashed with bcrypt, Argon2, or scrypt | MD5/SHA-1 are trivially cracked | CWE-916 |
+| Password complexity and length requirements enforced | Weak passwords are the #1 entry point | CWE-521 |
+| Multi-factor authentication available | Credential stuffing defense | CWE-308 |
+| Account lockout or rate limiting on login | Prevents brute-force attacks | CWE-307 |
+| Sessions invalidated on logout | Prevents session fixation | CWE-384 |
+| Session tokens are random, high-entropy | Predictable tokens can be hijacked | CWE-330 |
+| Cookies use Secure, HttpOnly, SameSite flags | Prevents XSS-based session theft | CWE-614 |
+| Password reset tokens expire and are single-use | Prevents token reuse attacks | CWE-640 |
+
+**Red flags in code:**
+
+- Storing passwords in plaintext or using MD5/SHA-1
+- Session tokens in URL parameters instead of cookies
+- Missing \`httpOnly\` or \`secure\` flags on session cookies
+- No rate limiting on \`/login\` or \`/api/auth\` endpoints
+
+---
+
+### 3. Authorization & Access Control
+
+Authorization flaws are the most common vulnerability class in modern web applications.
+
+| Check | Why It Matters | Common CWE |
+|---|---|---|
+| Access controls enforced server-side | Client-side checks are cosmetic only | CWE-284 |
+| IDOR protections in place | Accessing other users' data by changing IDs | CWE-639 |
+| Principle of least privilege followed | Users should only access what they need | CWE-269 |
+| Role-based (RBAC) or attribute-based (ABAC) access | Consistent, auditable access decisions | CWE-285 |
+| API endpoints have authorization checks | Every endpoint, not just the UI | CWE-862 |
+| Horizontal privilege escalation prevented | User A can't access User B's resources | CWE-863 |
+| Admin functions require re-authentication | Prevents session hijacking impact | CWE-306 |
+
+**What to look for:**
+
+- Missing authorization middleware on API routes
+- Direct object references (\`/api/users/123/profile\`) without ownership checks
+- Admin-only functions accessible to regular users
+- Relying solely on \`role\` field in JWT without server-side verification
+
+---
+
+### 4. Cryptography & Data Protection
+
+Getting crypto wrong is worse than not using it—it creates a false sense of security.
+
+| Check | Why It Matters | Common CWE |
+|---|---|---|
+| Sensitive data encrypted at rest (AES-256-GCM) | Protects against database breaches | CWE-311 |
+| TLS 1.2+ enforced for all data in transit | Prevents man-in-the-middle attacks | CWE-319 |
+| No hardcoded secrets, keys, or passwords | Secrets belong in vaults, not code | CWE-798 |
+| Cryptographic keys rotated on schedule | Limits blast radius of key compromise | CWE-320 |
+| Random number generation uses CSPRNG | Weak randomness breaks tokens and keys | CWE-338 |
+| PII handling complies with GDPR/CCPA | Regulatory fines, reputational damage | — |
+| Sensitive data not logged or cached | Logs become breach vectors | CWE-532 |
+
+**Common mistakes:**
+
+- Using \`Math.random()\` for security-sensitive values instead of \`crypto.randomBytes()\`
+- Hardcoded API keys, database passwords, or JWT secrets in source code
+- Storing credit card numbers or SSNs without proper tokenization
+- Using ECB mode for AES encryption (patterns leak through)
+
+---
+
+### 5. Error Handling & Logging
+
+Poor error handling leaks information. Poor logging means you can't detect attacks.
+
+| Check | Why It Matters | Common CWE |
+|---|---|---|
+| Stack traces never exposed to users | Reveals internal architecture to attackers | CWE-209 |
+| Error messages are generic and user-friendly | Prevents information enumeration | CWE-209 |
+| All security events are logged | Enables detection and forensics | CWE-778 |
+| Logs don't contain sensitive data | Logs are often less protected than databases | CWE-532 |
+| Log injection is prevented | Attackers can forge log entries | CWE-117 |
+| Centralized logging with alerting | Individual server logs miss the big picture | — |
+| Exception handling doesn't fail open | Errors should deny access, not grant it | CWE-280 |
+
+**Logging checklist:**
+
+- Log: authentication successes and failures, authorization failures, input validation failures, privilege changes, data access patterns
+- Never log: passwords, session tokens, credit card numbers, PII, API keys
+- Alert on: multiple failed logins, privilege escalation attempts, unusual data access volumes
+
+---
+
+### 6. Dependency & Supply Chain Security
+
+Your application is only as secure as its weakest dependency.
+
+| Check | Why It Matters | Common CWE |
+|---|---|---|
+| Dependencies scanned for known CVEs | 84% of codebases contain known vulnerabilities | CWE-1035 |
+| Lock files committed (\`package-lock.json\`) | Prevents supply chain injection | — |
+| Unused dependencies removed | Reduces attack surface | — |
+| License compliance verified | Legal risk from GPL in proprietary code | — |
+| Typosquatting protection in place | Malicious packages with similar names | CWE-506 |
+| Pinned versions for critical dependencies | Prevents auto-updating to compromised versions | — |
+
+**Tools to automate this:**
+
+- **npm audit / yarn audit** — Built-in vulnerability scanning
+- **Snyk** — Continuous dependency monitoring with fix PRs
+- **Dependabot** — Automated dependency update pull requests
+- **Socket.dev** — Detects supply chain attacks in real time
+- **OWASP Dependency-Check** — SBOM generation and CVE matching
+
+---
+
+### 7. API Security
+
+APIs are the #1 attack target in modern applications.
+
+| Check | Why It Matters | Common CWE |
+|---|---|---|
+| Rate limiting on all public endpoints | Prevents DoS and brute-force | CWE-770 |
+| Request size limits configured | Prevents resource exhaustion | CWE-400 |
+| CORS configured restrictively | Prevents unauthorized cross-origin requests | CWE-942 |
+| API versioning implemented | Safe deprecation without breaking security | — |
+| GraphQL introspection disabled in production | Prevents schema enumeration | CWE-200 |
+| Response filtering (no over-fetching) | Prevents accidental data exposure | CWE-213 |
+| Security headers set (CSP, HSTS, X-Frame-Options) | Defense-in-depth against common attacks | CWE-693 |
+
+---
+
+### 8. Infrastructure & Configuration
+
+Misconfigurations are the easiest vulnerabilities to exploit and the easiest to prevent.
+
+| Check | Why It Matters |
+|---|---|
+| Debug mode disabled in production | Exposes stack traces, enables code execution |
+| Default credentials changed | Bots scan for default admin/admin constantly |
+| Unnecessary services and ports disabled | Reduces attack surface |
+| Security headers configured correctly | CSP, HSTS, X-Content-Type-Options, Referrer-Policy |
+| Environment variables used for configuration | Prevents secrets in code |
+| HTTPS enforced with valid certificates | Prevents downgrade attacks |
+
+---
+
+## Integrating Secure Code Review into CI/CD
+
+Modern security code review is not just a manual process—it's automated, continuous, and embedded in your pipeline.
+
+### Recommended CI/CD Security Pipeline
+
+| Stage | Tool Category | Example Tools | What It Catches |
+|---|---|---|---|
+| Pre-commit | Secret scanning | git-secrets, TruffleHog | Hardcoded credentials |
+| Pull request | SAST | Semgrep, SonarQube | Code-level vulnerabilities |
+| Pull request | Manual review | Human reviewers | Logic flaws, business risks |
+| Build | SCA | Snyk, Dependabot | Vulnerable dependencies |
+| Pre-deploy | DAST | OWASP ZAP, Burp Suite | Runtime vulnerabilities |
+| Production | RASP/WAF | Signal Sciences, Cloudflare | Active exploitation attempts |
+
+> **Best Practice:** Gate merges on SAST findings above a severity threshold. This ensures no high or critical vulnerability ships without explicit acknowledgment.
+
+---
+
+## Review Severity Classification
+
+Use a consistent severity model so teams prioritize effectively:
+
+| Severity | Definition | SLA | Example |
+|---|---|---|---|
+| **Critical** | Exploitable remotely with no auth, leads to data breach or RCE | Block merge, fix immediately | SQL injection in login, hardcoded admin password |
+| **High** | Exploitable with low privilege, significant data exposure | Fix before next release | IDOR in API, missing authorization check |
+| **Medium** | Requires specific conditions to exploit | Fix within 30 days | Verbose error messages, missing rate limiting |
+| **Low** | Minimal security impact, best-practice improvement | Fix in next sprint | Missing security headers, outdated dependency |
+| **Informational** | No direct security impact, code quality concern | Backlog | Code complexity, missing comments |
+
+---
+
+## Measuring Code Review Effectiveness
+
+Track these KPIs to continuously improve your review process:
+
+- **Defect escape rate** — What percentage of security bugs reach production despite reviews?
+- **Review coverage** — What percentage of changes receive a security-focused review?
+- **Mean time to remediate** — How quickly are review findings fixed?
+- **False positive rate** — Are your tools generating noise that slows reviews?
+- **Reviewer load balance** — Are security reviews concentrated on one person or distributed?
+
+> **Target Benchmark:** Mature organizations aim for < 5% security defect escape rate and > 90% review coverage on security-critical code paths.
+
+---
+
+## Common Secure Code Review Anti-Patterns
+
+Avoid these mistakes that undermine review effectiveness:
+
+1. **Rubber-stamping** — Approving PRs without meaningful review to unblock velocity
+2. **Checklist fatigue** — Going through motions without thinking critically about each check
+3. **Ignoring test code** — Test fixtures with hardcoded credentials or relaxed security settings
+4. **Reviewing too much at once** — PRs over 400 lines have dramatically lower defect detection rates
+5. **No follow-up** — Finding issues but never verifying they were actually fixed
+6. **Security team bottleneck** — Only security engineers do security reviews instead of training all developers
+
+---
+
+## Further Reading
+
+- [OWASP Code Review Guide](https://owasp.org/www-project-code-review-guide/) — The definitive reference for secure code review methodology
+- [OWASP Top 10 2025](/owasp/top-10-2025) — The latest critical web application security risks
+- [CWE Top 25 Most Dangerous Software Weaknesses](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html)
+- [NIST Secure Software Development Framework](https://csrc.nist.gov/Projects/ssdf)
+- [Google's Code Review Best Practices](https://google.github.io/eng-practices/review/)`,
     date: "2025-09-20",
     author: "SCR Team",
     category: "Code Review",
-    tags: ["Code Review", "Checklist", "Best Practices"],
-    readTime: "5 min read",
+    tags: ["Code Review", "Checklist", "Best Practices", "SAST", "CI/CD Security", "OWASP"],
+    readTime: "18 min read",
   },
   {
     slug: "sql-injection-prevention-guide",
@@ -2073,355 +2916,6 @@ if (md5(password) === user.oldMd5Hash) {
     title: "Cloud Security Guide: AWS, Azure & GCP Misconfigurations 2025",
     excerpt: "Master cloud security with comprehensive guides on S3 bucket security, IAM policies, secrets management, and real breach case studies.",
     content: `## Cloud Security Landscape 2025
-\`\`\`javascript
-const bcrypt = require('bcryptjs');
-
-async function hashPassword(password) {
-  // Generate salt with cost factor 12
-  const salt = await bcrypt.genSalt(12);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  
-  console.log('Original:', password);
-  console.log('Hashed:', hashedPassword);
-  // Hashed: $2b$12$aWjd2hgh3vWs4Ejz8jK47DpO3U5/...
-  
-  return hashedPassword;
-}
-
-// Usage
-const hash = await hashPassword('hunter2');
-// Store 'hash' in database
-\`\`\`
-
-**Verifying Password**
-\`\`\`javascript
-async function verifyPassword(inputPassword, storedHash) {
-  const isMatch = await bcrypt.compare(inputPassword, storedHash);
-  return isMatch; // true/false
-}
-
-// Login flow
-const user = await User.findById(userId);
-const isValid = await verifyPassword(req.body.password, user.passwordHash);
-
-if (isValid) {
-  // Create session/JWT
-} else {
-  // Invalid credentials
-}
-\`\`\`
-
-### Cost Factor Timing
-
-\`\`\`javascript
-// Testing cost factors
-Bcrypt Cost 10: ~10ms per hash
-Bcrypt Cost 12: ~250ms per hash  (RECOMMENDED)
-Bcrypt Cost 14: ~1 second per hash (Too slow for users)
-Bcrypt Cost 16: ~2 seconds per hash (Only for admin passwords)
-\`\`\`
-
----
-
-## Argon2 (Future Standard)
-
-More secure than bcrypt, resistant to GPU/ASIC attacks.
-
-### Installation
-
-\`\`\`bash
-npm install argon2
-\`\`\`
-
-### Implementation
-
-\`\`\`javascript
-const argon2 = require('argon2');
-
-async function hashPasswordArgon2(password) {
-  try {
-    const hash = await argon2.hash(password, {
-      type: argon2.argon2i,  // or argon2id (recommended for general use)
-      memoryCost: 65536,      // 64 MB
-      timeCost: 3,            // 3 iterations
-      parallelism: 4,         // 4 threads
-      raw: false              // include algorithm info in hash
-    });
-    
-    console.log('Argon2 Hash:', hash);
-    // $argon2id$v=19$m=65536,t=3,p=4$SBJm7fHKrxO+...
-    
-    return hash;
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// Verify Argon2 password
-async function verifyArgon2(password, hash) {
-  try {
-    const isValid = await argon2.verify(hash, password);
-    return isValid;
-  } catch (err) {
-    console.error('Argon2 verification error:', err);
-    return false;
-  }
-}
-
-// Usage
-async function registerUser(username, password) {
-  const hash = await hashPasswordArgon2(password);
-  
-  await User.create({
-    username,
-    passwordHash: hash
-  });
-}
-
-async function loginUser(username, password) {
-  const user = await User.findByUsername(username);
-  const isValid = await verifyArgon2(password, user.passwordHash);
-  
-  if (isValid) {
-    // Login successful
-  } else {
-    // Invalid password
-  }
-}
-\`\`\`
-
----
-
-## Python Implementation
-
-### Bcrypt (Python)
-
-\`\`\`python
-import bcrypt
-
-def hash_password(password: str) -> str:
-    # Generate salt
-    salt = bcrypt.gensalt(rounds=12)
-    # Hash password
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hashed.decode('utf-8')
-
-def verify_password(password: str, hash: str) -> bool:
-    return bcrypt.checkpw(
-        password.encode('utf-8'), 
-        hash.encode('utf-8')
-    )
-
-# Usage
-hashed = hash_password('hunter2')
-is_valid = verify_password('hunter2', hashed)
-\`\`\`
-
-### Argon2 (Python)
-
-\`\`\`python
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
-
-hasher = PasswordHasher(
-    memory_cost=65536,  # 64 MB
-    time_cost=3,
-    parallelism=4
-)
-
-def hash_password_argon2(password: str) -> str:
-    return hasher.hash(password)
-
-def verify_password_argon2(password: str, hash: str) -> bool:
-    try:
-        hasher.verify(hash, password)
-        return True
-    except VerifyMismatchError:
-        return False
-
-# Usage
-hashed = hash_password_argon2('hunter2')
-is_valid = verify_password_argon2('hunter2', hashed)
-\`\`\`
-
----
-
-## Java Implementation
-
-### Bcrypt (Java with Spring Security)
-
-\`\`\`java
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-public class UserService {
-    private final BCryptPasswordEncoder passwordEncoder = 
-        new BCryptPasswordEncoder(12);  // Strength 12
-    
-    public String hashPassword(String password) {
-        return passwordEncoder.encode(password);
-    }
-    
-    public boolean verifyPassword(String rawPassword, String encodedPassword) {
-        return passwordEncoder.matches(rawPassword, encodedPassword);
-    }
-    
-    public void registerUser(String username, String password) {
-        String hashedPassword = hashPassword(password);
-        userRepository.save(new User(username, hashedPassword));
-    }
-}
-\`\`\`
-
-### Argon2 (Java)
-
-\`\`\`java
-import de.mkammerer.argon2.Argon2Factory;
-import de.mkammerer.argon2.Argon2;
-
-public class PasswordUtil {
-    private static final Argon2 argon2 = 
-        Argon2Factory.create();
-    
-    public String hashPassword(String password) {
-        return argon2.hash(3, 65536, 4, password);
-    }
-    
-    public boolean verifyPassword(String password, String hash) {
-        return argon2.verify(hash, password);
-    }
-}
-\`\`\`
-
----
-
-## Password Security Checklist
-
-- [ ] Never store plain text passwords
-- [ ] Use Argon2 or bcrypt (Cost ≥ 12)
-- [ ] Unique salt for each password (automatic with bcrypt/argon2)
-- [ ] Migrate legacy passwords on next login
-- [ ] Implement rate limiting on login attempts
-- [ ] Add multi-factor authentication (MFA)
-- [ ] Secure password reset mechanism
-- [ ] Avoid password hints or recovery questions
-- [ ] Use HTTPS for password transmission
-- [ ] Implement session timeout
-- [ ] Monitor for credential breaches
-- [ ] Regular security audits
-
----
-
-## Common Mistakes
-
-### ❌ Using rounds value too low
-\`\`\`javascript
-// BAD - Too fast
-const hash = await bcrypt.hash(password, 8);
-\`\`\`
-
-### ❌ Synchronous hashing blocks event loop
-\`\`\`javascript
-// BAD - Blocks Node.js
-const hash = bcrypt.hashSync(password, 12);
-\`\`\`
-
-### ❌ Comparing passwords as strings
-\`\`\`javascript
-// BAD - Timing attack vulnerability
-if (inputPassword === storedPassword) { ... }
-\`\`\`
-
-### ✅ Correct approach
-\`\`\`javascript
-// GOOD - Use async, proper comparison
-const hash = await bcrypt.hash(password, 12);
-const isValid = await bcrypt.compare(inputPassword, hash);
-\`\`\`
-
----
-
-## Password Strength Requirements
-
-Modern standards recommend:
-- **Minimum 12 characters** (not 8)
-- **Passphrase over complexity**: "correct-horse-battery-staple" > "P@ssw0rd!"
-- **No common passwords**: Check against breach databases
-- **Disable password expiration**: NIST guidance (2017)
-- **Force change only after breach**: Regular rotation is counterproductive
-
-### Password Validation (Node.js)
-
-\`\`\`javascript
-function validatePassword(password) {
-  const errors = [];
-  
-  if (password.length < 12) {
-    errors.push('Password must be at least 12 characters');
-  }
-  
-  if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain uppercase letter');
-  }
-  
-  if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain lowercase letter');
-  }
-  
-  if (!/[0-9]/.test(password)) {
-    errors.push('Password must contain number');
-  }
-  
-  // Check against breach database (Have I Been Pwned API)
-  const isPwned = checkBreachDatabase(password);
-  if (isPwned) {
-    errors.push('Password is compromised - use different password');
-  }
-  
-  return errors.length === 0;
-}
-\`\`\`
-
----
-
-## Performance Considerations
-
-**Hashing cost vs login time:**
-- Cost 10: ~10ms ✅ (Good for high-traffic)
-- Cost 12: ~250ms ✅ (Recommended)
-- Cost 14: ~1000ms ✅ (Still acceptable)
-- Cost 16: ~2000ms ⚠️ (Noticeable delay)
-
----
-
-## Resources
-
-- OWASP Password Storage Cheat Sheet
-- Argon2 Official: https://github.com/P-H-C/phc-winner-argon2
-- Bcrypt Website: https://bcrypt.online
-- Have I Been Pwned: https://haveibeenpwned.com
-- NIST Digital Identity Guidelines
-
----
-
-## Key Takeaways
-
-1. **Use Argon2** for new applications
-2. **Bcrypt is acceptable** for established systems
-3. **Never use MD5/SHA1/SHA256** for passwords
-4. **Cost factor must be ≥ 12** for bcrypt
-5. **Test performance** with your infrastructure
-6. **Support password migration** from legacy algorithms`,
-    date: "2026-02-16",
-    author: "SCR Team",
-    category: "Authentication",
-    tags: ["Password Security", "Bcrypt", "Argon2", "Hashing", "Best Practices"],
-    readTime: "13 min read",
-  },
-  {
-    slug: "cloud-security-aws-azure-misconfiguration",
-    title: "Cloud Security Guide: AWS, Azure & GCP Misconfigurations 2025",
-    excerpt: "Master cloud security with comprehensive guides on S3 bucket security, IAM policies, secrets management, and real breach case studies.",
-    content: `## Cloud Security Landscape 2025
 
 ### Statistics
 - **98% of breaches** involve cloud misconfigurations (Gartner)
@@ -2881,178 +3375,6 @@ service cloud.firestore {
     tags: ["AWS", "Azure", "GCP", "Cloud Security", "Misconfiguration"],
     readTime: "14 min read",
     },
-    {
-      slug: "cloud-security-aws-azure-misconfiguration",
-      title: "Cloud Security Guide: AWS, Azure & GCP Misconfigurations 2025",
-      excerpt: "Master cloud security with comprehensive guides on S3 bucket security, IAM policies, secrets management, and real breach case studies.",
-      content: `# Cloud Security in 2025: Preventing AWS, Azure & GCP Misconfigurations
-
-  ## Why Cloud Security Still Fails
-
-  Cloud misconfigurations remain the #1 cause of data breaches. In 2025, attackers exploit simple mistakes—public S3 buckets, over-permissive IAM, exposed secrets—across AWS, Azure, and GCP. This guide gives you actionable steps, checklists, and real-world breach lessons to secure your cloud today.
-
-  ---
-
-  ## Key Cloud Breach Statistics
-
-  - **98% of cloud breaches** stem from misconfiguration (Gartner)
-  - **$4.9M**: Average cost per breach (IBM, 2025)
-  - **236 days**: Average time to detect
-  - **45% of S3 buckets** have public access
-
-  ---
-
-  ## 1. AWS Security: S3 Buckets & IAM
-
-  ### S3 Bucket Security
-
-  #### Common Pitfall: Public Buckets
-  \`\`\`json
-  {
-    "Effect": "Allow",
-    "Principal": "*",
-    "Action": "s3:GetObject",
-    "Resource": "arn:aws:s3:::company-data/*"
-  }
-  \`\`\`
-  **Risk:** Data leaks, malware, credential exposure
-
-  #### Secure S3 Policy Example
-  \`\`\`json
-  {
-    "Effect": "Deny",
-    "Principal": "*",
-    "Action": "s3:*",
-    "Resource": ["arn:aws:s3:::secure-bucket", "arn:aws:s3:::secure-bucket/*"],
-    "Condition": {"Bool": {"aws:SecureTransport": "false"}}
-  }
-  \`\`\`
-
-  #### S3 Security Checklist
-  - [ ] Block public access globally
-  - [ ] Enable versioning & encryption
-  - [ ] Enable logging & monitoring
-  - [ ] Block unencrypted uploads
-
-  ### IAM: Least Privilege, Not God Mode
-
-  #### Over-Permissive Role (Bad)
-  \`\`\`json
-  {
-    "Effect": "Allow",
-    "Action": "*",
-    "Resource": "*"
-  }
-  \`\`\`
-  **Risk:** Privilege escalation, data exfiltration
-
-  #### Secure IAM Policy (Good)
-  \`\`\`json
-  {
-    "Effect": "Allow",
-    "Action": ["rds:DescribeDBInstances", "s3:GetObject"],
-    "Resource": "arn:aws:s3:::app-data/*"
-  }
-  \`\`\`
-
-  #### IAM Security Checklist
-  - [ ] Audit users & roles
-  - [ ] Enable MFA everywhere
-  - [ ] Use temporary credentials (STS)
-  - [ ] Rotate access keys every 90 days
-
-  ---
-
-  ## 2. Secrets Management: No More .env Leaks
-
-  #### Bad: Secrets in Code
-  \`\`\`env
-  DATABASE_URL=mongodb://user:pass@db.example.com
-  AWS_SECRET_ACCESS_KEY=...
-  \`\`\`
-
-  #### Good: Managed Secrets
-  Use AWS Secrets Manager, Azure Key Vault, or HashiCorp Vault. Example:
-  \`\`\`javascript
-  const secret = await secretsManager.getSecretValue({ SecretId: 'prod/database' }).promise();
-  \`\`\`
-
-  #### Secrets Management Checklist
-  - [ ] No secrets in code or git
-  - [ ] Use managed secrets store
-  - [ ] Rotate secrets regularly
-  - [ ] Monitor for secret leaks
-
-  ---
-
-  ## 3. Azure & GCP: Storage and RBAC
-
-  ### Azure: Secure Blob Storage
-  - [ ] Set containers to private
-  - [ ] Use SAS tokens for access
-  - [ ] Enforce HTTPS & TLS 1.2+
-
-  ### GCP: Firestore Rules
-  - [ ] Require authentication for all access
-  - [ ] Use least privilege in IAM
-
-  ---
-
-  ## Multi-Cloud Security Checklist
-
-  - [ ] Encryption at rest & in transit
-  - [ ] IAM/RBAC with least privilege
-  - [ ] Managed secrets (Vault, Key Vault)
-  - [ ] Logging & monitoring enabled
-  - [ ] MFA for all accounts
-  - [ ] Regular credential rotation
-  - [ ] VPC/Vnet isolation
-  - [ ] DDoS protection
-  - [ ] Threat detection (GuardDuty, Sentinel)
-  - [ ] Penetration testing
-
-  ---
-
-  ## Real-World Breach Lessons
-
-  ### Capital One (2019)
-  - WAF misconfig + metadata endpoint = 100M records stolen
-  - Cost: $80M settlement
-
-  ### Twitter (2020)
-  - OAuth token theft via social engineering
-  - Led to high-profile account takeovers
-
-  ---
-
-  ## Cloud Security Tools (2025)
-
-  | Tool        | Purpose                  | Cloud | Cost  |
-  |-------------|--------------------------|-------|-------|
-  | Prowler     | AWS security audit       | AWS   | Free  |
-  | ScoutSuite  | Multi-cloud assessment   | All   | Free  |
-  | CloudMapper | AWS network visualization| AWS   | Free  |
-  | Dome9       | Cloud posture management | All   | Paid  |
-  | CloudSploit | AWS infra checks         | AWS   | Free  |
-
-  ---
-
-  ## SEO Summary & Key Takeaways
-
-  1. **Default to private**—never public by default
-  2. **Least privilege**—grant only what’s needed
-  3. **Rotate credentials**—monthly for long-term keys
-  4. **Monitor everything**—CloudTrail, logs, anomalies
-  5. **Encrypt & audit**—compliance and peace of mind
-
-  Stay proactive: Review your cloud security posture quarterly. Use the checklists above to prevent the next breach.
-  `,
-    date: "2026-02-15",
-    author: "SCR Team",
-    category: "Cloud Security",
-    tags: ["AWS", "Azure", "GCP", "Cloud Security", "Misconfiguration", "IAM", "S3"],
-    readTime: "12 min read",
-  },
   {
     slug: "jwt-security-vulnerabilities-best-practices",
     title: "JWT Security: Vulnerabilities, Best Practices & Implementation Guide",

@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User, Shield, Wrench, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 import { InArticleAd } from "@/components/adsense";
+import MarkdownRenderer from "@/components/markdown-renderer";
 
 // Ad slot IDs - Replace with your actual AdSense slot IDs from https://www.google.com/adsense
 // 1. Go to AdSense > Ads > By ad unit
@@ -108,51 +109,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <Separator className="my-8" />
 
         <div className="prose prose-neutral dark:prose-invert max-w-none">
-          {post.content.split("\n").map((line, i) => {
-            if (line.startsWith("## ")) {
-              return (
-                <h2 key={i} className="text-2xl font-bold mt-8 mb-4">
-                  {line.replace("## ", "")}
-                </h2>
-              );
-            }
-            if (line.startsWith("### ")) {
-              return (
-                <h3 key={i} className="text-xl font-semibold mt-6 mb-3">
-                  {line.replace("### ", "")}
-                </h3>
-              );
-            }
-            if (line.startsWith("- ")) {
-              return (
-                <li key={i} className="ml-4 text-muted-foreground">
-                  {line.replace("- ", "")}
-                </li>
-              );
-            }
-            if (line.startsWith("1. ") || line.startsWith("2. ") || line.startsWith("3. ") || line.startsWith("4. ")) {
-              return (
-                <li key={i} className="ml-4 text-muted-foreground list-decimal">
-                  {line.replace(/^\d+\.\s/, "")}
-                </li>
-              );
-            }
-            if (line.startsWith("```")) return null;
-            if (line.startsWith("- [ ]")) {
-              return (
-                <li key={i} className="ml-4 text-muted-foreground flex items-center gap-2">
-                  <input type="checkbox" disabled className="rounded" />
-                  {line.replace("- [ ] ", "")}
-                </li>
-              );
-            }
-            if (line.trim() === "") return <br key={i} />;
-            return (
-              <p key={i} className="text-muted-foreground leading-relaxed mb-2">
-                {line}
-              </p>
-            );
-          })}
+          <MarkdownRenderer content={post.content} />
         </div>
 
         <Separator className="my-8" />
