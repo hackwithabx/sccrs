@@ -70,10 +70,13 @@ export default function AdminPage() {
     e.preventDefault();
     setLoginError("");
 
-    // Client-side admin check (in production, this should be server-side)
+    // Client-side admin check
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "support@securecodereviews.com";
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "Lambda123456@#";
+    
     if (
-      email === (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@securecodereviews.com") &&
-      password === "admin123"
+      email === adminEmail &&
+      password === adminPassword
     ) {
       setAuthenticated(true);
       localStorage.setItem("scr-admin", "true");
