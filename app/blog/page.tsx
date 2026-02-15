@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,12 +9,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionHeading } from "@/components/section-heading";
 import { blogPosts } from "@/lib/blog-data";
-import { ArrowRight, Calendar, Clock, Search, X } from "lucide-react";
+import { ArrowRight, Calendar, Clock, Search, X, ChevronDown, Tag } from "lucide-react";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const [tagSearch, setTagSearch] = useState("");
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setTagDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const categories = useMemo(
     () => [...new Set(blogPosts.map((p) => p.category))].sort(),
@@ -24,6 +38,14 @@ export default function BlogPage() {
   const allTags = useMemo(
     () => [...new Set(blogPosts.flatMap((p) => p.tags))].sort(),
     []
+  );
+
+  const filteredTags = useMemo(
+    () =>
+      tagSearch
+        ? allTags.filter((t) => t.toLowerCase().includes(tagSearch.toLowerCase()))
+        : allTags,
+    [allTags, tagSearch]
   );
 
   const filteredPosts = useMemo(() => {
@@ -109,20 +131,77 @@ export default function BlogPage() {
             ))}
           </div>
 
-          {/* Tag pills */}
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {allTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={selectedTag === tag ? "default" : "outline"}
-                className="cursor-pointer text-xs hover:bg-primary/10"
-                onClick={() =>
-                  setSelectedTag(selectedTag === tag ? null : tag)
-                }
+          {/* Tag dropdown */}
+          <div className="flex justify-center">
+            <div ref={tagDropdownRef} className="relative w-64">
+              <button
+                onClick={() => setTagDropdownOpen(!tagDropdownOpen)}
+                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors ${
+                  selectedTag
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background hover:bg-accent"
+                }`}
               >
-                {tag}
-              </Badge>
-            ))}
+                <span className="flex items-center gap-2">
+                  <Tag className="h-3.5 w-3.5" />
+                  {selectedTag || `Filter by tag (${allTags.length})`}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${tagDropdownOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {tagDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-background shadow-lg">
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      placeholder="Search tags..."
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
+                      className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto px-1 pb-1">
+                    {selectedTag && (
+                      <button
+                        onClick={() => {
+                          setSelectedTag(null);
+                          setTagDropdownOpen(false);
+                          setTagSearch("");
+                        }}
+                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-accent"
+                      >
+                        <X className="h-3 w-3" />
+                        Clear tag filter
+                      </button>
+                    )}
+                    {filteredTags.map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => {
+                          setSelectedTag(selectedTag === tag ? null : tag);
+                          setTagDropdownOpen(false);
+                          setTagSearch("");
+                        }}
+                        className={`flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-sm transition-colors ${
+                          selectedTag === tag
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "hover:bg-accent"
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    {filteredTags.length === 0 && (
+                      <p className="px-2.5 py-3 text-center text-xs text-muted-foreground">
+                        No tags match &ldquo;{tagSearch}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Active filter indicator */}

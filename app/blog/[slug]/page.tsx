@@ -82,11 +82,16 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Badge>{post.category}</Badge>
-                {post.tags.map((tag) => (
+                {post.tags.slice(0, 4).map((tag) => (
                   <Badge key={tag} variant="outline">
                     {tag}
                   </Badge>
                 ))}
+                {post.tags.length > 4 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{post.tags.length - 4} more
+                  </Badge>
+                )}
               </div>
 
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
