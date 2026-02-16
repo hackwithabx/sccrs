@@ -58,45 +58,46 @@ export function generateSecurityReportPDF(data: ReportData) {
   doc.setFillColor(16, 185, 129);
   doc.rect(0, 48, pageWidth, 2, "F");
 
-  // Add Logo - Simple text-based design
-  // Green circle background
+  // Add Logo - PROMINENT text-based design with shield
+  // Green circle background - LARGER
   doc.setFillColor(16, 185, 129); // green
-  doc.circle(margin + 12, 24, 10, "F");
+  doc.circle(margin + 15, 24, 12, "F");
   
-  // Logo text
+  // Logo text - LARGER and more visible
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setTextColor(255, 255, 255);
-  doc.text("SCR", margin + 12, 27, { align: "center" });
+  doc.text("SCR", margin + 15, 27, { align: "center" });
 
-  // Company name next to logo - with color separation
+  // Company name next to logo - bold and prominent
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   doc.setTextColor(255, 255, 255);
-  doc.text("Secure", margin + 28, 20);
+  doc.text("Secure", margin + 35, 20);
   
   doc.setFillColor(16, 185, 129);
   doc.setTextColor(16, 185, 129);
-  doc.text("Code", margin + 28, 28);
+  doc.setFontSize(20);
+  doc.text("Code", margin + 35, 28);
   
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.text("Reviews", margin + 28, 35);
+  doc.setFontSize(20);
+  doc.text("Reviews", margin + 35, 36);
 
-  // Security Platform tagline
+  // Security Platform tagline - smaller below
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(148, 163, 184); // slate-400
-  doc.text("Application Security Assessment Platform", margin + 28, 42);
+  doc.setFontSize(7.5);
+  doc.setTextColor(200, 220, 210); // lighter green
+  doc.text("Application Security Assessment Platform", margin + 35, 42);
 
-  // Report ID on right
+  // Report ID on right side - adjusted for better logo layout
   const reportId = `SCR-${Date.now().toString(36).toUpperCase()}`;
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(148, 163, 184);
-  doc.text(`Report ID: ${reportId}`, pageWidth - margin, 20, { align: "right" });
-  doc.text(`Classification: CONFIDENTIAL`, pageWidth - margin, 27, { align: "right" });
+  doc.text(`Report ID: ${reportId}`, pageWidth - margin - 5, 18, { align: "right" });
+  doc.text(`Classification: CONFIDENTIAL`, pageWidth - margin - 5, 25, { align: "right" });
 
-  y = 62;
+  y = 58;
 
   // ---- Report Title ----
   doc.setTextColor(30, 30, 30);
@@ -219,6 +220,12 @@ export function generateSecurityReportPDF(data: ReportData) {
   y += summaryLines.length * 5 + 10;
 
   // ---- Detailed Findings Table ----
+  // Check if we need a new page before large table
+  if (y > 175) {
+    doc.addPage();
+    y = 30;
+  }
+
   y = drawSectionHeader(doc, "Detailed Findings", y, margin);
 
   const tableData = data.items.map((item) => [
@@ -233,7 +240,7 @@ export function generateSecurityReportPDF(data: ReportData) {
     startY: y,
     head: [["Category", "Severity", "Status", "Finding", "Recommendation"]],
     body: tableData,
-    margin: { left: margin, right: margin },
+    margin: { left: 15, right: 15 },  // Reduced margins for table width
     styles: {
       fontSize: 8,
       cellPadding: 2.5,
@@ -257,11 +264,11 @@ export function generateSecurityReportPDF(data: ReportData) {
       textColor: [30, 30, 30], // Dark text for contrast
     },
     columnStyles: {
-      0: { cellWidth: 20, fontStyle: "bold" },
-      1: { cellWidth: 15, halign: "center", fontSize: 8 },
-      2: { cellWidth: 15, halign: "center", fontSize: 8 },
-      3: { cellWidth: 60, fontSize: 7.5 },
-      4: { cellWidth: 60, fontSize: 7.5 },
+      0: { cellWidth: 22, fontStyle: "bold" },      // Category
+      1: { cellWidth: 16, halign: "center", fontSize: 8 },  // Severity
+      2: { cellWidth: 16, halign: "center", fontSize: 8 },  // Status
+      3: { cellWidth: 55, fontSize: 8 },  // Finding - wider space
+      4: { cellWidth: 55, fontSize: 8 },  // Recommendation - wider space
     },
     didParseCell: (hookData) => {
       if (hookData.section === "body" && hookData.column.index === 2) {

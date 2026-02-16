@@ -958,7 +958,7 @@ export default function AiSecurityAuditorPage() {
             <Button size="lg" variant="secondary">
               Schedule Consultation
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
+            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10 font-semibold">
               View Pricing
             </Button>
           </div>

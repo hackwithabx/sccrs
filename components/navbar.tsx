@@ -152,15 +152,15 @@ export function Navbar() {
           <div className="flex items-center h-12 overflow-x-auto">
             {/* Services & Solutions */}
             <div className="relative group">
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-muted">
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
                 <Briefcase className="h-3.5 w-3.5" />
                 Services
                 <ChevronDown className="h-3 w-3" />
               </button>
-              <div className="absolute left-0 mt-0 w-56 bg-background border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <Link href="/services" className="block px-4 py-3 hover:bg-muted">
-                  <div className="font-medium text-sm">All Services</div>
-                  <div className="text-xs text-muted-foreground">Security & Development</div>
+              <div className="absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <Link href="/services" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <div className="font-medium text-sm text-slate-900 dark:text-white">All Services</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">Security & Development</div>
                 </Link>
               </div>
             </div>
@@ -179,15 +179,15 @@ export function Navbar() {
 
             {/* Free Tools */}
             <div className="relative group">
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-muted">
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
                 <Wrench className="h-3.5 w-3.5" />
                 Tools
                 <ChevronDown className="h-3 w-3" />
               </button>
-              <div className="absolute left-0 mt-0 w-56 bg-background border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <Link href="/tools" className="block px-4 py-3 hover:bg-muted">
-                  <div className="font-medium text-sm">All Tools</div>
-                  <div className="text-xs text-muted-foreground">Free security tools</div>
+              <div className="absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <Link href="/tools" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <div className="font-medium text-sm text-slate-900 dark:text-white">All Tools</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">Free security tools</div>
                 </Link>
               </div>
             </div>
@@ -196,27 +196,27 @@ export function Navbar() {
 
             {/* Learning & Education */}
             <div className="relative group">
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-muted">
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
                 <BookOpen className="h-3.5 w-3.5" />
                 Learn
                 <ChevronDown className="h-3 w-3" />
               </button>
-              <div className="absolute left-0 mt-0 w-60 bg-background border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <Link href="/owasp" className="block px-4 py-3 hover:bg-muted border-b border-border">
-                  <div className="font-medium text-sm">OWASP</div>
-                  <div className="text-xs text-muted-foreground">Top 10 & security standards</div>
+              <div className="absolute left-0 mt-1 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <Link href="/owasp" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <div className="font-medium text-sm text-slate-900 dark:text-white">OWASP</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">Top 10 & security standards</div>
                 </Link>
-                <Link href="/secure-code" className="block px-4 py-3 hover:bg-muted border-b border-border">
-                  <div className="font-medium text-sm">Secure Code</div>
-                  <div className="text-xs text-muted-foreground">Secure coding practices</div>
+                <Link href="/secure-code" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <div className="font-medium text-sm text-slate-900 dark:text-white">Secure Code</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">Secure coding practices</div>
                 </Link>
-                <Link href="/cloud-security" className="block px-4 py-3 hover:bg-muted border-b border-border">
-                  <div className="font-medium text-sm">Cloud Security</div>
-                  <div className="text-xs text-muted-foreground">Cloud infrastructure</div>
+                <Link href="/cloud-security" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <div className="font-medium text-sm text-slate-900 dark:text-white">Cloud Security</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">Cloud infrastructure</div>
                 </Link>
-                <Link href="/vulnerabilities" className="block px-4 py-3 hover:bg-muted">
-                  <div className="font-medium text-sm">Vulnerabilities</div>
-                  <div className="text-xs text-muted-foreground">Common vulnerabilities</div>
+                <Link href="/vulnerabilities" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <div className="font-medium text-sm text-slate-900 dark:text-white">Vulnerabilities</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">Common vulnerabilities</div>
                 </Link>
               </div>
             </div>

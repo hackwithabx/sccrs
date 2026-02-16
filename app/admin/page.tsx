@@ -802,41 +802,96 @@ export default function AdminPage() {
           {/* SEO Tab */}
           <TabsContent value="seo">
             <div className="space-y-6">
+              {/* Search Engine Visibility */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">SEO Configuration</CardTitle>
+                  <CardTitle className="text-base">🔍 Search Engine Visibility</CardTitle>
+                  <CardDescription>
+                    Help search engines discover and index your content
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     {[
-                      { label: "robots.txt", status: "configured", file: "app/robots.ts" },
-                      { label: "XML Sitemap", status: "configured", file: "app/sitemap.ts" },
-                      { label: "Open Graph Tags", status: "configured", file: "app/layout.tsx" },
-                      { label: "Twitter Cards", status: "configured", file: "app/layout.tsx" },
-                      { label: "JSON-LD Schema", status: "configured", file: "app/layout.tsx" },
-                      { label: "Google Analytics", status: "needs_env", file: "components/google-analytics.tsx" },
-                      { label: "Google Search Console", status: "needs_env", file: ".env.local" },
-                      { label: "Canonical URLs", status: "configured", file: "app/layout.tsx" },
-                      { label: "Security Headers", status: "configured", file: "next.config.ts" },
-                      { label: "Privacy Policy", status: "configured", file: "app/privacy-policy/page.tsx" },
-                      { label: "Terms of Service", status: "configured", file: "app/terms-of-service/page.tsx" },
+                      {
+                        label: "robots.txt",
+                        desc: "Tells search engines which pages to crawl or avoid",
+                        status: "active",
+                        file: "app/robots.ts",
+                      },
+                      {
+                        label: "XML Sitemap",
+                        desc: "Lists all your pages for search engines to discover",
+                        status: "active",
+                        file: "app/sitemap.ts",
+                        url: "https://securecodereviews.com/sitemap.xml",
+                      },
+                      {
+                        label: "Canonical URLs",
+                        desc: "Prevents duplicate content issues by specifying primary URLs",
+                        status: "active",
+                        file: "app/layout.tsx",
+                      },
                     ].map((item) => (
-                      <div key={item.label} className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                          {item.status === "configured" ? (
-                            <CheckCircle2 className="h-4 w-4 text-primary" />
-                          ) : (
-                            <AlertTriangle className="h-4 w-4 text-chart-4" />
-                          )}
-                          <span className="text-sm">{item.label}</span>
+                      <div key={item.label} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">{item.label}</h4>
+                              <p className="text-xs text-muted-foreground">{item.desc}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-green-600 shrink-0 ml-2">Active</Badge>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={item.status === "configured" ? "default" : "secondary"}
-                          >
-                            {item.status === "configured" ? "Active" : "Needs Config"}
-                          </Badge>
-                          <code className="text-xs text-muted-foreground">{item.file}</code>
+                        {item.url && (
+                          <div className="text-xs font-mono text-primary ml-8">
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {item.url}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Social Media & Sharing */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">📱 Social Media & Sharing</CardTitle>
+                  <CardDescription>
+                    Make your content look great when shared on social platforms
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    {[
+                      {
+                        label: "Open Graph Tags",
+                        desc: "Controls how content appears on Facebook, LinkedIn, Discord, etc.",
+                        status: "active",
+                        example: "og:title, og:description, og:image",
+                      },
+                      {
+                        label: "Twitter Cards",
+                        desc: "Optimizes how links appear when shared on Twitter/X",
+                        status: "active",
+                        example: "twitter:title, twitter:description, twitter:image",
+                      },
+                    ].map((item) => (
+                      <div key={item.label} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">{item.label}</h4>
+                              <p className="text-xs text-muted-foreground">{item.desc}</p>
+                              <p className="text-xs text-slate-500 mt-1">Tags: {item.example}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-green-600 shrink-0 ml-2">Active</Badge>
                         </div>
                       </div>
                     ))}
@@ -844,21 +899,171 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-6 space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-primary" />
-                    SEO Checklist
-                  </h3>
-                  <div className="text-sm text-muted-foreground space-y-2">
-                    <p>1. Set <code>NEXT_PUBLIC_GA_MEASUREMENT_ID</code> in <code>.env.local</code></p>
-                    <p>2. Set <code>NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION</code> in <code>.env.local</code></p>
-                    <p>3. Submit sitemap to Google Search Console: <code>https://securecodereviews.com/sitemap.xml</code></p>
-                    <p>4. Submit sitemap to Bing Webmaster Tools</p>
-                    <p>5. Create and upload <code>/public/og-image.png</code> (1200x630px) for social sharing</p>
-                    <p>6. Create and upload <code>/public/logo.png</code> for structured data</p>
-                    <p>7. Set up Google Analytics goals and events</p>
+              {/* Analytics & Monitoring */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">📊 Analytics & Monitoring</CardTitle>
+                  <CardDescription>
+                    Track user behavior and search performance
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    {[
+                      {
+                        label: "Google Analytics",
+                        desc: "Track visitors, pageviews, user behavior, and conversions",
+                        status: "needs_config",
+                        action: "Set NEXT_PUBLIC_GA_MEASUREMENT_ID in .env.local",
+                        file: ".env.local",
+                      },
+                      {
+                        label: "JSON-LD Schema",
+                        desc: "Structured data for search engines (Organization, Article, Product, etc.)",
+                        status: "active",
+                        file: "app/layout.tsx",
+                      },
+                      {
+                        label: "Google Search Console",
+                        desc: "Monitor search performance, submit sitemaps, check indexing",
+                        status: "needs_config",
+                        action: "Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION and submit sitemap",
+                        file: ".env.local",
+                      },
+                    ].map((item) => (
+                      <div key={item.label} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            {item.status === "active" ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                            ) : (
+                              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">{item.label}</h4>
+                              <p className="text-xs text-muted-foreground">{item.desc}</p>
+                            </div>
+                          </div>
+                          <Badge variant={item.status === "active" ? "default" : "secondary"} className="shrink-0 ml-2">
+                            {item.status === "active" ? "Active" : "⚠ Needs Config"}
+                          </Badge>
+                        </div>
+                        {item.action && (
+                          <p className="text-xs text-amber-600 font-medium ml-8">➜ {item.action}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Legal & Security */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">🔒 Legal & Security</CardTitle>
+                  <CardDescription>
+                    Required pages and security configurations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    {[
+                      {
+                        label: "Privacy Policy",
+                        desc: "Explains how you collect and use user data (legally required)",
+                        status: "active",
+                        file: "app/privacy-policy/page.tsx",
+                        url: "https://securecodereviews.com/privacy-policy",
+                      },
+                      {
+                        label: "Terms of Service",
+                        desc: "Legal agreement between you and users (legally required)",
+                        status: "active",
+                        file: "app/terms-of-service/page.tsx",
+                        url: "https://securecodereviews.com/terms-of-service",
+                      },
+                      {
+                        label: "Security Headers",
+                        desc: "HTTP headers that protect against XSS, clickjacking, MIME-sniffing",
+                        status: "active",
+                        file: "next.config.ts",
+                      },
+                    ].map((item) => (
+                      <div key={item.label} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">{item.label}</h4>
+                              <p className="text-xs text-muted-foreground">{item.desc}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-green-600 shrink-0 ml-2">Active</Badge>
+                        </div>
+                        {item.url && (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline ml-8 inline-block"
+                          >
+                            View Page →
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Configuration Steps */}
+              <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-blue-600" />
+                    📋 Next Steps for SEO Optimization
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2">
+                    <li>
+                      <strong className="text-foreground">Configure Google Analytics:</strong> Add{" "}
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded text-xs">
+                        NEXT_PUBLIC_GA_MEASUREMENT_ID
+                      </code>{" "}
+                      to <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded text-xs">.env.local</code>
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Setup Google Search Console:</strong> Add{" "}
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded text-xs">
+                        NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+                      </code>{" "}
+                      to <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded text-xs">.env.local</code>
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Submit Sitemap:</strong> Visit{" "}
+                      <a
+                        href="https://search.google.com/search-console"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Google Search Console
+                      </a>{" "}
+                      and submit <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded text-xs">
+                        https://securecodereviews.com/sitemap.xml
+                      </code>
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Create Social Images:</strong> Upload{" "}
+                      <code className="bg-slate-200 dark:bg-slate-800 px-1 rounded text-xs">/public/og-image.png</code>{" "}
+                      (1200x630px) for social sharing previews
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Monitor Performance:</strong> Check Google Analytics dashboard
+                      for traffic, user behavior, and conversions
+                    </li>
+                  </ol>
                 </CardContent>
               </Card>
             </div>
