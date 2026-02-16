@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -220,6 +221,7 @@ interface SecurityScore {
 }
 
 export default function AiSecurityAuditorPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("prompt-injection");
   const [prompt, setPrompt] = useState("");
   const [output, setOutput] = useState("");
@@ -955,10 +957,19 @@ export default function AiSecurityAuditorPage() {
             Get a professional security assessment report and remediation guidance for your AI/LLM application
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" variant="secondary">
+            <Button 
+              size="lg" 
+              variant="secondary"
+              onClick={() => router.push("/contact")}
+            >
               Schedule Consultation
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10 font-semibold">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="text-white border-white hover:bg-white/10 font-semibold"
+              onClick={() => router.push("/services")}
+            >
               View Pricing
             </Button>
           </div>
