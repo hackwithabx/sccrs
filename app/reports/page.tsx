@@ -146,10 +146,10 @@ export default function ReportsPage() {
   );
 
   const statusIcon = (status: string) => {
-    if (status === "pass") return <CheckCircle2 className="h-5 w-5 text-primary" />;
+    if (status === "pass") return <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />;
     if (status === "warning")
-      return <AlertTriangle className="h-5 w-5 text-chart-4" />;
-    return <XCircle className="h-5 w-5 text-destructive" />;
+      return <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
+    return <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
   };
 
   return (
@@ -231,11 +231,11 @@ export default function ReportsPage() {
             className="mt-12 space-y-8"
           >
             {/* Report Header */}
-            <Card className="bg-primary/5 border-primary/20">
+            <Card className="bg-card border-primary/20">
               <CardContent className="py-8">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="text-center md:text-left">
-                    <h3 className="text-2xl font-bold">
+                    <h3 className="text-2xl font-bold text-foreground">
                       Security Assessment Report
                     </h3>
                     <p className="text-muted-foreground mt-1">
@@ -256,10 +256,10 @@ export default function ReportsPage() {
                     <div
                       className={`text-5xl font-bold ${
                         overallScore >= 80
-                          ? "text-primary"
+                          ? "text-green-600 dark:text-green-400"
                           : overallScore >= 60
-                          ? "text-chart-4"
-                          : "text-destructive"
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-red-600 dark:text-red-400"
                       }`}
                     >
                       {overallScore}
@@ -274,29 +274,29 @@ export default function ReportsPage() {
 
             {/* Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card>
+              <Card className="bg-card border-border">
                 <CardContent className="p-6 flex items-center gap-4">
-                  <CheckCircle2 className="h-8 w-8 text-primary" />
+                  <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
                   <div>
-                    <div className="text-2xl font-bold">{passCount}</div>
+                    <div className="text-2xl font-bold text-foreground">{passCount}</div>
                     <div className="text-sm text-muted-foreground">Passed</div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-card border-border">
                 <CardContent className="p-6 flex items-center gap-4">
-                  <AlertTriangle className="h-8 w-8 text-chart-4" />
+                  <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
                   <div>
-                    <div className="text-2xl font-bold">{warnCount}</div>
+                    <div className="text-2xl font-bold text-foreground">{warnCount}</div>
                     <div className="text-sm text-muted-foreground">Warnings</div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-card border-border">
                 <CardContent className="p-6 flex items-center gap-4">
-                  <XCircle className="h-8 w-8 text-destructive" />
+                  <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
                   <div>
-                    <div className="text-2xl font-bold">{failCount}</div>
+                    <div className="text-2xl font-bold text-foreground">{failCount}</div>
                     <div className="text-sm text-muted-foreground">Failed</div>
                   </div>
                 </CardContent>
@@ -304,9 +304,9 @@ export default function ReportsPage() {
             </div>
 
             {/* Findings */}
-            <Card>
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-foreground">
                   <BarChart3 className="h-5 w-5 text-primary" />
                   Detailed Findings
                 </CardTitle>
@@ -318,12 +318,12 @@ export default function ReportsPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="rounded-lg border p-4 space-y-2"
+                    className="rounded-lg border border-border bg-card p-4 space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {statusIcon(item.status)}
-                        <span className="font-semibold">{item.category}</span>
+                        <span className="font-semibold text-foreground">{item.category}</span>
                       </div>
                       <Badge
                         variant={
@@ -337,11 +337,11 @@ export default function ReportsPage() {
                         {item.status.toUpperCase()}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground pl-8">
-                      <strong>Finding:</strong> {item.finding}
+                    <p className="text-sm text-foreground pl-8">
+                      <strong className="text-foreground">Finding:</strong> <span className="text-muted-foreground">{item.finding}</span>
                     </p>
-                    <p className="text-sm text-muted-foreground pl-8">
-                      <strong>Recommendation:</strong> {item.recommendation}
+                    <p className="text-sm text-foreground pl-8">
+                      <strong className="text-foreground">Recommendation:</strong> <span className="text-muted-foreground">{item.recommendation}</span>
                     </p>
                   </motion.div>
                 ))}

@@ -27,6 +27,8 @@ import {
   FileCode,
   Search,
   ArrowRight,
+  Brain,
+  Sparkles,
 } from "lucide-react";
 
 export default function ToolsPage() {
@@ -39,9 +41,49 @@ export default function ToolsPage() {
           description="Free online tools for security testing, encoding, hashing, and analysis. No sign-up required."
         />
 
+        {/* Featured AI Security Auditor */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 mb-12"
+        >
+          <Link href="/tools/ai-security-auditor">
+            <Card className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950 dark:to-indigo-950 border-2 border-violet-200 dark:border-violet-700 hover:shadow-lg transition-all cursor-pointer">
+              <CardContent className="p-8">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Brain className="h-8 w-8 text-violet-600" />
+                      <Badge className="bg-violet-600 gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        NEW - Enterprise Tool
+                      </Badge>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">AI Security Auditor</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Professional security assessment tool for AI/LLM applications. Test for prompt injection, vulnerable,
+                      data leakage, and OWASP vulnerabilities. Generate professional reports and get actionable remediation guidance.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <Badge variant="outline">Prompt Injection Detection</Badge>
+                      <Badge variant="outline">PII Scanning</Badge>
+                      <Badge variant="outline">OWASP LLM Top 10</Badge>
+                      <Badge variant="outline">PDF Reports</Badge>
+                    </div>
+                    <Button className="gap-2 bg-violet-600 hover:bg-violet-700">
+                      Try AI Security Auditor <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </motion.div>
+
         {/* Quick Navigation */}
         <div className="mt-8 flex flex-wrap gap-2 justify-center">
           {[
+            { id: "ai-auditor", label: "🤖 AI Security Auditor", link: "/tools/ai-security-auditor" },
             { id: "headers", label: "Header Analyzer" },
             { id: "csp-generator", label: "CSP Generator" },
             { id: "jwt-decoder", label: "JWT Decoder" },
@@ -50,11 +92,19 @@ export default function ToolsPage() {
             { id: "password", label: "Password Checker" },
             { id: "sql-tester", label: "SQL Injection Tester" },
           ].map((tool) => (
-            <a key={tool.id} href={`#${tool.id}`}>
-              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 transition-colors px-3 py-1.5">
-                {tool.label}
-              </Badge>
-            </a>
+            tool.link ? (
+              <Link key={tool.id} href={tool.link}>
+                <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 transition-colors px-3 py-1.5 bg-violet-50 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700">
+                  {tool.label}
+                </Badge>
+              </Link>
+            ) : (
+              <a key={tool.id} href={`#${tool.id}`}>
+                <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 transition-colors px-3 py-1.5">
+                  {tool.label}
+                </Badge>
+              </a>
+            )
           ))}
         </div>
 

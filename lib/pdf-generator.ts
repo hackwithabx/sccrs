@@ -237,17 +237,20 @@ export function generateSecurityReportPDF(data: ReportData) {
     styles: {
       fontSize: 7.5,
       cellPadding: 3.5,
+      textColor: [30, 30, 30], // Always dark text for readability
       lineColor: [226, 232, 240], // slate-200
       lineWidth: 0.3,
     },
     headStyles: {
       fillColor: [15, 23, 42], // slate-900
-      textColor: [255, 255, 255],
+      textColor: [255, 255, 255], // White text on dark bg
       fontStyle: "bold",
       fontSize: 8,
     },
     alternateRowStyles: {
-      fillColor: [248, 250, 252], // slate-50
+      fillColor: [248, 250, 252], // slate-50 (light background)
+      textColor: [30, 30, 30], // Dark text for contrast
+    },
     },
     columnStyles: {
       0: { cellWidth: 28, fontStyle: "bold" },
