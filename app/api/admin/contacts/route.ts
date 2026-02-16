@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Contact from "@/models/Contact";
 
-// Simple admin auth check via header
+// Server-side admin auth check via httpOnly cookie
 function isAuthorized(request: NextRequest): boolean {
-  const authHeader = request.headers.get("x-admin-auth");
-  // Check server-side env var first (ADMIN_PASSWORD), then NEXT_PUBLIC variant, then fallback
-  const adminPassword =
-    process.env.ADMIN_PASSWORD ||
-    process.env.NEXT_PUBLIC_ADMIN_PASSWORD ||
-    "Lambda123456@#";
-  return authHeader === adminPassword;
+  const token = request.cookies.get("scr-admin-token")?.value;
+  if (!token) return false;
+
+  try {
+    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
+    return decoded.authenticated === true && Date.now() < decoded.expiresAt;
+  } catch {
+    return false;
+  }
 }
 
 // GET - Fetch all contact submissions

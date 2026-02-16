@@ -2,9 +2,27 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting: 3 registration attempts per 15 minutes per IP
+    const clientIP = getClientIP(req);
+    const rateLimitResult = rateLimit(`register:${clientIP}`, {
+      maxRequests: 3,
+      windowSeconds: 900,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateLimitResult.resetIn) },
+        }
+      );
+    }
+
     const { name, email, password } = await req.json();
 
     if (!name || !email || !password) {
@@ -14,22 +32,31 @@ export async function POST(req: Request) {
       );
     }
 
-    if (password.length < 8) {
+    // Stronger password policy
+    if (password.length < 10) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
+        { error: "Password must be at least 10 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must contain uppercase, lowercase, number, and special character" },
         { status: 400 }
       );
     }
 
     await dbConnect();
 
-    // Check if user already exists
+    // Check if user already exists — use generic message to prevent user enumeration
     const existingUser = await User.findOne({ email: email.toLowerCase() });
 
     if (existingUser) {
+      // Return same status/message as success to prevent enumeration
       return NextResponse.json(
-        { error: "User already exists with this email" },
-        { status: 409 }
+        { message: "If this email is available, a confirmation will be sent." },
+        { status: 201 }
       );
     }
 

@@ -47,10 +47,11 @@ interface ContactSubmission {
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
-  const [adminPassword, setAdminPassword] = useState("");
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Blog management state
   const [editingPost, setEditingPost] = useState<string | null>(null);
@@ -89,9 +90,9 @@ export default function AdminPage() {
     ],
   });
 
-  // Fetch contacts from MongoDB
+  // Fetch contacts from MongoDB (uses httpOnly cookie auth)
   const fetchContacts = useCallback(async () => {
-    if (!adminPassword) return;
+    if (!authenticated) return;
     setContactsLoading(true);
     setContactsError("");
     try {
@@ -102,7 +103,7 @@ export default function AdminPage() {
       if (contactsFilter) params.set("status", contactsFilter);
 
       const res = await fetch(`/api/admin/contacts?${params}`, {
-        headers: { "x-admin-auth": adminPassword },
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -119,7 +120,7 @@ export default function AdminPage() {
     } finally {
       setContactsLoading(false);
     }
-  }, [adminPassword, contactsPage, contactsFilter]);
+  }, [authenticated, contactsPage, contactsFilter]);
 
   // Update contact status
   const updateContactStatus = async (id: string, status: string) => {
@@ -128,8 +129,8 @@ export default function AdminPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-auth": adminPassword,
         },
+        credentials: "include",
         body: JSON.stringify({ id, status }),
       });
       if (res.ok) {
@@ -148,7 +149,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/admin/contacts?id=${id}`, {
         method: "DELETE",
-        headers: { "x-admin-auth": adminPassword },
+        credentials: "include",
       });
       if (res.ok) {
         setContacts((prev) => prev.filter((c) => c._id !== id));
@@ -159,49 +160,79 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
+    setLoginLoading(true);
 
-    // Client-side admin check
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "support@securecodereviews.com";
-    const expectedPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "Lambda123456@#";
-    
-    if (
-      email === adminEmail &&
-      password === expectedPassword
-    ) {
-      setAuthenticated(true);
-      setAdminPassword(password);
-      localStorage.setItem("scr-admin", "true");
-      localStorage.setItem("scr-admin-pw", password);
-    } else {
-      setLoginError("Invalid credentials. Please check your email and password.");
+    try {
+      // Authenticate via server-side API (password never exposed to client)
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password }),
+      });
+
+      if (res.ok) {
+        setAuthenticated(true);
+      } else {
+        const data = await res.json();
+        setLoginError(data.error || "Invalid credentials");
+      }
+    } catch {
+      setLoginError("Authentication failed. Please try again.");
+    } finally {
+      setLoginLoading(false);
     }
   };
 
+  // Check if already authenticated (httpOnly cookie)
   useEffect(() => {
-    const stored = localStorage.getItem("scr-admin");
-    const storedPw = localStorage.getItem("scr-admin-pw");
-    if (stored === "true" && storedPw) {
-      setAuthenticated(true);
-      setAdminPassword(storedPw);
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/admin/auth", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          setAuthenticated(true);
+        }
+      } catch {
+        // Not authenticated
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    checkAuth();
   }, []);
 
   // Fetch contacts when authenticated
   useEffect(() => {
-    if (authenticated && adminPassword) {
+    if (authenticated) {
       fetchContacts();
     }
-  }, [authenticated, adminPassword, fetchContacts]);
+  }, [authenticated, fetchContacts]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/auth", {
+        method: "DELETE",
+        credentials: "include",
+      });
+    } catch {
+      // Ignore errors
+    }
     setAuthenticated(false);
-    setAdminPassword("");
-    localStorage.removeItem("scr-admin");
-    localStorage.removeItem("scr-admin-pw");
   };
+
+  // Loading state while checking auth
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   // Login screen
   if (!authenticated) {
@@ -249,9 +280,13 @@ export default function AdminPage() {
                 {loginError && (
                   <p className="text-sm text-destructive text-center">{loginError}</p>
                 )}
-                <Button type="submit" className="w-full gap-2">
-                  <Lock className="h-4 w-4" />
-                  Sign In
+                <Button type="submit" className="w-full gap-2" disabled={loginLoading}>
+                  {loginLoading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Lock className="h-4 w-4" />
+                  )}
+                  {loginLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
             </CardContent>

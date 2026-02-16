@@ -33,6 +33,7 @@ interface ReportItem {
   status: "pass" | "warning" | "fail";
   finding: string;
   recommendation: string;
+  severity?: "Critical" | "High" | "Medium" | "Low" | "Info";
 }
 
 export default function ReportsPage() {
@@ -46,65 +47,86 @@ export default function ReportsPage() {
     {
       category: "Transport Security",
       status: "pass",
-      finding: "HTTPS is properly configured with TLS 1.3",
-      recommendation: "Continue monitoring certificate expiration dates",
+      severity: "Info",
+      finding: "HTTPS is properly configured with TLS 1.3 and HSTS enabled",
+      recommendation: "Continue monitoring certificate expiration dates and ensure HSTS preload list inclusion",
     },
     {
       category: "Security Headers",
       status: "warning",
-      finding: "Content-Security-Policy is missing 'strict-dynamic'",
-      recommendation:
-        "Update CSP to include strict-dynamic for better XSS protection",
+      severity: "Medium",
+      finding: "Content-Security-Policy is present but uses 'unsafe-inline' and 'unsafe-eval' directives",
+      recommendation: "Implement nonce-based CSP with 'strict-dynamic' to prevent XSS attacks. Remove unsafe-inline and unsafe-eval.",
     },
     {
       category: "Authentication",
       status: "pass",
-      finding: "Multi-factor authentication is available",
-      recommendation: "Consider enforcing MFA for admin accounts",
+      severity: "Info",
+      finding: "Authentication mechanism uses bcrypt password hashing with proper salt rounds",
+      recommendation: "Consider enforcing MFA for admin accounts and implementing account lockout after failed attempts",
     },
     {
-      category: "Session Management",
+      category: "Session Mgmt",
       status: "warning",
-      finding: "Session timeout is set to 24 hours",
-      recommendation: "Reduce session timeout to 30 minutes for sensitive operations",
+      severity: "Medium",
+      finding: "JWT session tokens have a 24-hour expiry window which may be excessive",
+      recommendation: "Reduce session timeout to 4 hours for standard users and 30 minutes for admin operations",
     },
     {
       category: "Input Validation",
       status: "fail",
-      finding: "Several endpoints lack proper input sanitization",
-      recommendation:
-        "Implement server-side validation using a schema library (e.g., Zod)",
+      severity: "High",
+      finding: "Several API endpoints lack comprehensive input sanitization — risk of SQL/NoSQL injection",
+      recommendation: "Implement server-side validation using Zod schema library. Sanitize all user inputs before database queries.",
     },
     {
       category: "Error Handling",
       status: "warning",
-      finding: "Some API endpoints return stack traces in error responses",
-      recommendation:
-        "Implement a global error handler that strips sensitive information",
+      severity: "Medium",
+      finding: "Some API error responses include internal error messages that could aid attackers",
+      recommendation: "Implement a global error handler that returns generic messages to clients while logging details server-side",
     },
     {
       category: "Dependencies",
       status: "fail",
-      finding: "3 dependencies have known critical vulnerabilities",
-      recommendation: "Update lodash, express, and jsonwebtoken to latest versions",
+      severity: "Critical",
+      finding: "3 npm dependencies have known CVEs with CVSS scores above 7.0",
+      recommendation: "Run npm audit fix immediately. Update vulnerable packages and implement automated dependency scanning in CI/CD.",
     },
     {
       category: "Access Control",
       status: "pass",
-      finding: "Role-based access control is properly implemented",
-      recommendation: "Add audit logging for privilege escalation attempts",
+      severity: "Info",
+      finding: "Role-based access control is properly implemented with middleware protection",
+      recommendation: "Add audit logging for privilege escalation attempts and implement principle of least privilege",
     },
     {
       category: "Data Protection",
       status: "pass",
-      finding: "Sensitive data is encrypted at rest and in transit",
-      recommendation: "Implement field-level encryption for PII data",
+      severity: "Low",
+      finding: "Sensitive data is encrypted at rest via MongoDB Atlas encryption and in transit via TLS",
+      recommendation: "Implement field-level encryption for PII data and ensure encryption keys are rotated regularly",
     },
     {
       category: "API Security",
       status: "warning",
-      finding: "Rate limiting is configured but thresholds may be too high",
-      recommendation: "Lower rate limits for authentication endpoints to 5 req/min",
+      severity: "Medium",
+      finding: "Rate limiting is partially configured but not enforced on all endpoints",
+      recommendation: "Implement rate limiting on all API endpoints: 5 req/min for auth, 20 req/min for contact forms, 100 req/min for reads",
+    },
+    {
+      category: "CORS Policy",
+      status: "pass",
+      severity: "Info",
+      finding: "CORS headers are properly configured with restrictive origin policy",
+      recommendation: "Regularly audit allowed origins and ensure no wildcard (*) patterns in production",
+    },
+    {
+      category: "Cookie Security",
+      status: "pass",
+      severity: "Low",
+      finding: "Authentication cookies use HttpOnly, Secure, and SameSite=Strict attributes",
+      recommendation: "Consider implementing cookie prefixes (__Host- or __Secure-) for additional protection",
     },
   ];
 

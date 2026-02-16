@@ -1,0 +1,117 @@
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getClientIP } from "@/lib/rate-limit";
+
+// Server-side admin authentication
+// Uses ADMIN_PASSWORD env var
+export async function POST(request: NextRequest) {
+  try {
+    // Rate limiting: 5 login attempts per 15 minutes per IP
+    const clientIP = getClientIP(request);
+    const rateLimitResult = rateLimit(`admin-auth:${clientIP}`, {
+      maxRequests: 5,
+      windowSeconds: 900,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateLimitResult.resetIn) },
+        }
+      );
+    }
+
+    const body = await request.json();
+    const { password } = body;
+
+    if (!password || typeof password !== "string") {
+      return NextResponse.json(
+        { error: "Password is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check admin password from server-side env var (never exposed to client)
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword) {
+      return NextResponse.json(
+        { error: "Admin authentication not configured" },
+        { status: 503 }
+      );
+    }
+
+    if (password !== adminPassword) {
+      // Add a small delay to prevent timing attacks
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
+
+    // Generate a session token for admin
+    const token = Buffer.from(
+      JSON.stringify({
+        authenticated: true,
+        timestamp: Date.now(),
+        // Token expires in 4 hours
+        expiresAt: Date.now() + 4 * 60 * 60 * 1000,
+      })
+    ).toString("base64");
+
+    const response = NextResponse.json({ success: true });
+
+    // Set httpOnly cookie (not accessible via JavaScript)
+    response.cookies.set("scr-admin-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 4 * 60 * 60, // 4 hours
+      path: "/",
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Admin login error:", error);
+    return NextResponse.json(
+      { error: "Authentication failed" },
+      { status: 500 }
+    );
+  }
+}
+
+// Verify admin session
+export async function GET(request: NextRequest) {
+  const token = request.cookies.get("scr-admin-token")?.value;
+
+  if (!token) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+
+  try {
+    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
+
+    if (!decoded.authenticated || Date.now() > decoded.expiresAt) {
+      // Token expired
+      const response = NextResponse.json(
+        { authenticated: false },
+        { status: 401 }
+      );
+      response.cookies.delete("scr-admin-token");
+      return response;
+    }
+
+    return NextResponse.json({ authenticated: true });
+  } catch {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+}
+
+// Logout
+export async function DELETE() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.delete("scr-admin-token");
+  return response;
+}
