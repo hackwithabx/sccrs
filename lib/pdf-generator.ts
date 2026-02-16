@@ -58,36 +58,36 @@ export function generateSecurityReportPDF(data: ReportData) {
   doc.setFillColor(16, 185, 129);
   doc.rect(0, 48, pageWidth, 2, "F");
 
-  // Add logo
-  try {
-    doc.addImage(SCR_LOGO_BASE64, "PNG", margin, 6, 36, 36);
-  } catch {
-    // Fallback: draw shield icon if image fails
-    doc.setFillColor(16, 185, 129);
-    doc.circle(margin + 18, 24, 16, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    doc.text("SCR", margin + 18, 28, { align: "center" });
-  }
-
-  // Company name next to logo
+  // Add Logo - Simple text-based design
+  // Green circle background
+  doc.setFillColor(16, 185, 129); // green
+  doc.circle(margin + 12, 24, 10, "F");
+  
+  // Logo text
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
+  doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
-  doc.text("SecureCodeReviews", margin + 42, 20);
+  doc.text("SCR", margin + 12, 27, { align: "center" });
 
-  // Tagline
-  doc.setFontSize(10);
+  // Company name next to logo - with color separation
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Secure", margin + 28, 20);
+  
+  doc.setFillColor(16, 185, 129);
+  doc.setTextColor(16, 185, 129);
+  doc.text("Code", margin + 28, 28);
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.text("Reviews", margin + 28, 35);
+
+  // Security Platform tagline
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(148, 163, 184); // slate-400
-  doc.text("Application Security Assessment Platform", margin + 42, 28);
-
-  // Website & contact
   doc.setFontSize(8);
-  doc.setTextColor(100, 200, 160);
-  doc.text("https://securecodereviews.com", margin + 42, 36);
-  doc.text("support@securecodereviews.com", margin + 42, 42);
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text("Application Security Assessment Platform", margin + 28, 42);
 
   // Report ID on right
   const reportId = `SCR-${Date.now().toString(36).toUpperCase()}`;
@@ -235,29 +235,33 @@ export function generateSecurityReportPDF(data: ReportData) {
     body: tableData,
     margin: { left: margin, right: margin },
     styles: {
-      fontSize: 7.5,
-      cellPadding: 3.5,
+      fontSize: 8,
+      cellPadding: 2.5,
       textColor: [30, 30, 30], // Always dark text for readability
       lineColor: [226, 232, 240], // slate-200
       lineWidth: 0.3,
+      halign: "left",
+      valign: "middle",
+      overflow: "linebreak",
     },
     headStyles: {
       fillColor: [15, 23, 42], // slate-900
       textColor: [255, 255, 255], // White text on dark bg
       fontStyle: "bold",
       fontSize: 8,
+      halign: "center",
+      cellPadding: 2,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252], // slate-50 (light background)
       textColor: [30, 30, 30], // Dark text for contrast
     },
-    },
     columnStyles: {
-      0: { cellWidth: 28, fontStyle: "bold" },
-      1: { cellWidth: 18, halign: "center", fontSize: 7 },
-      2: { cellWidth: 16, halign: "center" },
-      3: { cellWidth: 52 },
-      4: { cellWidth: 52 },
+      0: { cellWidth: 20, fontStyle: "bold" },
+      1: { cellWidth: 15, halign: "center", fontSize: 8 },
+      2: { cellWidth: 15, halign: "center", fontSize: 8 },
+      3: { cellWidth: 60, fontSize: 7.5 },
+      4: { cellWidth: 60, fontSize: 7.5 },
     },
     didParseCell: (hookData) => {
       if (hookData.section === "body" && hookData.column.index === 2) {
@@ -317,19 +321,18 @@ export function generateSecurityReportPDF(data: ReportData) {
         doc.addPage();
         finalY = 25;
       }
-      const icon = item.status === "fail" ? "●" : "○";
+      const icon = item.status === "fail" ? "[CRITICAL]" : "[WARNING]";
       const color = item.status === "fail" ? [239, 68, 68] : [234, 179, 8];
       doc.setTextColor(color[0], color[1], color[2]);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.text(`${icon} Priority ${priority}:`, margin + 3, finalY);
+      doc.text(`#${priority} - ${item.category} ${icon}`, margin + 3, finalY);
       doc.setTextColor(30, 30, 30);
-      doc.text(item.category, margin + 30, finalY);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(71, 85, 105);
-      const recLines = doc.splitTextToSize(`→ ${item.recommendation}`, pageWidth - 2 * margin - 30);
-      doc.text(recLines, margin + 30, finalY + 5);
-      finalY += 5 + recLines.length * 4 + 4;
+      const recLines = doc.splitTextToSize(item.recommendation, pageWidth - 2 * margin - 10);
+      doc.text(recLines, margin + 8, finalY + 5);
+      finalY += 5 + recLines.length * 4 + 6;
       priority++;
     });
 
