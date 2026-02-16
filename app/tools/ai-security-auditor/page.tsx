@@ -966,8 +966,7 @@ export default function AiSecurityAuditorPage() {
             </Button>
             <Button 
               size="lg" 
-              variant="outline" 
-              className="text-white border-white hover:bg-white/10 font-semibold"
+              className="bg-white text-violet-600 hover:bg-gray-100 font-semibold"
               onClick={() => router.push("/services")}
             >
               View Pricing

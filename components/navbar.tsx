@@ -79,6 +79,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [hoverDropdown, setHoverDropdown] = useState<string | null>(null);
   const { data: session } = useSession();
 
   const isActive = (href: string) =>
@@ -151,13 +152,13 @@ export function Navbar() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-12 overflow-x-auto">
             {/* Services & Solutions */}
-            <div className="relative group">
+            <div className="relative" onMouseEnter={() => setHoverDropdown('services')} onMouseLeave={() => setHoverDropdown(null)}>
               <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
                 <Briefcase className="h-3.5 w-3.5" />
                 Services
                 <ChevronDown className="h-3 w-3" />
               </button>
-              <div className="absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className={`absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg transition-all duration-200 z-50 ${hoverDropdown === 'services' ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
                 <Link href="/services" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                   <div className="font-medium text-sm text-slate-900 dark:text-white">All Services</div>
                   <div className="text-xs text-slate-600 dark:text-slate-400">Security & Development</div>
@@ -178,13 +179,13 @@ export function Navbar() {
             </Link>
 
             {/* Free Tools */}
-            <div className="relative group">
+            <div className="relative" onMouseEnter={() => setHoverDropdown('tools')} onMouseLeave={() => setHoverDropdown(null)}>
               <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
                 <Wrench className="h-3.5 w-3.5" />
                 Tools
                 <ChevronDown className="h-3 w-3" />
               </button>
-              <div className="absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className={`absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg transition-all duration-200 z-50 ${hoverDropdown === 'tools' ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
                 <Link href="/tools" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
                   <div className="font-medium text-sm text-slate-900 dark:text-white">All Tools</div>
                   <div className="text-xs text-slate-600 dark:text-slate-400">Free security tools</div>
@@ -195,13 +196,13 @@ export function Navbar() {
             <div className="w-px h-6 bg-border mx-1"></div>
 
             {/* Learning & Education */}
-            <div className="relative group">
+            <div className="relative" onMouseEnter={() => setHoverDropdown('learn')} onMouseLeave={() => setHoverDropdown(null)}>
               <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
                 <BookOpen className="h-3.5 w-3.5" />
                 Learn
                 <ChevronDown className="h-3 w-3" />
               </button>
-              <div className="absolute left-0 mt-1 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className={`absolute left-0 mt-1 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg transition-all duration-200 z-50 ${hoverDropdown === 'learn' ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
                 <Link href="/owasp" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                   <div className="font-medium text-sm text-slate-900 dark:text-white">OWASP</div>
                   <div className="text-xs text-slate-600 dark:text-slate-400">Top 10 & security standards</div>
