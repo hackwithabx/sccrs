@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,9 +18,19 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
+        // Rate limit login attempts by email
+        const rateLimitResult = rateLimit(`login:${credentials.email.toLowerCase()}`, {
+          maxRequests: 5,
+          windowSeconds: 900,
+        });
+
+        if (!rateLimitResult.allowed) {
+          throw new Error("Too many login attempts. Please try again later.");
+        }
+
         await dbConnect();
 
-        const user = await User.findOne({ email: credentials.email });
+        const user = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password');
 
         if (!user || !user.password) {
           throw new Error("Invalid credentials");
@@ -45,6 +56,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 8 * 60 * 60, // 8 hours
   },
   callbacks: {
     async jwt({ token, user }) {

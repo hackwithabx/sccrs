@@ -29,6 +29,7 @@ import {
   Mail,
   MessageSquare,
   Clock,
+  Wrench,
 } from "lucide-react";
 import { blogPosts } from "@/lib/blog-data";
 
@@ -823,7 +824,7 @@ export default function AdminPage() {
                     {[
                       { label: "Total Users", value: "847", icon: Users, color: "text-primary" },
                       { label: "This Month", value: "124", icon: BarChart3, color: "text-blue-500" },
-                      { label: "Active Today", value: "43", icon: Activity, color: "text-green-500" },
+                      { label: "Active Today", value: "43", icon: Eye, color: "text-green-500" },
                       { label: "Premium", value: "12", icon: Lock, color: "text-amber-500" },
                     ].map((stat) => (
                       <div key={stat.label} className="border rounded-lg p-3">
@@ -881,8 +882,8 @@ export default function AdminPage() {
                     {[
                       { label: "Total Reports", value: "324", icon: FileText, color: "text-primary" },
                       { label: "This Month", value: "87", icon: BarChart3, color: "text-blue-500" },
-                      { label: "Avg Score", value: "72/100", icon: TrendingUp, color: "text-green-500" },
-                      { label: "Downloads", value: "156", icon: Download, color: "text-amber-500" },
+                      { label: "Avg Score", value: "72/100", icon: BarChart3, color: "text-green-500" },
+                      { label: "Downloads", value: "156", icon: FileText, color: "text-amber-500" },
                     ].map((stat) => (
                       <div key={stat.label} className="border rounded-lg p-3">
                         <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -902,11 +903,11 @@ export default function AdminPage() {
                     </thead>
                     <tbody className="border-t">
                       {[
-                        { app: "E-commerce API", score: "85", author: "john.smith@company.com", date: "2026-02-16", status: "Downloaded" },
-                        { app: "Admin Dashboard", score: "72", author: "s.chen@tech.io", date: "2026-02-15", status: "Viewed" },
+                        { app: "E-commerce API", score: 85, author: "john.smith@company.com", date: "2026-02-16", status: "Downloaded" },
+                        { app: "Admin Dashboard", score: 72, author: "s.chen@tech.io", date: "2026-02-15", status: "Viewed" },
                         { app: "Mobile App Backend", score: 91, author: "mjohnson@dev.net", date: "2026-02-14", status: "Downloaded" },
-                        { app: "Microservice Gateway", score: "68", author: "emma.w@startups.io", date: "2026-02-13", status: "Generated" },
-                        { app: "Payment Processor", score: "88", author: "a.martinez@company.esp", date: "2026-02-12", status: "Downloaded" },
+                        { app: "Microservice Gateway", score: 68, author: "emma.w@startups.io", date: "2026-02-13", status: "Generated" },
+                        { app: "Payment Processor", score: 88, author: "a.martinez@company.esp", date: "2026-02-12", status: "Downloaded" },
                       ].map((report) => (
                         <tr key={report.app} className="border-b hover:bg-muted/50">
                           <td className="p-2 font-medium">{report.app}</td>
@@ -946,7 +947,7 @@ export default function AdminPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
                       { label: "Total Searches", value: "2,847", icon: BarChart3, color: "text-primary" },
-                      { label: "This Week", value: "421", icon: TrendingUp, color: "text-blue-500" },
+                      { label: "This Week", value: "421", icon: BarChart3, color: "text-blue-500" },
                       { label: "Unique Users", value: "563", icon: Users, color: "text-green-500" },
                       { label: "Avg Usage Time", value: "3m 24s", icon: Clock, color: "text-amber-500" },
                     ].map((stat) => (

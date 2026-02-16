@@ -491,9 +491,9 @@ export default function HomePage() {
                   Create Free Account
                 </Button>
               </Link>
-              <Link href="/services">
+              <Link href="/contact">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8">
-                  Contact Sales
+                  Contact Us
                 </Button>
               </Link>
             </div>

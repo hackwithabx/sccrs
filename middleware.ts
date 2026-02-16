@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+function verifyAdminToken(token: string): { authenticated: boolean; expiresAt: number } | null {
+  try {
+    // Use Web Crypto compatible approach for Edge runtime
+    const [data, signature] = token.split(".");
+    if (!data || !signature) return null;
+    // In Edge runtime, we decode and verify structure only
+    // Full HMAC verification happens in the API routes
+    const decoded = JSON.parse(atob(data.replace(/-/g, "+").replace(/_/g, "/")));
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -23,8 +37,8 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      const decoded = JSON.parse(Buffer.from(token, "base64").toString());
-      if (!decoded.authenticated || Date.now() > decoded.expiresAt) {
+      const decoded = verifyAdminToken(token);
+      if (!decoded || !decoded.authenticated || Date.now() > decoded.expiresAt) {
         // Token expired
         if (pathname.startsWith("/api/")) {
           const response = NextResponse.json(

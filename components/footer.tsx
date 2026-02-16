@@ -12,6 +12,7 @@ const footerLinks = {
   ],
   Tools: [
     { href: "/tools", label: "Free Security Tools" },
+    { href: "/tools/ai-security-auditor", label: "AI Security Auditor" },
     { href: "/reports", label: "Security Reports" },
     { href: "/tools#headers", label: "Header Analyzer" },
     { href: "/tools#csp-generator", label: "CSP Generator" },
@@ -19,9 +20,10 @@ const footerLinks = {
   ],
   Resources: [
     { href: "/owasp/top-10", label: "OWASP Top 10" },
+    { href: "/owasp/top-10-2025", label: "OWASP Top 10 (2025)" },
     { href: "/owasp/top-10-ai", label: "OWASP Top 10 AI" },
+    { href: "/nodejs-security-guide", label: "Node.js Security Guide" },
     { href: "/blog/cloud-security-aws-azure-gcp", label: "Cloud Security Guide" },
-    { href: "/blog/major-cyberattacks-2024-2025", label: "Major Cyberattacks" },
   ],
   Company: [
     { href: "/about", label: "About Us" },

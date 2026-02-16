@@ -1,9 +1,7 @@
 // Custom server for Hostinger Node.js hosting
 // This file is the entry point for Passenger/LiteSpeed
 const { createServer } = require("http");
-const { parse } = require("url");
 const next = require("next");
-const path = require("path");
 
 const dev = false;
 const hostname = "0.0.0.0";
@@ -15,8 +13,11 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   createServer(async (req, res) => {
     try {
-      const parsedUrl = parse(req.url, true);
-      await handle(req, res, parsedUrl);
+      const parsedUrl = new URL(req.url, `http://${hostname}:${port}`);
+      await handle(req, res, {
+        pathname: parsedUrl.pathname,
+        query: Object.fromEntries(parsedUrl.searchParams),
+      });
     } catch (err) {
       console.error("Error occurred handling", req.url, err);
       res.statusCode = 500;

@@ -1,5 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
+import crypto from "crypto";
+
+function signToken(payload: object): string {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD || "fallback-secret";
+  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto.createHmac("sha256", secret).update(data).digest("base64url");
+  return `${data}.${signature}`;
+}
+
+function verifyToken(token: string): { authenticated: boolean; expiresAt: number } | null {
+  try {
+    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD || "fallback-secret";
+    const [data, signature] = token.split(".");
+    if (!data || !signature) return null;
+    const expected = crypto.createHmac("sha256", secret).update(data).digest("base64url");
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+    return JSON.parse(Buffer.from(data, "base64url").toString());
+  } catch {
+    return null;
+  }
+}
 
 // Server-side admin authentication
 // Uses ADMIN_PASSWORD env var
@@ -42,7 +63,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password !== adminPassword) {
+    // Constant-time password comparison
+    const passwordBuffer = Buffer.from(password);
+    const adminBuffer = Buffer.from(adminPassword);
+    if (passwordBuffer.length !== adminBuffer.length || !crypto.timingSafeEqual(passwordBuffer, adminBuffer)) {
       // Add a small delay to prevent timing attacks
       await new Promise((resolve) => setTimeout(resolve, 500));
       return NextResponse.json(
@@ -51,15 +75,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate a session token for admin
-    const token = Buffer.from(
-      JSON.stringify({
-        authenticated: true,
-        timestamp: Date.now(),
-        // Token expires in 4 hours
-        expiresAt: Date.now() + 4 * 60 * 60 * 1000,
-      })
-    ).toString("base64");
+    // Generate a cryptographically signed session token
+    const token = signToken({
+      authenticated: true,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + 4 * 60 * 60 * 1000,
+    });
 
     const response = NextResponse.json({ success: true });
 
@@ -91,9 +112,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
+    const decoded = verifyToken(token);
 
-    if (!decoded.authenticated || Date.now() > decoded.expiresAt) {
+    if (!decoded || !decoded.authenticated || Date.now() > decoded.expiresAt) {
       // Token expired
       const response = NextResponse.json(
         { authenticated: false },

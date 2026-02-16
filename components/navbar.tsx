@@ -26,59 +26,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-// Organized nav sections with clear separation
-const navSections = {
-  services: {
-    label: "Services & Solutions",
-    badge: null,
-    items: [
-      { href: "/services", label: "All Services", icon: Briefcase, description: "Our Security & Development Services" },
-    ],
-  },
-  aiSecurity: {
-    label: "🤖 AI Security (NEW)",
-    badge: "NEW",
-    items: [
-      { href: "/tools/ai-security-auditor", label: "AI Security Auditor", icon: Brain, description: "Test your LLM/AI applications" },
-    ],
-  },
-  tools: {
-    label: "Free Tools",
-    badge: null,
-    items: [
-      { href: "/tools", label: "All Tools", icon: Wrench, description: "Header analyzer, JWT decoder, hash tools" },
-    ],
-  },
-  educational: {
-    label: "Learning & Education",
-    badge: null,
-    items: [
-      { href: "/owasp", label: "OWASP", icon: ShieldAlert, description: "OWASP Top 10 & security standards" },
-      { href: "/secure-code", label: "Secure Code", icon: Code, description: "Secure coding practices & examples" },
-      { href: "/cloud-security", label: "Cloud Security", icon: Cloud, description: "Cloud infrastructure security" },
-      { href: "/vulnerabilities", label: "Vulnerabilities", icon: BarChart3, description: "Common vulnerabilities guide" },
-    ],
-  },
-  blog: {
-    label: "Blog & Content",
-    badge: null,
-    items: [
-      { href: "/blog", label: "Blog", icon: BookOpen, description: "Security articles & insights" },
-    ],
-  },
-  reports: {
-    label: "Reports",
-    badge: null,
-    items: [
-      { href: "/reports", label: "Generate Report", icon: FileText, description: "Create security assessment reports" },
-    ],
-  },
-};
-
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [hoverDropdown, setHoverDropdown] = useState<string | null>(null);
   const { data: session } = useSession();
 

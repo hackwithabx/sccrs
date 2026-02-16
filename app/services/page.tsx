@@ -627,14 +627,14 @@ export default function ServicesPage() {
                     <ul className="space-y-2">
                       {service.features.map((feature) => (
                         <li key={feature} className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: "currentColor" }} />
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
                           {feature}
                         </li>
                       ))}
                     </ul>
                     <div className="pt-4 border-t">
                       <span className="text-sm font-semibold text-muted-foreground">Budget: </span>
-                      <span className="text-lg font-bold" style={{ color: service.color.split(" ")[1] }}>
+                      <span className="text-lg font-bold text-primary">
                         {service.price}
                       </span>
                     </div>

@@ -53,10 +53,13 @@ export async function POST(request: Request) {
     // Sanitize inputs
     const sanitize = (str: string) =>
       str.replace(/<[^>]*>/g, "").trim().slice(0, 5000);
+    const escapeHtml = (str: string) =>
+      str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
     const cleanName = sanitize(name);
     const cleanSubject = sanitize(subject);
     const cleanMessage = sanitize(message);
+    const cleanEmail = escapeHtml(email);
 
     // Check MongoDB configuration
     if (!isMongoConfigured) {
@@ -146,7 +149,7 @@ export async function POST(request: Request) {
                   </tr>
                   <tr>
                     <td style="padding: 10px 0; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">Email:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9;"><a href="mailto:${email}" style="color: #10b981; font-size: 14px; font-weight: 600; text-decoration: none;">${email}</a></td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9;"><a href="mailto:${cleanEmail}" style="color: #10b981; font-size: 14px; font-weight: 600; text-decoration: none;">${cleanEmail}</a></td>
                   </tr>
                   <tr>
                     <td style="padding: 10px 0; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">Subject:</td>
@@ -158,7 +161,7 @@ export async function POST(request: Request) {
 ${cleanMessage}
                 </div>
                 <div style="margin-top: 20px; text-align: center;">
-                  <a href="mailto:${email}?subject=Re: ${encodeURIComponent(cleanSubject)}" style="display: inline-block; background: #10b981; color: white; text-decoration: none; padding: 10px 28px; border-radius: 6px; font-size: 13px; font-weight: 600;">↩ Reply to ${cleanName}</a>
+                  <a href="mailto:${cleanEmail}?subject=Re: ${encodeURIComponent(cleanSubject)}" style="display: inline-block; background: #10b981; color: white; text-decoration: none; padding: 10px 28px; border-radius: 6px; font-size: 13px; font-weight: 600;">↩ Reply to ${cleanName}</a>
                 </div>
                 <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 16px 0 0;">
                   Received: ${new Date().toISOString()} · SecureCodeReviews Contact Form

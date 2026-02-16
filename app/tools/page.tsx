@@ -61,7 +61,7 @@ export default function ToolsPage() {
                     </div>
                     <h3 className="text-2xl font-bold mb-2">AI Security Auditor</h3>
                     <p className="text-muted-foreground mb-4">
-                      Professional security assessment tool for AI/LLM applications. Test for prompt injection, vulnerable,
+                      Professional security assessment tool for AI/LLM applications. Test for prompt injection, vulnerabilities,
                       data leakage, and OWASP vulnerabilities. Generate professional reports and get actionable remediation guidance.
                     </p>
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -262,8 +262,8 @@ function HashGenerator() {
       results[algo] = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
     }
 
-    // Simple MD5-like representation (not actual MD5 for browser)
-    results["MD5"] = "(Use server-side for MD5 - not available in Web Crypto API)";
+    // Note: MD5 is not supported by Web Crypto API
+    results["MD5"] = "Not available (Web Crypto API does not support MD5)";
 
     setHashes(results);
   };
@@ -275,7 +275,7 @@ function HashGenerator() {
   };
 
   return (
-    <Card>
+    <Card id="hash">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Hash className="h-5 w-5 text-primary" />

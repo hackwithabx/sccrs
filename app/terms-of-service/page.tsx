@@ -9,7 +9,7 @@ export default function TermsOfServicePage() {
           Last updated: February 12, 2026
         </p>
 
-        <div className="prose prose-invert max-w-none space-y-8">
+        <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8">
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
@@ -159,4 +159,13 @@ export default function TermsOfServicePage() {
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "SecureCodeReviews.com terms of service — the legal agreement governing the use of our platform and services.",
+  keywords: ["terms of service", "legal agreement", "user agreement", "SecureCodeReviews"],
+  openGraph: {
+    title: "Terms of Service | SecureCodeReviews",
+    description: "The legal agreement governing use of the SecureCodeReviews platform and services.",
+    url: "https://securecodereviews.com/terms-of-service",
+  },
+  alternates: {
+    canonical: "/terms-of-service",
+  },
 };

@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -152,8 +152,11 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
-  const randomTip =
-    securityTips[Math.floor(Math.random() * securityTips.length)];
+  const [randomTip, setRandomTip] = useState(securityTips[0]);
+
+  useEffect(() => {
+    setRandomTip(securityTips[Math.floor(Math.random() * securityTips.length)]);
+  }, []);
 
   return (
     <div className="min-h-screen py-12">

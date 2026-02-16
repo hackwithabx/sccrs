@@ -72,12 +72,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        message: "User created successfully",
-        user: {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-        },
+        message: "If this email is available, a confirmation will be sent.",
       },
       { status: 201 }
     );
