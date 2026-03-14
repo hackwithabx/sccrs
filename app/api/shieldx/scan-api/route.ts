@@ -119,68 +119,203 @@ const SECURITY_HEADERS: {
   },
 ];
 
+// OWASP API Top 10 2023 + additional API security checks
 const API_CHECKS: {
   name: string;
+  owasp?: string;
   severity: "critical" | "high" | "medium" | "low";
-  check: (data: { headers: Record<string, string>; status: number; body: string; url: string }) => { status: "pass" | "fail" | "warn"; message: string };
+  check: (data: { headers: Record<string, string>; status: number; body: string; url: string; cookies: string[]; allowedMethods?: string[] }) => { status: "pass" | "fail" | "warn"; message: string };
 }[] = [
+  // API1:2023 - Broken Object Level Authorization (BOLA)
   {
-    name: "HTTPS Enforcement",
+    name: "Object-Level Authorization",
+    owasp: "API1:2023",
     severity: "critical",
-    check: ({ url }) => {
-      if (url.startsWith("https://")) return { status: "pass", message: "Endpoint uses HTTPS" };
-      return { status: "fail", message: "Endpoint uses HTTP — all traffic is unencrypted" };
+    check: ({ url, status }) => {
+      const hasId = /\/\d+$|\/[a-f0-9-]{36}$|\/[a-f0-9]{24}$/i.test(url);
+      if (hasId && status === 200)
+        return { status: "warn", message: "Endpoint exposes object by ID — verify authorization checks exist for each object access" };
+      return { status: "pass", message: "No BOLA indicators detected (test with different auth tokens for thorough check)" };
     },
   },
+  // API2:2023 - Broken Authentication
   {
-    name: "Rate Limiting Headers",
-    severity: "high",
-    check: ({ headers }) => {
-      const rl = headers["x-ratelimit-limit"] || headers["ratelimit-limit"] || headers["x-rate-limit-limit"] || headers["retry-after"];
-      if (rl) return { status: "pass", message: "Rate limiting detected" };
-      return { status: "warn", message: "No rate limiting headers — API may be vulnerable to abuse" };
-    },
-  },
-  {
-    name: "Authentication Required",
-    severity: "high",
+    name: "Authentication Enforcement",
+    owasp: "API2:2023",
+    severity: "critical",
     check: ({ status, headers }) => {
       if (status === 401 || status === 403) return { status: "pass", message: "Endpoint requires authentication" };
       if (headers["www-authenticate"]) return { status: "pass", message: "Auth challenge present" };
-      return { status: "warn", message: `Endpoint returned ${status} without auth — ensure sensitive endpoints are protected` };
+      return { status: "warn", message: `Endpoint returned ${status} without auth challenge — ensure sensitive endpoints require authentication` };
+    },
+  },
+  // API3:2023 - Broken Object Property Level Authorization
+  {
+    name: "Excessive Data Exposure",
+    owasp: "API3:2023",
+    severity: "high",
+    check: ({ body }) => {
+      const lower = body.toLowerCase();
+      const sensitiveFields = ["password", "secret_key", "access_token", "private_key", "ssn", "credit_card", "api_key", "authorization", "token", "credentials", "bank_account"];
+      const found = sensitiveFields.filter((p) => lower.includes(p));
+      if (found.length) return { status: "fail", message: `Sensitive data fields found in response: ${found.join(", ")}` };
+      // Check for excessive response size (>50KB might indicate over-fetching)
+      if (body.length > 50000) return { status: "warn", message: `Large response (${Math.round(body.length / 1024)}KB) — may indicate excessive data exposure; consider field filtering` };
+      return { status: "pass", message: "No obvious sensitive data patterns or excessive data in response" };
+    },
+  },
+  // API4:2023 - Unrestricted Resource Consumption
+  {
+    name: "Rate Limiting / Resource Controls",
+    owasp: "API4:2023",
+    severity: "high",
+    check: ({ headers }) => {
+      const rl = headers["x-ratelimit-limit"] || headers["ratelimit-limit"] || headers["x-rate-limit-limit"] || headers["retry-after"];
+      const remaining = headers["x-ratelimit-remaining"] || headers["ratelimit-remaining"];
+      if (rl && remaining) return { status: "pass", message: `Rate limiting active: ${remaining} requests remaining of ${rl}` };
+      if (rl) return { status: "pass", message: "Rate limiting detected" };
+      return { status: "warn", message: "No rate limiting headers — API may be vulnerable to resource exhaustion / DoS" };
+    },
+  },
+  // API5:2023 - Broken Function Level Authorization
+  {
+    name: "HTTP Method Restrictions",
+    owasp: "API5:2023",
+    severity: "high",
+    check: ({ allowedMethods }) => {
+      if (!allowedMethods) return { status: "warn", message: "Could not determine allowed methods" };
+      const dangerous = allowedMethods.filter((m) => ["DELETE", "PUT", "PATCH", "TRACE"].includes(m.toUpperCase()));
+      if (dangerous.length === 0) return { status: "pass", message: `Only safe methods allowed: ${allowedMethods.join(", ")}` };
+      if (dangerous.includes("TRACE")) return { status: "fail", message: `TRACE method enabled — vulnerable to Cross-Site Tracing (XST)` };
+      return { status: "warn", message: `Potentially dangerous methods enabled: ${dangerous.join(", ")} — ensure proper authorization` };
+    },
+  },
+  // API6:2023 - Unrestricted Access to Sensitive Business Flows
+  {
+    name: "Bot Protection",
+    owasp: "API6:2023",
+    severity: "medium",
+    check: ({ headers }) => {
+      const botProtection = headers["x-robots-tag"] || headers["cf-ray"] || headers["x-amzn-waf-action"] || headers["x-akamai-transformed"];
+      if (botProtection) return { status: "pass", message: "WAF/bot protection indicators detected" };
+      return { status: "warn", message: "No WAF/bot protection headers detected — consider implementing bot mitigation" };
+    },
+  },
+  // API7:2023 - Server Side Request Forgery (SSRF)
+  {
+    name: "Redirect Chain Analysis",
+    owasp: "API7:2023",
+    severity: "high",
+    check: ({ headers, url }) => {
+      const location = headers["location"];
+      if (location) {
+        try {
+          const origHost = new URL(url).hostname;
+          const redirHost = new URL(location, url).hostname;
+          if (origHost !== redirHost) return { status: "warn", message: `Redirect to different host: ${redirHost} — verify redirect destination` };
+        } catch { /* invalid URL parsing */ }
+        return { status: "warn", message: `Redirect detected to: ${location}` };
+      }
+      return { status: "pass", message: "No redirects detected" };
+    },
+  },
+  // API8:2023 - Security Misconfiguration
+  {
+    name: "HTTPS Enforcement",
+    owasp: "API8:2023",
+    severity: "critical",
+    check: ({ url }) => {
+      if (url.startsWith("https://")) return { status: "pass", message: "Endpoint uses HTTPS" };
+      return { status: "fail", message: "Endpoint uses HTTP — all traffic is transmitted unencrypted" };
     },
   },
   {
-    name: "Sensitive Data in Response",
-    severity: "critical",
-    check: ({ body }) => {
-      const lower = body.toLowerCase();
-      const patterns = ["password", "secret_key", "access_token", "private_key", "ssn", "credit_card"];
-      const found = patterns.filter((p) => lower.includes(p));
-      if (found.length) return { status: "fail", message: `Potentially sensitive fields: ${found.join(", ")}` };
-      return { status: "pass", message: "No obvious sensitive data patterns in response" };
+    name: "Server Information Disclosure",
+    owasp: "API8:2023",
+    severity: "medium",
+    check: ({ headers }) => {
+      const leaked = [];
+      if (headers["server"]) leaked.push(`Server: ${headers["server"]}`);
+      if (headers["x-powered-by"]) leaked.push(`X-Powered-By: ${headers["x-powered-by"]}`);
+      if (headers["x-aspnet-version"]) leaked.push(`ASP.NET: ${headers["x-aspnet-version"]}`);
+      if (headers["x-runtime"]) leaked.push(`Runtime: ${headers["x-runtime"]}`);
+      if (leaked.length) return { status: "fail", message: `Technology stack exposed: ${leaked.join("; ")} — remove these headers` };
+      return { status: "pass", message: "No server technology information leaked" };
     },
   },
   {
     name: "Error Information Leakage",
+    owasp: "API8:2023",
     severity: "medium",
     check: ({ body }) => {
       const lower = body.toLowerCase();
-      const patterns = ["stack trace", "traceback", "exception", "at com.", "at org.", "node_modules", "internal server error"];
+      const patterns = ["stack trace", "traceback", "exception", "at com.", "at org.", "node_modules", "internal server error", "sql syntax", "syntax error", "undefined variable", "fatal error"];
       const found = patterns.filter((p) => lower.includes(p));
-      if (found.length) return { status: "fail", message: `Error info leaked: ${found.join(", ")}` };
+      if (found.length) return { status: "fail", message: `Error info leaked: ${found.join(", ")} — use generic error responses in production` };
       return { status: "pass", message: "No error information leakage detected" };
     },
   },
+  // API9:2023 - Improper Inventory Management
+  {
+    name: "API Versioning",
+    owasp: "API9:2023",
+    severity: "medium",
+    check: ({ url, headers }) => {
+      const urlVersion = /\/v\d+/i.test(url);
+      const headerVersion = headers["api-version"] || headers["x-api-version"];
+      if (urlVersion || headerVersion) return { status: "pass", message: "API versioning detected" };
+      return { status: "warn", message: "No API versioning detected — consider implementing version management" };
+    },
+  },
+  // API10:2023 - Unsafe Consumption of APIs
   {
     name: "Content-Type Validation",
+    owasp: "API10:2023",
     severity: "medium",
     check: ({ headers }) => {
       const ct = headers["content-type"];
-      if (!ct) return { status: "warn", message: "No Content-Type header" };
-      if (ct.includes("application/json") || ct.includes("text/html") || ct.includes("application/xml"))
-        return { status: "pass", message: `Content-Type: ${ct}` };
-      return { status: "pass", message: `Content-Type: ${ct}` };
+      if (!ct) return { status: "warn", message: "No Content-Type header — responses should declare content type" };
+      if (ct.includes("charset=")) return { status: "pass", message: `Content-Type: ${ct} (charset specified)` };
+      return { status: "warn", message: `Content-Type: ${ct} — consider specifying charset to prevent encoding attacks` };
+    },
+  },
+  // Additional best-practice checks
+  {
+    name: "Cookie Security",
+    severity: "high",
+    check: ({ cookies }) => {
+      if (!cookies.length) return { status: "pass", message: "No cookies set (stateless API — good practice)" };
+      const issues: string[] = [];
+      for (const c of cookies) {
+        const lower = c.toLowerCase();
+        if (!lower.includes("httponly")) issues.push("missing HttpOnly");
+        if (!lower.includes("secure")) issues.push("missing Secure flag");
+        if (!lower.includes("samesite")) issues.push("missing SameSite");
+      }
+      if (issues.length) return { status: "fail", message: `Cookie security issues: ${[...new Set(issues)].join(", ")}` };
+      return { status: "pass", message: `${cookies.length} cookie(s) with proper security flags` };
+    },
+  },
+  {
+    name: "Cache-Control",
+    severity: "medium",
+    check: ({ headers }) => {
+      const cc = headers["cache-control"];
+      if (!cc) return { status: "warn", message: "No Cache-Control — sensitive API responses may be cached by proxies" };
+      if (cc.includes("no-store") || cc.includes("private")) return { status: "pass", message: `Cache-Control: ${cc}` };
+      return { status: "warn", message: `Cache-Control: ${cc} — consider 'no-store' for sensitive endpoints` };
+    },
+  },
+  {
+    name: "CORS Configuration",
+    severity: "high",
+    check: ({ headers }) => {
+      const origin = headers["access-control-allow-origin"];
+      const credentials = headers["access-control-allow-credentials"];
+      if (!origin) return { status: "pass", message: "No CORS header (good if not needed)" };
+      if (origin === "*" && credentials === "true") return { status: "fail", message: "Wildcard CORS with credentials — critically insecure" };
+      if (origin === "*") return { status: "fail", message: "Wildcard CORS — any origin can access this API" };
+      return { status: "pass", message: `CORS restricted to: ${origin}` };
     },
   },
 ];
@@ -209,7 +344,7 @@ export async function POST(request: NextRequest) {
         method: "GET",
         signal: controller.signal,
         redirect: "follow",
-        headers: { "User-Agent": "SCR-ShieldX-Scanner/1.0 (Security Assessment)" },
+        headers: { "User-Agent": "SCR-ShieldX-Scanner/2.0 (Security Assessment)" },
       });
     } catch (err) {
       clearTimeout(timeout);
@@ -221,9 +356,32 @@ export async function POST(request: NextRequest) {
     const headersObj: Record<string, string> = {};
     response.headers.forEach((v, k) => { headersObj[k.toLowerCase()] = v; });
 
-    // Read first 10KB of body for analysis
+    // Extract cookies
+    const cookies: string[] = [];
+    response.headers.forEach((v, k) => {
+      if (k.toLowerCase() === "set-cookie") cookies.push(v);
+    });
+
+    // Read body for analysis (first 50KB for excessive data check)
     const bodyText = await response.text();
-    const truncatedBody = bodyText.slice(0, 10000);
+    const truncatedBody = bodyText.slice(0, 50000);
+
+    // Probe for allowed HTTP methods (OPTIONS request)
+    let allowedMethods: string[] | undefined;
+    try {
+      const optCtrl = new AbortController();
+      const optTimeout = setTimeout(() => optCtrl.abort(), 4000);
+      const optResp = await fetch(targetUrl, {
+        method: "OPTIONS",
+        signal: optCtrl.signal,
+        headers: { "User-Agent": "SCR-ShieldX-Scanner/2.0" },
+      });
+      clearTimeout(optTimeout);
+      const allow = optResp.headers.get("allow") || optResp.headers.get("access-control-allow-methods");
+      if (allow) allowedMethods = allow.split(",").map((m) => m.trim().toUpperCase());
+    } catch {
+      // OPTIONS not supported — that's fine
+    }
 
     // Run header checks
     const headerResults: HeaderCheck[] = SECURITY_HEADERS.map((h) => {
@@ -239,10 +397,10 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Run API-specific checks
+    // Run OWASP API checks
     const apiResults = API_CHECKS.map((c) => {
-      const result = c.check({ headers: headersObj, status: response.status, body: truncatedBody, url: targetUrl });
-      return { name: c.name, severity: c.severity, ...result };
+      const result = c.check({ headers: headersObj, status: response.status, body: truncatedBody, url: targetUrl, cookies, allowedMethods });
+      return { name: c.name, owasp: c.owasp || null, severity: c.severity, ...result };
     });
 
     // Calculate score
@@ -250,7 +408,7 @@ export async function POST(request: NextRequest) {
       ...headerResults.map((h) => ({ status: h.status, severity: h.severity })),
       ...apiResults.map((a) => ({ status: a.status, severity: a.severity })),
     ];
-    const weights = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+    const weights: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
     let totalWeight = 0;
     let earnedWeight = 0;
     for (const c of allChecks) {
@@ -261,12 +419,16 @@ export async function POST(request: NextRequest) {
     }
     const score = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 10 * 10) / 10 : 0;
 
+    const owaspCoverage = API_CHECKS.filter((c) => c.owasp).map((c) => c.owasp);
+
     return NextResponse.json({
       url: targetUrl,
       status: response.status,
       headers: headerResults,
       apiChecks: apiResults,
       score,
+      owaspCoverage: [...new Set(owaspCoverage)],
+      totalChecks: allChecks.length,
       scannedAt: new Date().toISOString(),
     });
   } catch (err) {

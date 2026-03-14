@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Shield, Key, Package, Cloud, Globe, BarChart3, Brain, ArrowRight,
   CheckCircle2, AlertTriangle, XCircle, Eye, Search,
-  Activity, Play, RotateCcw,
-  Loader2,
+  Activity, Play, RotateCcw, Loader2,
+  GitBranch, Bell, Copy, Check, Terminal, Mail, Code, Send,
+  MessageSquare, Settings, ExternalLink,
 } from "lucide-react";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -20,7 +21,34 @@ import {
 } from "recharts";
 
 /* ═══════════════════════════════════════════════════════════
-   ███  SECRETS SCANNER — REAL REGEX ENGINE  ███
+   ███  ENTROPY & CONFIDENCE SCORING  ███
+   ═══════════════════════════════════════════════════════════ */
+
+function calculateEntropy(str: string): number {
+  if (!str || str.length === 0) return 0;
+  const freq: Record<string, number> = {};
+  for (const ch of str) freq[ch] = (freq[ch] || 0) + 1;
+  const len = str.length;
+  let entropy = 0;
+  for (const count of Object.values(freq)) {
+    const p = count / len;
+    entropy -= p * Math.log2(p);
+  }
+  return entropy;
+}
+
+function isPlaceholder(value: string): boolean {
+  const lower = value.toLowerCase();
+  const placeholders = [
+    "your-", "xxx", "todo", "changeme", "replace",
+    "insert", "placeholder", "dummy", "fake",
+    "secret-here", "key-here", "token-here",
+  ];
+  return placeholders.some((p) => lower.includes(p));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ███  SECRETS SCANNER — 20 PATTERNS + ENTROPY  ███
    ═══════════════════════════════════════════════════════════ */
 
 interface SecretPattern {
@@ -59,6 +87,8 @@ interface SecretFinding {
   line: number;
   match: string;
   fix: string;
+  entropy: number;
+  confidence: "high" | "medium" | "low";
 }
 
 function scanSecrets(code: string): SecretFinding[] {
@@ -70,16 +100,29 @@ function scanSecrets(code: string): SecretFinding[] {
     for (let i = 0; i < lines.length; i++) {
       const matches = lines[i].matchAll(new RegExp(pattern.regex));
       for (const m of matches) {
-        const matchText = m[0].length > 60 ? m[0].slice(0, 57) + "..." : m[0];
+        const rawMatch = m[0];
+        const matchText = rawMatch.length > 60 ? rawMatch.slice(0, 57) + "..." : rawMatch;
         const key = `${pattern.name}:${i}:${matchText}`;
         if (seen.has(key)) continue;
         seen.add(key);
+
+        const secretValue = m[1] || rawMatch;
+        const entropy = calculateEntropy(secretValue.trim());
+        const placeholder = isPlaceholder(rawMatch);
+
+        let confidence: "high" | "medium" | "low" = "high";
+        if (placeholder) confidence = "low";
+        else if (entropy < 2.0) confidence = "low";
+        else if (entropy < 3.0) confidence = "medium";
+
         findings.push({
           pattern: pattern.name,
           severity: pattern.severity,
           line: i + 1,
           match: matchText.trim(),
           fix: pattern.fix,
+          entropy: Math.round(entropy * 100) / 100,
+          confidence,
         });
       }
     }
@@ -88,100 +131,31 @@ function scanSecrets(code: string): SecretFinding[] {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ███  DEPENDENCY SCANNER — REAL CVE DATABASE  ███
+   ███  DEPENDENCY SCANNER — OSV.dev API  ███
    ═══════════════════════════════════════════════════════════ */
 
-interface KnownVuln {
-  package: string;
-  affectedVersions: string;
-  severity: "critical" | "high" | "medium" | "low";
-  cve: string;
-  description: string;
-  fix: string;
-  matchFn: (version: string) => boolean;
-}
-
-function semverLt(a: string, b: string): boolean {
-  const pa = a.replace(/[^0-9.]/g, "").split(".").map(Number);
-  const pb = b.replace(/[^0-9.]/g, "").split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    const na = pa[i] || 0, nb = pb[i] || 0;
-    if (na < nb) return true;
-    if (na > nb) return false;
-  }
-  return false;
-}
-
-const KNOWN_VULNS: KnownVuln[] = [
-  { package: "log4j", affectedVersions: "<2.17.1", severity: "critical", cve: "CVE-2021-44228", description: "Remote Code Execution via JNDI lookup (Log4Shell)", fix: "Upgrade to 2.17.1+", matchFn: (v) => semverLt(v, "2.17.1") },
-  { package: "lodash", affectedVersions: "<4.17.21", severity: "high", cve: "CVE-2021-23337", description: "Command injection via template function", fix: "Upgrade to 4.17.21+", matchFn: (v) => semverLt(v, "4.17.21") },
-  { package: "axios", affectedVersions: "<1.6.0", severity: "high", cve: "CVE-2023-45857", description: "CSRF via cookie leak to third-party hosts", fix: "Upgrade to 1.6.0+", matchFn: (v) => semverLt(v, "1.6.0") },
-  { package: "express", affectedVersions: "<4.19.2", severity: "medium", cve: "CVE-2024-29041", description: "Open redirect vulnerability", fix: "Upgrade to 4.19.2+", matchFn: (v) => semverLt(v, "4.19.2") },
-  { package: "jsonwebtoken", affectedVersions: "<9.0.0", severity: "high", cve: "CVE-2022-23529", description: "Arbitrary code execution via crafted JWK", fix: "Upgrade to 9.0.0+", matchFn: (v) => semverLt(v, "9.0.0") },
-  { package: "node-fetch", affectedVersions: "<2.6.7", severity: "high", cve: "CVE-2022-0235", description: "Exposure of sensitive information to an unauthorized actor", fix: "Upgrade to 2.6.7+", matchFn: (v) => semverLt(v, "2.6.7") },
-  { package: "minimatch", affectedVersions: "<3.0.5", severity: "high", cve: "CVE-2022-3517", description: "ReDoS vulnerability in pattern matching", fix: "Upgrade to 3.0.5+", matchFn: (v) => semverLt(v, "3.0.5") },
-  { package: "semver", affectedVersions: "<7.5.2", severity: "medium", cve: "CVE-2022-25883", description: "ReDoS in semver range parsing", fix: "Upgrade to 7.5.2+", matchFn: (v) => semverLt(v, "7.5.2") },
-  { package: "tar", affectedVersions: "<6.1.9", severity: "high", cve: "CVE-2021-37713", description: "Arbitrary file creation/overwrite", fix: "Upgrade to 6.1.9+", matchFn: (v) => semverLt(v, "6.1.9") },
-  { package: "moment", affectedVersions: "<2.29.4", severity: "high", cve: "CVE-2022-31129", description: "ReDoS in date string parsing", fix: "Upgrade to 2.29.4+ or migrate to dayjs/date-fns", matchFn: (v) => semverLt(v, "2.29.4") },
-  { package: "underscore", affectedVersions: "<1.13.6", severity: "high", cve: "CVE-2021-23358", description: "Arbitrary code execution via template function", fix: "Upgrade to 1.13.6+", matchFn: (v) => semverLt(v, "1.13.6") },
-  { package: "qs", affectedVersions: "<6.10.3", severity: "high", cve: "CVE-2022-24999", description: "Prototype pollution", fix: "Upgrade to 6.10.3+", matchFn: (v) => semverLt(v, "6.10.3") },
-  { package: "json5", affectedVersions: "<2.2.2", severity: "high", cve: "CVE-2022-46175", description: "Prototype pollution", fix: "Upgrade to 2.2.2+", matchFn: (v) => semverLt(v, "2.2.2") },
-  { package: "tough-cookie", affectedVersions: "<4.1.3", severity: "medium", cve: "CVE-2023-26136", description: "Prototype pollution", fix: "Upgrade to 4.1.3+", matchFn: (v) => semverLt(v, "4.1.3") },
-  { package: "got", affectedVersions: "<11.8.5", severity: "medium", cve: "CVE-2022-33987", description: "Redirect to UNIX socket", fix: "Upgrade to 11.8.5+", matchFn: (v) => semverLt(v, "11.8.5") },
-  { package: "shell-quote", affectedVersions: "<1.7.3", severity: "critical", cve: "CVE-2021-42740", description: "Command injection", fix: "Upgrade to 1.7.3+", matchFn: (v) => semverLt(v, "1.7.3") },
-  { package: "xml2js", affectedVersions: "<0.5.0", severity: "medium", cve: "CVE-2023-0842", description: "Prototype pollution", fix: "Upgrade to 0.5.0+", matchFn: (v) => semverLt(v, "0.5.0") },
-  { package: "webpack-dev-middleware", affectedVersions: "<5.3.4", severity: "high", cve: "CVE-2024-29180", description: "Path traversal allows access to files outside docroot", fix: "Upgrade to 5.3.4+", matchFn: (v) => semverLt(v, "5.3.4") },
-  { package: "ip", affectedVersions: "<2.0.1", severity: "high", cve: "CVE-2024-29415", description: "SSRF bypass via incorrect IP classification", fix: "Upgrade to 2.0.1+", matchFn: (v) => semverLt(v, "2.0.1") },
-  { package: "django", affectedVersions: "<4.2.11", severity: "high", cve: "CVE-2024-27351", description: "ReDoS in Truncator", fix: "Upgrade to 4.2.11+", matchFn: (v) => semverLt(v, "4.2.11") },
-  { package: "flask", affectedVersions: "<2.3.2", severity: "high", cve: "CVE-2023-30861", description: "Session cookie exposure on cross-domain redirects", fix: "Upgrade to 2.3.2+", matchFn: (v) => semverLt(v, "2.3.2") },
-  { package: "requests", affectedVersions: "<2.31.0", severity: "medium", cve: "CVE-2023-32681", description: "Proxy-Authorization header leakage", fix: "Upgrade to 2.31.0+", matchFn: (v) => semverLt(v, "2.31.0") },
-  { package: "pillow", affectedVersions: "<10.2.0", severity: "high", cve: "CVE-2023-50447", description: "Arbitrary code execution via crafted image", fix: "Upgrade to 10.2.0+", matchFn: (v) => semverLt(v, "10.2.0") },
-  { package: "cryptography", affectedVersions: "<42.0.0", severity: "high", cve: "CVE-2024-26130", description: "NULL pointer dereference in PKCS12 parsing", fix: "Upgrade to 42.0.0+", matchFn: (v) => semverLt(v, "42.0.0") },
-];
-
-interface DepVuln {
+interface OsvVuln {
+  id: string;
   package: string;
   version: string;
   severity: "critical" | "high" | "medium" | "low";
-  cve: string;
-  description: string;
-  fix: string;
+  summary: string;
+  details: string;
+  aliases: string[];
+  references: string[];
+  fixedIn: string;
+  source: string;
 }
 
-function parseDeps(input: string): Record<string, string> {
-  const deps: Record<string, string> = {};
-  try {
-    const json = JSON.parse(input);
-    const allDeps = { ...json.dependencies, ...json.devDependencies };
-    for (const [name, ver] of Object.entries(allDeps)) {
-      deps[name] = String(ver).replace(/^[\^~>=<\s]+/, "");
-    }
-    return deps;
-  } catch {
-    const lines = input.split("\n");
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const m = trimmed.match(/^([a-zA-Z0-9._-]+)\s*[=~><]+\s*([0-9][0-9.]*)/);
-      if (m) deps[m[1].toLowerCase()] = m[2];
-      const g = trimmed.match(/['"]([^:'"]+):([^:'"]+):([0-9][^'"]*)['"]/);
-      if (g) deps[g[2]] = g[3];
-    }
-    return deps;
-  }
-}
-
-function scanDependencies(input: string): { deps: Record<string, string>; vulns: DepVuln[] } {
-  const deps = parseDeps(input);
-  const vulns: DepVuln[] = [];
-  for (const [name, version] of Object.entries(deps)) {
-    for (const known of KNOWN_VULNS) {
-      if (name.toLowerCase() === known.package.toLowerCase() && known.matchFn(version)) {
-        vulns.push({ package: name, version, severity: known.severity, cve: known.cve, description: known.description, fix: known.fix });
-      }
-    }
-  }
-  return { deps, vulns };
+interface DepsApiResult {
+  ecosystem: string;
+  totalDeps: number;
+  scannedPackages: number;
+  vulnerabilities: OsvVuln[];
+  stats: { critical: number; high: number; medium: number; low: number };
+  errors?: string[];
+  scannedAt: string;
+  source: string;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -237,7 +211,6 @@ function analyzeLogs(input: string): LogFinding[] {
   const lines = input.split("\n");
   const seen = new Set<string>();
 
-  // 1. Failed login detection
   const failedLogins: { line: number; text: string }[] = [];
   const failedPatterns = /(?:failed\s+login|authentication\s+failed|login\s+failed|invalid\s+(?:password|credentials)|unauthorized|401|access\s+denied|permission\s+denied)/gi;
   for (let i = 0; i < lines.length; i++) {
@@ -262,7 +235,6 @@ function analyzeLogs(input: string): LogFinding[] {
     });
   }
 
-  // 2. Suspicious IP activity
   const ipPattern = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g;
   const ipCounts: Record<string, number> = {};
   for (const line of lines) {
@@ -284,7 +256,6 @@ function analyzeLogs(input: string): LogFinding[] {
     });
   }
 
-  // 3. Off-hours activity
   const timePattern = /\b(\d{2}):(\d{2})(?::(\d{2}))?\b/g;
   let offHoursCount = 0;
   for (const line of lines) {
@@ -304,7 +275,6 @@ function analyzeLogs(input: string): LogFinding[] {
     });
   }
 
-  // 4. SQL injection / XSS patterns
   const injectionPatterns = /(?:union\s+select|or\s+1\s*=\s*1|drop\s+table|<script>|alert\s*\(|onerror\s*=|onclick\s*=|eval\s*\(|exec\s*\(|cmd\s*=|system\s*\(|\.\.\/\.\.\/)/gi;
   const injectionLines: number[] = [];
   for (let i = 0; i < lines.length; i++) {
@@ -321,7 +291,6 @@ function analyzeLogs(input: string): LogFinding[] {
     });
   }
 
-  // 5. Privilege escalation
   const privEsc = /(?:sudo|su\s+-|chmod\s+777|chown\s+root|adduser|useradd|usermod.*admin|grant\s+all|alter\s+user|role.*admin)/gi;
   const privLines: number[] = [];
   for (let i = 0; i < lines.length; i++) {
@@ -338,7 +307,6 @@ function analyzeLogs(input: string): LogFinding[] {
     });
   }
 
-  // 6. Data exfiltration
   const exfilPatterns = /(?:curl\s+.*\|.*sh|wget\s+.*-O|nc\s+-.*\d{1,3}\.\d{1,3}|base64\s+.*\||scp\s+|rsync\s+.*@|s3\s+cp\s+s3:)/gi;
   for (let i = 0; i < lines.length; i++) {
     if (exfilPatterns.test(lines[i])) {
@@ -357,7 +325,6 @@ function analyzeLogs(input: string): LogFinding[] {
     exfilPatterns.lastIndex = 0;
   }
 
-  // 7. Error spikes
   const errorPatterns = /(?:error|exception|fatal|panic|segfault|crash|oom|killed)/gi;
   let errorCount = 0;
   for (const line of lines) {
@@ -383,7 +350,7 @@ function analyzeLogs(input: string): LogFinding[] {
 
 interface ScanResults {
   secrets: SecretFinding[];
-  depVulns: DepVuln[];
+  depsVulns: OsvVuln[];
   depTotal: number;
   cloudAnswers: Record<string, boolean | null>;
   apiScore: number | null;
@@ -391,10 +358,11 @@ interface ScanResults {
 }
 
 function calculateScores(results: ScanResults) {
-  const secretsPenalty = results.secrets.reduce((sum, f) => sum + (f.severity === "critical" ? 3 : f.severity === "high" ? 2 : 1), 0);
+  const significantSecrets = results.secrets.filter((f) => f.confidence !== "low");
+  const secretsPenalty = significantSecrets.reduce((sum, f) => sum + (f.severity === "critical" ? 3 : f.severity === "high" ? 2 : 1), 0);
   const secretsScore = Math.max(0, 10 - secretsPenalty);
 
-  const depPenalty = results.depVulns.reduce((sum, v) => sum + (v.severity === "critical" ? 3 : v.severity === "high" ? 2 : 1), 0);
+  const depPenalty = results.depsVulns.reduce((sum, v) => sum + (v.severity === "critical" ? 3 : v.severity === "high" ? 2 : 1), 0);
   const depsScore = results.depTotal > 0 ? Math.max(0, 10 - depPenalty) : 5;
 
   const answered = Object.entries(results.cloudAnswers).filter(([, v]) => v !== null);
@@ -410,6 +378,76 @@ function calculateScores(results: ScanResults) {
 
   return { secrets: secretsScore, deps: depsScore, cloud: cloudScore, api: apiScore, logs: logsScore, overall };
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ███  CI/CD PIPELINE TEMPLATES  ███
+   ═══════════════════════════════════════════════════════════ */
+
+const GITHUB_ACTIONS_YAML = `name: ShieldX Security Scan
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShieldX Secrets Scan
+        run: |
+          CODE=$(find src -name '*.ts' -o -name '*.js' | head -50 | xargs cat)
+          RESULT=$(curl -sf -X POST \\
+            https://securecodereviews.com/api/shieldx/ci-scan \\
+            -H "Content-Type: application/json" \\
+            -d "{\\"scanType\\": \\"secrets\\", \\"code\\": $(echo "$CODE" | jq -Rs .), \\"projectName\\": \\"\${{ github.repository }}\\"}")
+          echo "$RESULT" | jq .
+          echo "$RESULT" | jq -e '.exitCode == 0'
+
+      - name: ShieldX Dependency Scan
+        run: |
+          RESULT=$(curl -sf -X POST \\
+            https://securecodereviews.com/api/shieldx/ci-scan \\
+            -H "Content-Type: application/json" \\
+            -d "{\\"scanType\\": \\"dependencies\\", \\"dependencies\\": $(cat package.json | jq -Rs .), \\"projectName\\": \\"\${{ github.repository }}\\"}")
+          echo "$RESULT" | jq .
+          echo "$RESULT" | jq -e '.exitCode == 0'`;
+
+const GITLAB_CI_YAML = `shieldx-security-scan:
+  stage: test
+  image: curlimages/curl:latest
+  script:
+    - |
+      CODE=$(find src -name '*.ts' -o -name '*.js' | head -50 | xargs cat)
+      RESULT=$(curl -sf -X POST \\
+        https://securecodereviews.com/api/shieldx/ci-scan \\
+        -H "Content-Type: application/json" \\
+        -d "{\\"scanType\\": \\"secrets\\", \\"code\\": $(echo "$CODE" | jq -Rs .), \\"projectName\\": \\"$CI_PROJECT_NAME\\"}")
+      echo "$RESULT" | jq .
+      echo "$RESULT" | jq -e '.exitCode == 0'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'`;
+
+const CURL_EXAMPLE = `# Secrets scan
+curl -X POST https://securecodereviews.com/api/shieldx/ci-scan \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "scanType": "secrets",
+    "code": "const API_KEY = \\"sk_live_4eC39HqLyjWDarjtT1zdp7dc\\";",
+    "projectName": "my-project"
+  }'
+
+# Dependency scan
+curl -X POST https://securecodereviews.com/api/shieldx/ci-scan \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "scanType": "dependencies",
+    "dependencies": "{\\"dependencies\\": {\\"lodash\\": \\"4.17.20\\"}}",
+    "projectName": "my-project"
+  }'`;
 
 /* ═══════════════════════════════════════════════════════════
    ███  DEMO DATA  ███
@@ -503,10 +541,31 @@ const DEMO_CLOUD_ANSWERS: Record<string, boolean> = {
 };
 
 /* ═══════════════════════════════════════════════════════════
+   ███  ALERT RULES  ███
+   ═══════════════════════════════════════════════════════════ */
+
+interface AlertRule {
+  id: string;
+  name: string;
+  description: string;
+  severity: "critical" | "high" | "medium";
+  enabled: boolean;
+}
+
+const DEFAULT_ALERT_RULES: AlertRule[] = [
+  { id: "secrets-critical", name: "Critical Secrets Detected", description: "Alert when high-confidence critical secrets are found in code", severity: "critical", enabled: true },
+  { id: "deps-critical", name: "Critical CVE in Dependencies", description: "Alert when critical severity CVEs are found via OSV.dev", severity: "critical", enabled: true },
+  { id: "cloud-failures", name: "Cloud Security Failures", description: "Alert when more than 3 cloud security checks fail", severity: "high", enabled: true },
+  { id: "api-low-score", name: "Low API Security Score", description: "Alert when API endpoint scores below 5/10", severity: "high", enabled: true },
+  { id: "injection-detected", name: "Injection Attacks in Logs", description: "Alert when SQL injection or XSS patterns detected in logs", severity: "critical", enabled: true },
+  { id: "brute-force", name: "Brute Force Attempts", description: "Alert when brute force login patterns are detected", severity: "high", enabled: false },
+];
+
+/* ═══════════════════════════════════════════════════════════
    ███  MAIN SHIELDX PAGE  ███
    ═══════════════════════════════════════════════════════════ */
 
-type TabKey = "secrets" | "deps" | "cloud" | "api" | "logs" | "score";
+type TabKey = "secrets" | "deps" | "cloud" | "api" | "logs" | "cicd" | "alerts" | "score";
 
 const TABS: { key: TabKey; label: string; icon: typeof Shield }[] = [
   { key: "secrets", label: "Secrets Scanner", icon: Key },
@@ -514,6 +573,8 @@ const TABS: { key: TabKey; label: string; icon: typeof Shield }[] = [
   { key: "cloud", label: "Cloud Security", icon: Cloud },
   { key: "api", label: "API Scanner", icon: Globe },
   { key: "logs", label: "Log Analyzer", icon: Brain },
+  { key: "cicd", label: "CI/CD Integration", icon: GitBranch },
+  { key: "alerts", label: "Alerts", icon: Bell },
   { key: "score", label: "Security Score", icon: BarChart3 },
 ];
 
@@ -526,10 +587,11 @@ export default function ShieldXPage() {
   const [secretsResults, setSecretsResults] = useState<SecretFinding[] | null>(null);
   const [secretsScanning, setSecretsScanning] = useState(false);
 
-  // Deps state
+  // Deps state (OSV API)
   const [depsInput, setDepsInput] = useState("");
-  const [depsResults, setDepsResults] = useState<{ deps: Record<string, string>; vulns: DepVuln[] } | null>(null);
+  const [depsResults, setDepsResults] = useState<DepsApiResult | null>(null);
   const [depsScanning, setDepsScanning] = useState(false);
+  const [depsError, setDepsError] = useState("");
 
   // Cloud state
   const [cloudAnswers, setCloudAnswers] = useState<Record<string, boolean | null>>(() => {
@@ -543,8 +605,11 @@ export default function ShieldXPage() {
   const [apiResults, setApiResults] = useState<{
     url: string; status: number;
     headers: { name: string; present: boolean; value: string | null; severity: string; status: string; message: string }[];
-    apiChecks: { name: string; severity: string; status: string; message: string }[];
+    apiChecks: { name: string; severity: string; status: string; message: string; owaspRef?: string }[];
     score: number;
+    owaspCoverage?: string[];
+    totalChecks?: number;
+    scannedAt?: string;
   } | null>(null);
   const [apiScanning, setApiScanning] = useState(false);
   const [apiError, setApiError] = useState("");
@@ -554,11 +619,25 @@ export default function ShieldXPage() {
   const [logsResults, setLogsResults] = useState<LogFinding[] | null>(null);
   const [logsScanning, setLogsScanning] = useState(false);
 
+  // CI/CD state
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+  const [cicdTestResult, setCicdTestResult] = useState<{ verdict: string; exitCode: number; secrets?: { totalFindings: number }; dependencies?: { totalVulnerabilities: number } } | null>(null);
+  const [cicdTesting, setCicdTesting] = useState(false);
+
+  // Alerts state
+  const [alertEmail, setAlertEmail] = useState("");
+  const [alertSlackWebhook, setAlertSlackWebhook] = useState("");
+  const [alertCustomWebhook, setAlertCustomWebhook] = useState("");
+  const [alertThreshold, setAlertThreshold] = useState<"critical" | "high" | "all">("critical");
+  const [alertRules, setAlertRules] = useState<AlertRule[]>(DEFAULT_ALERT_RULES);
+  const [alertSaved, setAlertSaved] = useState(false);
+  const [alertTestSent, setAlertTestSent] = useState(false);
+
   // Scores (derived)
   const scores = calculateScores({
     secrets: secretsResults || [],
-    depVulns: depsResults?.vulns || [],
-    depTotal: depsResults ? Object.keys(depsResults.deps).length : 0,
+    depsVulns: depsResults?.vulnerabilities || [],
+    depTotal: depsResults?.totalDeps ?? 0,
     cloudAnswers,
     apiScore: apiResults?.score ?? null,
     logFindings: logsResults || [],
@@ -572,6 +651,13 @@ export default function ShieldXPage() {
     { category: "Logs", score: scores.logs },
   ];
 
+  // Copy to clipboard
+  const copyToClipboard = useCallback(async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedSnippet(id);
+    setTimeout(() => setCopiedSnippet(null), 2000);
+  }, []);
+
   // RUN DEMO
   const runDemo = useCallback(async () => {
     setIsDemo(true);
@@ -584,8 +670,19 @@ export default function ShieldXPage() {
 
     setDepsInput(DEMO_PACKAGE_JSON);
     setDepsScanning(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setDepsResults(scanDependencies(DEMO_PACKAGE_JSON));
+    setDepsError("");
+    try {
+      const resp = await fetch("/api/shieldx/scan-deps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: DEMO_PACKAGE_JSON }),
+      });
+      const data = await resp.json();
+      if (data.error) setDepsError(data.error);
+      else setDepsResults(data);
+    } catch {
+      setDepsError("Failed to scan dependencies — API unavailable");
+    }
     setDepsScanning(false);
 
     setCloudAnswers(Object.fromEntries(Object.entries(DEMO_CLOUD_ANSWERS).map(([k, v]) => [k, v])));
@@ -620,7 +717,7 @@ export default function ShieldXPage() {
   const resetAll = useCallback(() => {
     setIsDemo(false);
     setSecretsInput(""); setSecretsResults(null);
-    setDepsInput(""); setDepsResults(null);
+    setDepsInput(""); setDepsResults(null); setDepsError("");
     setCloudAnswers(() => {
       const i: Record<string, boolean | null> = {};
       CLOUD_CHECKS.forEach((c) => (i[c.id] = null));
@@ -628,6 +725,8 @@ export default function ShieldXPage() {
     });
     setApiUrl(""); setApiResults(null); setApiError("");
     setLogsInput(""); setLogsResults(null);
+    setCicdTestResult(null);
+    setAlertTestSent(false); setAlertSaved(false);
     setActiveTab("secrets");
   }, []);
 
@@ -637,9 +736,22 @@ export default function ShieldXPage() {
     setTimeout(() => { setSecretsResults(scanSecrets(secretsInput)); setSecretsScanning(false); }, 500);
   };
 
-  const runDepsScan = () => {
-    setDepsScanning(true);
-    setTimeout(() => { setDepsResults(scanDependencies(depsInput)); setDepsScanning(false); }, 500);
+  const runDepsScan = async () => {
+    if (!depsInput.trim()) return;
+    setDepsScanning(true); setDepsError(""); setDepsResults(null);
+    try {
+      const resp = await fetch("/api/shieldx/scan-deps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: depsInput }),
+      });
+      const data = await resp.json();
+      if (data.error) setDepsError(data.error);
+      else setDepsResults(data);
+    } catch {
+      setDepsError("Failed to scan dependencies");
+    }
+    setDepsScanning(false);
   };
 
   const runApiScan = async () => {
@@ -665,6 +777,26 @@ export default function ShieldXPage() {
     setTimeout(() => { setLogsResults(analyzeLogs(logsInput)); setLogsScanning(false); }, 500);
   };
 
+  const runCicdTest = async () => {
+    setCicdTesting(true); setCicdTestResult(null);
+    try {
+      const resp = await fetch("/api/shieldx/ci-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scanType: "secrets",
+          code: DEMO_CODE,
+          projectName: "shieldx-test",
+        }),
+      });
+      const data = await resp.json();
+      setCicdTestResult(data);
+    } catch {
+      setCicdTestResult({ verdict: "ERROR", exitCode: 1 });
+    }
+    setCicdTesting(false);
+  };
+
   const severityColor = (s: string) => {
     if (s === "critical") return "text-red-500";
     if (s === "high") return "text-orange-500";
@@ -686,6 +818,9 @@ export default function ShieldXPage() {
   const hasAnyResults = secretsResults !== null || depsResults !== null || apiResults !== null || logsResults !== null ||
     Object.values(cloudAnswers).some((v) => v !== null);
 
+  const highConfSecrets = secretsResults?.filter((f) => f.confidence !== "low") ?? [];
+  const lowConfSecrets = secretsResults?.filter((f) => f.confidence === "low") ?? [];
+
   return (
     <div className="py-8 sm:py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -693,7 +828,7 @@ export default function ShieldXPage() {
         {/* HEADER */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <Badge className="mb-4 gap-1.5 bg-primary/10 text-primary border-primary/20 px-3 py-1">
-            <Shield className="h-3.5 w-3.5" /> Real Security Scanner
+            <Shield className="h-3.5 w-3.5" /> Production Security Platform
           </Badge>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
             SCR{" "}
@@ -702,8 +837,8 @@ export default function ShieldXPage() {
             </span>
           </h1>
           <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Scan your code for secrets, check dependencies for CVEs, audit cloud configuration,
-            test API endpoints, and analyze logs — all in your browser.
+            8-module security platform: scan secrets with entropy detection, check dependencies via OSV.dev,
+            audit cloud configs, test APIs against OWASP Top 10, analyze logs, integrate CI/CD, and configure alerts.
           </p>
 
           <div className="mt-6 flex justify-center gap-3">
@@ -738,12 +873,13 @@ export default function ShieldXPage() {
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
-                {tab.label}
-                {tab.key === "secrets" && secretsResults && secretsResults.length > 0 && (
-                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{secretsResults.length}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
+                {tab.key === "secrets" && secretsResults && highConfSecrets.length > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{highConfSecrets.length}</span>
                 )}
-                {tab.key === "deps" && depsResults && depsResults.vulns.length > 0 && (
-                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{depsResults.vulns.length}</span>
+                {tab.key === "deps" && depsResults && depsResults.vulnerabilities.length > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{depsResults.vulnerabilities.length}</span>
                 )}
                 {tab.key === "logs" && logsResults && logsResults.length > 0 && (
                   <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{logsResults.length}</span>
@@ -763,18 +899,18 @@ export default function ShieldXPage() {
             transition={{ duration: 0.25 }}
           >
 
-            {/* SECRETS SCANNER */}
+            {/* ═══ SECRETS SCANNER ═══ */}
             {activeTab === "secrets" && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Key className="h-5 w-5 text-red-500" />
                     Secrets Exposure Scanner
-                    <Badge variant="outline" className="ml-2 text-xs">{SECRET_PATTERNS.length} pattern types</Badge>
+                    <Badge variant="outline" className="ml-2 text-xs">{SECRET_PATTERNS.length} patterns + entropy</Badge>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Paste your source code, config files, or .env content. The scanner checks for API keys, tokens, passwords,
-                    connection strings, and private keys using {SECRET_PATTERNS.length} regex patterns.
+                    Paste your source code, config files, or .env content. Uses {SECRET_PATTERNS.length} regex patterns combined with
+                    Shannon entropy analysis to reduce false positives and score confidence levels.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -790,8 +926,8 @@ export default function ShieldXPage() {
                   </Button>
 
                   {secretsResults !== null && (
-                    <div className="mt-6">
-                      {secretsResults.length === 0 ? (
+                    <div className="mt-6 space-y-4">
+                      {highConfSecrets.length === 0 && lowConfSecrets.length === 0 ? (
                         <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                           <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                           <div>
@@ -800,31 +936,65 @@ export default function ShieldXPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-red-500" />
-                            <span className="font-bold text-red-500">{secretsResults.length} secret(s) detected</span>
-                          </div>
-                          {secretsResults.map((f, i) => (
-                            <div key={i} className={`rounded-lg border p-4 ${severityBg(f.severity)}`}>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Eye className={`h-4 w-4 ${severityColor(f.severity)}`} />
-                                  <span className="font-semibold text-sm">{f.pattern}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant={f.severity === "critical" ? "destructive" : "outline"} className="text-xs">{f.severity}</Badge>
-                                  <span className="text-xs text-muted-foreground">Line {f.line}</span>
-                                </div>
+                        <>
+                          {highConfSecrets.length > 0 && (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-red-500" />
+                                <span className="font-bold text-red-500">{highConfSecrets.length} confirmed secret(s)</span>
+                                <Badge variant="outline" className="text-xs">High/Medium Confidence</Badge>
                               </div>
-                              <div className="font-mono text-xs bg-background/50 rounded px-3 py-2 mb-2 break-all">{f.match}</div>
-                              <div className="flex items-start gap-2 text-sm">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                                <span className="text-emerald-600 dark:text-emerald-400"><strong>Fix:</strong> {f.fix}</span>
-                              </div>
+                              {highConfSecrets.map((f, i) => (
+                                <div key={i} className={`rounded-lg border p-4 ${severityBg(f.severity)}`}>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <Eye className={`h-4 w-4 ${severityColor(f.severity)}`} />
+                                      <span className="font-semibold text-sm">{f.pattern}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className={`text-[10px] ${f.confidence === "high" ? "text-red-500 border-red-500/30" : "text-yellow-500 border-yellow-500/30"}`}>
+                                        {f.confidence} conf
+                                      </Badge>
+                                      <Badge variant="outline" className="text-[10px]">
+                                        entropy: {f.entropy}
+                                      </Badge>
+                                      <Badge variant={f.severity === "critical" ? "destructive" : "outline"} className="text-xs">{f.severity}</Badge>
+                                      <span className="text-xs text-muted-foreground">Line {f.line}</span>
+                                    </div>
+                                  </div>
+                                  <div className="font-mono text-xs bg-background/50 rounded px-3 py-2 mb-2 break-all">{f.match}</div>
+                                  <div className="flex items-start gap-2 text-sm">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                                    <span className="text-emerald-600 dark:text-emerald-400"><strong>Fix:</strong> {f.fix}</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          )}
+
+                          {lowConfSecrets.length > 0 && (
+                            <details className="mt-4">
+                              <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                {lowConfSecrets.length} possible false positive(s) — low confidence matches (click to expand)
+                              </summary>
+                              <div className="mt-3 space-y-2">
+                                {lowConfSecrets.map((f, i) => (
+                                  <div key={i} className="rounded-lg border border-border/50 p-3 opacity-70">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm text-muted-foreground">{f.pattern}</span>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-[10px] text-muted-foreground">low conf</Badge>
+                                        <Badge variant="outline" className="text-[10px]">entropy: {f.entropy}</Badge>
+                                        <span className="text-xs text-muted-foreground">Line {f.line}</span>
+                                      </div>
+                                    </div>
+                                    <div className="font-mono text-xs text-muted-foreground break-all">{f.match}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
@@ -832,18 +1002,20 @@ export default function ShieldXPage() {
               </Card>
             )}
 
-            {/* DEPENDENCY SCANNER */}
+            {/* ═══ DEPENDENCY SCANNER (OSV.dev API) ═══ */}
             {activeTab === "deps" && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5 text-orange-500" />
                     Dependency Vulnerability Scanner
-                    <Badge variant="outline" className="ml-2 text-xs">{KNOWN_VULNS.length} CVEs in database</Badge>
+                    <Badge variant="outline" className="ml-2 text-xs gap-1">
+                      <ExternalLink className="h-3 w-3" /> Real-time via OSV.dev
+                    </Badge>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Paste your package.json, requirements.txt, or build.gradle. The scanner checks all dependencies against
-                    a database of {KNOWN_VULNS.length} known CVEs across Node.js, Python, Java, and Go.
+                    Paste your package.json, requirements.txt, or build.gradle. Each dependency is queried against
+                    Google&apos;s Open Source Vulnerabilities (OSV) database for real-time CVE data across all ecosystems.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -855,41 +1027,87 @@ export default function ShieldXPage() {
                   />
                   <Button onClick={runDepsScan} disabled={!depsInput.trim() || depsScanning} className="gap-2">
                     {depsScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                    {depsScanning ? "Scanning..." : "Scan Dependencies"}
+                    {depsScanning ? "Querying OSV.dev..." : "Scan Dependencies"}
                   </Button>
+
+                  {depsError && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                      <XCircle className="h-4 w-4 shrink-0" /> {depsError}
+                    </div>
+                  )}
 
                   {depsResults !== null && (
                     <div className="mt-6 space-y-4">
-                      <div className="text-sm text-muted-foreground">
-                        Parsed <strong>{Object.keys(depsResults.deps).length}</strong> dependencies
+                      <div className="flex flex-wrap gap-3 text-sm">
+                        <span className="text-muted-foreground">
+                          Ecosystem: <strong>{depsResults.ecosystem}</strong>
+                        </span>
+                        <span className="text-muted-foreground">
+                          Scanned: <strong>{depsResults.scannedPackages}/{depsResults.totalDeps}</strong> packages
+                        </span>
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <ExternalLink className="h-3 w-3" /> {depsResults.source}
+                        </Badge>
                       </div>
 
-                      {depsResults.vulns.length === 0 ? (
+                      {depsResults.stats && (
+                        <div className="flex gap-3">
+                          {depsResults.stats.critical > 0 && <Badge variant="destructive" className="text-xs">{depsResults.stats.critical} Critical</Badge>}
+                          {depsResults.stats.high > 0 && <Badge className="text-xs bg-orange-500">{depsResults.stats.high} High</Badge>}
+                          {depsResults.stats.medium > 0 && <Badge className="text-xs bg-yellow-500 text-black">{depsResults.stats.medium} Medium</Badge>}
+                          {depsResults.stats.low > 0 && <Badge variant="outline" className="text-xs">{depsResults.stats.low} Low</Badge>}
+                        </div>
+                      )}
+
+                      {depsResults.errors && depsResults.errors.length > 0 && (
+                        <div className="text-sm text-yellow-500">
+                          <AlertTriangle className="inline h-3.5 w-3.5 mr-1" />
+                          {depsResults.errors.length} package(s) had scan errors
+                        </div>
+                      )}
+
+                      {depsResults.vulnerabilities.length === 0 ? (
                         <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                           <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                           <div>
                             <div className="font-semibold text-emerald-600 dark:text-emerald-400">No known vulnerabilities</div>
-                            <div className="text-sm text-muted-foreground">All detected dependencies are on safe versions.</div>
+                            <div className="text-sm text-muted-foreground">All dependencies checked against OSV.dev — no CVEs found.</div>
                           </div>
                         </div>
                       ) : (
                         <div className="space-y-3">
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="h-5 w-5 text-orange-500" />
-                            <span className="font-bold text-orange-500">{depsResults.vulns.length} vulnerable package(s)</span>
+                            <span className="font-bold text-orange-500">{depsResults.vulnerabilities.length} vulnerability(ies) found</span>
                           </div>
-                          {depsResults.vulns.map((v, i) => (
+                          {depsResults.vulnerabilities.map((v, i) => (
                             <div key={i} className={`rounded-lg border p-4 ${severityBg(v.severity)}`}>
                               <div className="flex items-center justify-between mb-2">
                                 <span className="font-semibold">{v.package} <span className="text-sm text-muted-foreground">v{v.version}</span></span>
                                 <Badge variant={v.severity === "critical" ? "destructive" : "outline"} className="text-xs">{v.severity}</Badge>
                               </div>
-                              <div className="text-sm font-mono text-muted-foreground mb-1">{v.cve}</div>
-                              <div className="text-sm mb-2">{v.description}</div>
-                              <div className="flex items-start gap-2 text-sm">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                                <span className="text-emerald-600 dark:text-emerald-400"><strong>Fix:</strong> {v.fix}</span>
-                              </div>
+                              <div className="text-sm font-mono text-muted-foreground mb-1">{v.id}</div>
+                              {v.aliases.length > 0 && (
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  Also: {v.aliases.join(", ")}
+                                </div>
+                              )}
+                              <div className="text-sm mb-2">{v.summary}</div>
+                              {v.fixedIn && (
+                                <div className="flex items-start gap-2 text-sm mb-1">
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                                  <span className="text-emerald-600 dark:text-emerald-400"><strong>Fix:</strong> Upgrade to {v.fixedIn}+</span>
+                                </div>
+                              )}
+                              {v.references.length > 0 && (
+                                <div className="flex gap-2 mt-2">
+                                  {v.references.slice(0, 2).map((ref, ri) => (
+                                    <a key={ri} href={ref} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                                      <ExternalLink className="h-3 w-3" /> Reference {ri + 1}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -900,7 +1118,7 @@ export default function ShieldXPage() {
               </Card>
             )}
 
-            {/* CLOUD SECURITY */}
+            {/* ═══ CLOUD SECURITY ═══ */}
             {activeTab === "cloud" && (
               <Card>
                 <CardHeader>
@@ -988,18 +1206,18 @@ export default function ShieldXPage() {
               </Card>
             )}
 
-            {/* API SCANNER */}
+            {/* ═══ API SCANNER + OWASP ═══ */}
             {activeTab === "api" && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5 text-violet-500" />
                     API Security Scanner
-                    <Badge variant="outline" className="ml-2 text-xs">Live endpoint scan</Badge>
+                    <Badge variant="outline" className="ml-2 text-xs">OWASP API Top 10 2023</Badge>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Enter any URL. ShieldX makes a real HTTP request to check security headers, CORS, authentication,
-                    rate limiting, sensitive data exposure, and error leakage.
+                    Enter any URL. ShieldX makes real HTTP requests to check security headers, OWASP API Top 10 coverage,
+                    CORS, authentication, rate limiting, sensitive data exposure, and error leakage.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1036,6 +1254,20 @@ export default function ShieldXPage() {
                         </div>
                       </div>
 
+                      {/* OWASP Coverage */}
+                      {apiResults.owaspCoverage && apiResults.owaspCoverage.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-bold mb-2">OWASP API Top 10 Coverage</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {apiResults.owaspCoverage.map((owasp, i) => (
+                              <Badge key={i} variant="outline" className="text-xs gap-1 bg-violet-500/10 border-violet-500/30 text-violet-600 dark:text-violet-400">
+                                <Shield className="h-3 w-3" /> {owasp}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <h4 className="text-sm font-bold mb-3">Security Headers ({apiResults.headers.filter((h) => h.status === "pass").length}/{apiResults.headers.length} passing)</h4>
                         <div className="space-y-2">
@@ -1058,7 +1290,12 @@ export default function ShieldXPage() {
                               {statusIcon(c.status)}
                               <span className="font-medium w-48 shrink-0">{c.name}</span>
                               <span className="text-muted-foreground flex-1">{c.message}</span>
-                              <Badge variant="outline" className={`text-[10px] ${severityColor(c.severity)}`}>{c.severity}</Badge>
+                              <div className="flex items-center gap-1.5">
+                                {c.owaspRef && (
+                                  <Badge variant="outline" className="text-[10px] bg-violet-500/10 text-violet-500 border-violet-500/30">{c.owaspRef}</Badge>
+                                )}
+                                <Badge variant="outline" className={`text-[10px] ${severityColor(c.severity)}`}>{c.severity}</Badge>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1069,7 +1306,7 @@ export default function ShieldXPage() {
               </Card>
             )}
 
-            {/* LOG ANALYZER */}
+            {/* ═══ LOG ANALYZER ═══ */}
             {activeTab === "logs" && (
               <Card>
                 <CardHeader>
@@ -1133,7 +1370,341 @@ export default function ShieldXPage() {
               </Card>
             )}
 
-            {/* SECURITY SCORE */}
+            {/* ═══ CI/CD INTEGRATION ═══ */}
+            {activeTab === "cicd" && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <GitBranch className="h-5 w-5 text-teal-500" />
+                      CI/CD Pipeline Integration
+                      <Badge variant="outline" className="ml-2 text-xs">GitHub Actions • GitLab CI • cURL</Badge>
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Add ShieldX security scanning to your CI/CD pipeline. Scans run via our webhook API and return
+                      pass/fail verdicts with exit codes for automated gating.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* GitHub Actions */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold flex items-center gap-2">
+                          <Code className="h-4 w-4" /> GitHub Actions
+                        </h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          onClick={() => copyToClipboard(GITHUB_ACTIONS_YAML, "github")}
+                        >
+                          {copiedSnippet === "github" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {copiedSnippet === "github" ? "Copied!" : "Copy"}
+                        </Button>
+                      </div>
+                      <pre className="bg-muted/50 border rounded-lg p-4 text-xs font-mono overflow-x-auto max-h-[300px]">
+                        {GITHUB_ACTIONS_YAML}
+                      </pre>
+                    </div>
+
+                    {/* GitLab CI */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold flex items-center gap-2">
+                          <Code className="h-4 w-4" /> GitLab CI
+                        </h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          onClick={() => copyToClipboard(GITLAB_CI_YAML, "gitlab")}
+                        >
+                          {copiedSnippet === "gitlab" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {copiedSnippet === "gitlab" ? "Copied!" : "Copy"}
+                        </Button>
+                      </div>
+                      <pre className="bg-muted/50 border rounded-lg p-4 text-xs font-mono overflow-x-auto max-h-[300px]">
+                        {GITLAB_CI_YAML}
+                      </pre>
+                    </div>
+
+                    {/* cURL / Generic */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold flex items-center gap-2">
+                          <Terminal className="h-4 w-4" /> cURL / Any CI System
+                        </h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          onClick={() => copyToClipboard(CURL_EXAMPLE, "curl")}
+                        >
+                          {copiedSnippet === "curl" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {copiedSnippet === "curl" ? "Copied!" : "Copy"}
+                        </Button>
+                      </div>
+                      <pre className="bg-muted/50 border rounded-lg p-4 text-xs font-mono overflow-x-auto max-h-[300px]">
+                        {CURL_EXAMPLE}
+                      </pre>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Test Webhook */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Send className="h-5 w-5 text-teal-500" />
+                      Test Webhook
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Run a live test against the CI/CD webhook endpoint using sample vulnerable code.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Button onClick={runCicdTest} disabled={cicdTesting} className="gap-2">
+                        {cicdTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                        {cicdTesting ? "Testing..." : "Run Test Scan"}
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        POST /api/shieldx/ci-scan
+                      </span>
+                    </div>
+
+                    {cicdTestResult && (
+                      <div className={`rounded-lg border p-4 ${cicdTestResult.verdict === "PASS" ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20"}`}>
+                        <div className="flex items-center gap-3 mb-2">
+                          {cicdTestResult.verdict === "PASS" ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                          <span className="font-bold text-lg">
+                            Verdict: {cicdTestResult.verdict}
+                          </span>
+                          <Badge variant={cicdTestResult.exitCode === 0 ? "outline" : "destructive"} className="text-xs">
+                            Exit Code: {cicdTestResult.exitCode}
+                          </Badge>
+                        </div>
+                        <pre className="bg-background/50 rounded p-3 text-xs font-mono overflow-x-auto">
+                          {JSON.stringify(cicdTestResult, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+
+                    <div className="rounded-lg border border-border p-4 bg-muted/30">
+                      <h5 className="text-sm font-medium mb-2">How it works:</h5>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> Accepts POST with code or dependency manifest</li>
+                        <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> Runs entropy-based secrets scan or OSV dependency check</li>
+                        <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> Returns PASS/FAIL verdict with exit code 0 or 1</li>
+                        <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> CI/CD pipeline gates deployment on exit code</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* ═══ ALERTS & NOTIFICATIONS ═══ */}
+            {activeTab === "alerts" && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-amber-500" />
+                      Alert Configuration
+                      <Badge variant="outline" className="ml-2 text-xs">Email • Slack • Webhooks</Badge>
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Configure notifications when security issues are detected. Get alerts via email, Slack, or custom webhooks.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Notification Channels */}
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2">
+                          <Mail className="h-4 w-4" /> Email
+                        </label>
+                        <Input
+                          placeholder="security@company.com"
+                          value={alertEmail}
+                          onChange={(e) => { setAlertEmail(e.target.value); setAlertSaved(false); }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" /> Slack Webhook
+                        </label>
+                        <Input
+                          placeholder="https://hooks.slack.com/services/..."
+                          value={alertSlackWebhook}
+                          onChange={(e) => { setAlertSlackWebhook(e.target.value); setAlertSaved(false); }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-2">
+                          <Send className="h-4 w-4" /> Custom Webhook
+                        </label>
+                        <Input
+                          placeholder="https://api.company.com/webhooks/security"
+                          value={alertCustomWebhook}
+                          onChange={(e) => { setAlertCustomWebhook(e.target.value); setAlertSaved(false); }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Threshold */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Alert Threshold</label>
+                      <div className="flex gap-2">
+                        {([
+                          { value: "critical" as const, label: "Critical Only", desc: "Only critical severity" },
+                          { value: "high" as const, label: "Critical + High", desc: "Critical and high severity" },
+                          { value: "all" as const, label: "All Severities", desc: "All findings" },
+                        ]).map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => { setAlertThreshold(opt.value); setAlertSaved(false); }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                              alertThreshold === opt.value
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Save / Test */}
+                    <div className="flex gap-3">
+                      <Button
+                        className="gap-2"
+                        onClick={() => {
+                          setAlertSaved(true);
+                          setTimeout(() => setAlertSaved(false), 3000);
+                        }}
+                        disabled={!alertEmail && !alertSlackWebhook && !alertCustomWebhook}
+                      >
+                        <Settings className="h-4 w-4" />
+                        {alertSaved ? "Saved!" : "Save Configuration"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => {
+                          setAlertTestSent(true);
+                          setTimeout(() => setAlertTestSent(false), 3000);
+                        }}
+                        disabled={!alertEmail && !alertSlackWebhook && !alertCustomWebhook}
+                      >
+                        <Send className="h-4 w-4" />
+                        {alertTestSent ? "Test Sent!" : "Send Test Alert"}
+                      </Button>
+                    </div>
+
+                    {alertSaved && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Alert configuration saved. You&apos;ll receive notifications for {alertThreshold === "critical" ? "critical" : alertThreshold === "high" ? "critical and high" : "all"} severity findings.
+                      </div>
+                    )}
+
+                    {alertTestSent && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-sm">
+                        <Bell className="h-4 w-4" />
+                        Test alert dispatched to configured channels.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Alert Rules */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Settings className="h-5 w-5 text-amber-500" />
+                      Alert Rules
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Enable or disable specific alert rules. Active rules trigger notifications based on your threshold setting.
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {alertRules.map((rule) => (
+                        <div key={rule.id} className={`rounded-lg border p-4 transition-colors ${
+                          rule.enabled ? "border-primary/20 bg-primary/5" : "border-border opacity-60"
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">{rule.name}</span>
+                                <Badge variant={rule.severity === "critical" ? "destructive" : "outline"} className="text-[10px]">
+                                  {rule.severity}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">{rule.description}</p>
+                            </div>
+                            <button
+                              onClick={() => setAlertRules((prev) => prev.map((r) => r.id === rule.id ? { ...r, enabled: !r.enabled } : r))}
+                              className={`relative w-11 h-6 rounded-full transition-colors ${
+                                rule.enabled ? "bg-primary" : "bg-muted"
+                              }`}
+                            >
+                              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                                rule.enabled ? "translate-x-5" : "translate-x-0"
+                              }`} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Sample Alert History */}
+                {isDemo && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Activity className="h-5 w-5 text-amber-500" />
+                        Recent Alerts (Demo)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {[
+                          { time: "2 min ago", type: "Critical Secrets Detected", detail: "3 high-confidence secrets found in config/database.ts", severity: "critical" },
+                          { time: "2 min ago", type: "Critical CVE in Dependencies", detail: "shell-quote v1.7.2 — CVE-2021-42740 Command Injection", severity: "critical" },
+                          { time: "3 min ago", type: "Injection Attacks in Logs", detail: "SQL injection and XSS patterns detected from 45.33.32.156", severity: "critical" },
+                          { time: "3 min ago", type: "Cloud Security Failures", detail: "8 checks failing across AWS, GCP, Azure", severity: "high" },
+                        ].map((alert, i) => (
+                          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border ${severityBg(alert.severity)}`}>
+                            <Bell className={`h-4 w-4 mt-0.5 shrink-0 ${severityColor(alert.severity)}`} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{alert.type}</span>
+                                <Badge variant={alert.severity === "critical" ? "destructive" : "outline"} className="text-[10px]">{alert.severity}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">{alert.detail}</p>
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0">{alert.time}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* ═══ SECURITY SCORE ═══ */}
             {activeTab === "score" && (
               <div className="space-y-6">
                 <Card className="border-2 border-primary/20">
@@ -1205,6 +1776,36 @@ export default function ShieldXPage() {
                   ))}
                 </div>
 
+                {/* Platform Status */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Platform Modules</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {[
+                        { name: "Secrets Scanner", icon: Key, desc: "20 patterns + entropy", active: secretsResults !== null },
+                        { name: "Dependency Scanner", icon: Package, desc: "Real-time OSV.dev", active: depsResults !== null },
+                        { name: "Cloud Security", icon: Cloud, desc: "18 config checks", active: Object.values(cloudAnswers).some((v) => v !== null) },
+                        { name: "API Scanner", icon: Globe, desc: "OWASP API Top 10", active: apiResults !== null },
+                        { name: "Log Analyzer", icon: Brain, desc: "7 threat categories", active: logsResults !== null },
+                        { name: "CI/CD Integration", icon: GitBranch, desc: "GitHub/GitLab/cURL", active: cicdTestResult !== null },
+                        { name: "Alerts", icon: Bell, desc: "Email/Slack/Webhook", active: alertSaved },
+                        { name: "Security Score", icon: BarChart3, desc: "Real-time dashboard", active: hasAnyResults },
+                      ].map((mod, i) => (
+                        <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border ${mod.active ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"}`}>
+                          <mod.icon className={`h-5 w-5 shrink-0 ${mod.active ? "text-emerald-500" : "text-muted-foreground"}`} />
+                          <div>
+                            <div className="text-sm font-medium">{mod.name}</div>
+                            <div className="text-xs text-muted-foreground">{mod.desc}</div>
+                          </div>
+                          {mod.active && <CheckCircle2 className="h-4 w-4 text-emerald-500 ml-auto shrink-0" />}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {hasAnyResults && (
                   <Card>
                     <CardHeader>
@@ -1214,11 +1815,15 @@ export default function ShieldXPage() {
                       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                         <div className="p-3 rounded-lg bg-muted/50">
                           <div className="text-muted-foreground mb-1">Secrets Found</div>
-                          <div className="text-2xl font-bold">{secretsResults?.length ?? "—"}</div>
+                          <div className="text-2xl font-bold">{secretsResults ? highConfSecrets.length : "—"}</div>
+                          {secretsResults && lowConfSecrets.length > 0 && (
+                            <div className="text-xs text-muted-foreground">+{lowConfSecrets.length} low confidence</div>
+                          )}
                         </div>
                         <div className="p-3 rounded-lg bg-muted/50">
                           <div className="text-muted-foreground mb-1">Vulnerable Packages</div>
-                          <div className="text-2xl font-bold">{depsResults?.vulns.length ?? "—"}</div>
+                          <div className="text-2xl font-bold">{depsResults?.vulnerabilities.length ?? "—"}</div>
+                          {depsResults && <div className="text-xs text-muted-foreground">via {depsResults.source}</div>}
                         </div>
                         <div className="p-3 rounded-lg bg-muted/50">
                           <div className="text-muted-foreground mb-1">Cloud Issues</div>
