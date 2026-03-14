@@ -1,6 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
+// Allow up to 30s on Vercel Pro; Hobby gets 10s regardless
+export const maxDuration = 30;
+
+// Ensure this route is never cached
+export const dynamic = "force-dynamic";
+
+// Extract a meaningful error message from Node.js fetch errors
+function extractFetchError(err: unknown): string {
+  if (!(err instanceof Error)) return "Unknown network error";
+
+  // Node.js undici wraps the real error in .cause
+  const cause = (err as Error & { cause?: Error })?.cause;
+  const causeMsg = cause?.message?.toLowerCase() ?? "";
+  const msg = err.message?.toLowerCase() ?? "";
+
+  if (causeMsg.includes("getaddrinfo") || causeMsg.includes("enotfound"))
+    return "DNS resolution failed — check the domain name is correct";
+  if (causeMsg.includes("econnrefused") || causeMsg.includes("connection refused"))
+    return "Connection refused — the server is not accepting connections";
+  if (causeMsg.includes("econnreset") || causeMsg.includes("connection reset"))
+    return "Connection was reset by the server";
+  if (causeMsg.includes("etimedout") || causeMsg.includes("connect_timeout") || msg.includes("aborted"))
+    return "Connection timed out — the server took too long to respond";
+  if (causeMsg.includes("cert") || causeMsg.includes("ssl") || causeMsg.includes("tls"))
+    return "SSL/TLS certificate error — the site may have an invalid certificate";
+  if (causeMsg.includes("socket hang up") || causeMsg.includes("eproto"))
+    return "Connection dropped — the server closed the connection unexpectedly";
+  if (msg === "fetch failed" && cause)
+    return `Network error: ${cause.message}`;
+  
+  return err.message || "Unknown network error";
+}
+
 // Security headers we check for, with descriptions and evaluation logic
 const SECURITY_HEADERS = [
   {
@@ -154,43 +187,42 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the URL headers (HEAD request first, fallback to GET)
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const fetchHeaders = {
+      "User-Agent": "Mozilla/5.0 (compatible; SecureCodeReviews-Scanner/1.0; +https://securecodereviews.com)",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    };
 
     let response: Response;
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
       response = await fetch(parsedUrl.toString(), {
         method: "HEAD",
         signal: controller.signal,
         redirect: "follow",
-        headers: {
-          "User-Agent": "SecureCodeReviews-HeaderAnalyzer/1.0",
-        },
+        headers: fetchHeaders,
+        cache: "no-store",
       });
+      clearTimeout(timeout);
     } catch {
       // HEAD might be blocked; try GET
       try {
         const controller2 = new AbortController();
-        const timeout2 = setTimeout(() => controller2.abort(), 10000);
+        const timeout2 = setTimeout(() => controller2.abort(), 6000);
         response = await fetch(parsedUrl.toString(), {
           method: "GET",
           signal: controller2.signal,
           redirect: "follow",
-          headers: {
-            "User-Agent": "SecureCodeReviews-HeaderAnalyzer/1.0",
-          },
+          headers: fetchHeaders,
+          cache: "no-store",
         });
         clearTimeout(timeout2);
       } catch (err) {
-        clearTimeout(timeout);
-        const message = err instanceof Error ? err.message : "Unknown error";
         return NextResponse.json(
-          { error: `Could not reach the URL: ${message}` },
+          { error: extractFetchError(err) },
           { status: 502 }
         );
       }
-    } finally {
-      clearTimeout(timeout);
     }
 
     // Extract and evaluate headers
