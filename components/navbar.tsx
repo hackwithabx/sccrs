@@ -2,342 +2,287 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Shield,
-  ShieldAlert,
   Menu,
   X,
   BookOpen,
-  Code,
-  BarChart3,
   Wrench,
   FileText,
   Briefcase,
-  Cloud,
-  Users,
   LogOut,
   LayoutDashboard,
   Brain,
-  ChevronDown,
+  Info,
+  Mail,
+  ArrowRight,
 } from "lucide-react";
+
+const navLinks = [
+  { href: "/services", label: "Services", icon: Briefcase },
+  { href: "/tools/ai-security-auditor", label: "AI Security", icon: Brain, highlight: true },
+  { href: "/tools", label: "Tools", icon: Wrench },
+  { href: "/owasp", label: "Learn", icon: BookOpen, matchAlso: ["/secure-code", "/cloud-security", "/vulnerabilities"] },
+  { href: "/blog", label: "Blog", icon: BookOpen },
+  { href: "/reports", label: "Reports", icon: FileText },
+  { href: "/about", label: "About", icon: Info },
+  { href: "/contact", label: "Contact", icon: Mail },
+];
 
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [hoverDropdown, setHoverDropdown] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
   const { data: session } = useSession();
 
-  const isActive = (href: string) =>
-    pathname === href || (href !== "/" && pathname.startsWith(href));
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
+  const isActive = useCallback(
+    (href: string, matchAlso?: string[]) => {
+      if (pathname === href) return true;
+      if (href !== "/" && pathname.startsWith(href)) return true;
+      if (matchAlso?.some((m) => pathname.startsWith(m))) return true;
+      return false;
+    },
+    [pathname]
+  );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
-      {/* Top bar Brand Name */}
-      <div className="border-b border-border/50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
+    <header
+      className={`sticky top-0 z-50 w-full transition-shadow duration-300 bg-background/85 backdrop-blur-lg ${
+        scrolled ? "shadow-md" : "shadow-none"
+      }`}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* ─── Logo ─── */}
+          <Link href="/" className="flex items-center gap-2 shrink-0 group">
+            <Shield className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
+            <span className="text-xl font-bold tracking-tight select-none">
               Secure<span className="text-primary">Code</span>Reviews
             </span>
           </Link>
 
+          {/* ─── Desktop Navigation ─── */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map(({ href, label, highlight, matchAlso }) => {
+              const active = isActive(href, matchAlso);
+              // Prevent "Tools" from being active when AI Security is active
+              const suppressActive = href === "/tools" && isActive("/tools/ai-security-auditor");
+              const showActive = active && !suppressActive;
+
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`relative px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                    highlight
+                      ? showActive
+                        ? "text-primary bg-primary/10"
+                        : "text-primary hover:bg-primary/5"
+                      : showActive
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  {label}
+                  {/* Active indicator bar */}
+                  {showActive && (
+                    <motion.span
+                      layoutId="nav-indicator"
+                      className="absolute inset-x-1 -bottom-[13px] h-0.5 rounded-full bg-primary"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* ─── Right actions ─── */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
+
+            {/* Auth – Desktop */}
             {session ? (
-              <div className="hidden sm:flex items-center gap-2">
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="gap-1.5">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                  </Button>
+              <div className="hidden lg:flex items-center gap-2">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-accent/50"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
                 </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
+                <button
                   onClick={() => signOut({ callbackUrl: "/" })}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-accent/50"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign Out
-                </Button>
+                </button>
               </div>
             ) : (
-              <div className="hidden sm:flex items-center gap-2">
-                <Link href="/auth/login">
-                  <Button variant="outline" size="sm">
-                    Sign In
-                  </Button>
+              <div className="hidden lg:flex items-center gap-2">
+                <Link
+                  href="/auth/login"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-accent/50"
+                >
+                  Sign In
                 </Link>
-                <Link href="/auth/register">
-                  <Button size="sm">Get Started</Button>
+                <Link
+                  href="/auth/register"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-2 rounded-lg transition-colors"
+                >
+                  Get Started
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             )}
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setMobileOpen(!mobileOpen)}
+
+            {/* Hamburger – Mobile */}
+            <button
+              onClick={() => setMobileOpen((v) => !v)}
+              className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-md text-foreground hover:bg-accent/50 transition-colors"
               aria-label="Toggle menu"
             >
-              {mobileOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
-            </Button>
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Desktop Navigation - Organized & Clear */}
-      <nav className="hidden lg:block">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-12 overflow-x-auto">
-            {/* Services & Solutions */}
-            <div className="relative" onMouseEnter={() => setHoverDropdown('services')} onMouseLeave={() => setHoverDropdown(null)}>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
-                <Briefcase className="h-3.5 w-3.5" />
-                Services
-                <ChevronDown className="h-3 w-3" />
-              </button>
-              <div className={`absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg transition-all duration-200 z-50 ${hoverDropdown === 'services' ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-                <Link href="/services" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                  <div className="font-medium text-sm text-slate-900 dark:text-white">All Services</div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400">Security & Development</div>
-                </Link>
-              </div>
-            </div>
+      {/* Active indicator bottom border for desktop */}
+      <div className="hidden lg:block h-px bg-border" />
 
-            {/* AI Security - PROMINENT */}
-            <Link href="/tools/ai-security-auditor">
-              <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-bold transition-colors whitespace-nowrap ${
-                isActive("/tools/ai-security-auditor")
-                  ? "bg-violet-600/20 text-violet-600"
-                  : "text-violet-600 hover:bg-violet-600/10"
-              }`}>
-                <Brain className="h-3.5 w-3.5" />
-                🤖 AI Security
-              </button>
-            </Link>
-
-            {/* Free Tools */}
-            <div className="relative" onMouseEnter={() => setHoverDropdown('tools')} onMouseLeave={() => setHoverDropdown(null)}>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
-                <Wrench className="h-3.5 w-3.5" />
-                Tools
-                <ChevronDown className="h-3 w-3" />
-              </button>
-              <div className={`absolute left-0 mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg transition-all duration-200 z-50 ${hoverDropdown === 'tools' ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-                <Link href="/tools" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <div className="font-medium text-sm text-slate-900 dark:text-white">All Tools</div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400">Free security tools</div>
-                </Link>
-              </div>
-            </div>
-
-            <div className="w-px h-6 bg-border mx-1"></div>
-
-            {/* Learning & Education */}
-            <div className="relative" onMouseEnter={() => setHoverDropdown('learn')} onMouseLeave={() => setHoverDropdown(null)}>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
-                <BookOpen className="h-3.5 w-3.5" />
-                Learn
-                <ChevronDown className="h-3 w-3" />
-              </button>
-              <div className={`absolute left-0 mt-1 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg transition-all duration-200 z-50 ${hoverDropdown === 'learn' ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-                <Link href="/owasp" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                  <div className="font-medium text-sm text-slate-900 dark:text-white">OWASP</div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400">Top 10 & security standards</div>
-                </Link>
-                <Link href="/secure-code" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                  <div className="font-medium text-sm text-slate-900 dark:text-white">Secure Code</div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400">Secure coding practices</div>
-                </Link>
-                <Link href="/cloud-security" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                  <div className="font-medium text-sm text-slate-900 dark:text-white">Cloud Security</div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400">Cloud infrastructure</div>
-                </Link>
-                <Link href="/vulnerabilities" className="block px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <div className="font-medium text-sm text-slate-900 dark:text-white">Vulnerabilities</div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400">Common vulnerabilities</div>
-                </Link>
-              </div>
-            </div>
-
-            {/* Blog */}
-            <Link href="/blog">
-              <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive("/blog")
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}>
-                <BookOpen className="h-3.5 w-3.5" />
-                Blog
-              </button>
-            </Link>
-
-            {/* Reports */}
-            <Link href="/reports">
-              <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive("/reports")
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}>
-                <FileText className="h-3.5 w-3.5" />
-                Reports
-              </button>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile Nav - Well Organized */}
+      {/* ─── Mobile overlay + slide-in menu ─── */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t bg-background"
-          >
-            <div className="flex flex-col p-4 space-y-2">
-              {/* Services Section */}
-              <div className="border-b pb-3">
-                <div className="text-xs font-bold text-muted-foreground uppercase mb-2">Services</div>
-                <Link href="/services" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Briefcase className="h-4 w-4" />
-                    All Services
-                  </Button>
-                </Link>
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+              onClick={() => setMobileOpen(false)}
+            />
+
+            {/* Panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed top-0 right-0 z-50 h-full w-72 bg-background shadow-2xl lg:hidden flex flex-col"
+            >
+              {/* Mobile header */}
+              <div className="flex items-center justify-between px-5 h-16 border-b border-border">
+                <span className="text-lg font-bold tracking-tight">
+                  <span className="text-primary">Menu</span>
+                </span>
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="h-9 w-9 inline-flex items-center justify-center rounded-md hover:bg-accent/50 transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
-              {/* AI Security Section */}
-              <div className="border-b pb-3">
-                <div className="text-xs font-bold text-violet-600 uppercase mb-2">New</div>
-                <Link href="/tools/ai-security-auditor" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/tools/ai-security-auditor") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <Brain className="h-4 w-4" />
-                    🤖 AI Security Auditor
-                  </Button>
-                </Link>
-              </div>
+              {/* Mobile nav links */}
+              <nav className="flex-1 overflow-y-auto py-4 px-3">
+                <ul className="space-y-0.5">
+                  {navLinks.map(({ href, label, icon: Icon, highlight, matchAlso }) => {
+                    const active = isActive(href, matchAlso);
+                    const suppressActive = href === "/tools" && isActive("/tools/ai-security-auditor");
+                    const showActive = active && !suppressActive;
 
-              {/* Tools Section */}
-              <div className="border-b pb-3">
-                <div className="text-xs font-bold text-muted-foreground uppercase mb-2">Free Tools</div>
-                <Link href="/tools" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/tools") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <Wrench className="h-4 w-4" />
-                    All Tools
-                  </Button>
-                </Link>
-              </div>
+                    return (
+                      <li key={href}>
+                        <Link
+                          href={href}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                            showActive
+                              ? "bg-primary/10 text-primary"
+                              : highlight
+                                ? "text-primary hover:bg-primary/5"
+                                : "text-foreground hover:bg-accent/50"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          {label}
+                          {showActive && (
+                            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
 
-              {/* Learning Section */}
-              <div className="border-b pb-3">
-                <div className="text-xs font-bold text-muted-foreground uppercase mb-2">Learning</div>
-                <Link href="/owasp" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/owasp") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <ShieldAlert className="h-4 w-4" />
-                    OWASP
-                  </Button>
-                </Link>
-                <Link href="/secure-code" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/secure-code") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <Code className="h-4 w-4" />
-                    Secure Code
-                  </Button>
-                </Link>
-                <Link href="/cloud-security" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/cloud-security") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <Cloud className="h-4 w-4" />
-                    Cloud Security
-                  </Button>
-                </Link>
-                <Link href="/vulnerabilities" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/vulnerabilities") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    Vulnerabilities
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Content Section */}
-              <div className="border-b pb-3">
-                <div className="text-xs font-bold text-muted-foreground uppercase mb-2">Content</div>
-                <Link href="/blog" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/blog") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    Blog
-                  </Button>
-                </Link>
-                <Link href="/reports" onClick={() => setMobileOpen(false)}>
-                  <Button variant={isActive("/reports") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                    <FileText className="h-4 w-4" />
-                    Reports
-                  </Button>
-                </Link>
-              </div>
-
-              {/* User Section */}
-              <div className="flex flex-col gap-2 pt-3 border-t mt-2">
+              {/* Mobile auth */}
+              <div className="border-t border-border p-4 space-y-2">
                 {session ? (
                   <>
-                    <Link href="/dashboard">
-                      <Button
-                        variant="outline"
-                        className="w-full gap-2"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        <LayoutDashboard className="h-4 w-4" />
-                        Dashboard
-                      </Button>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
                     </Link>
-                    <Button
-                      variant="destructive"
-                      className="w-full gap-2"
+                    <button
                       onClick={() => {
                         setMobileOpen(false);
                         signOut({ callbackUrl: "/" });
                       }}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium w-full text-destructive hover:bg-destructive/10 transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
                       Sign Out
-                    </Button>
+                    </button>
                   </>
                 ) : (
-                  <div className="flex gap-2">
-                    <Link href="/auth/login" className="flex-1">
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        Sign In
-                      </Button>
+                  <>
+                    <Link
+                      href="/auth/login"
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-accent/50 transition-colors"
+                    >
+                      Sign In
                     </Link>
-                    <Link href="/auth/register" className="flex-1">
-                      <Button
-                        className="w-full"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        Get Started
-                      </Button>
+                    <Link
+                      href="/auth/register"
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                      Get Started
+                      <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
-                  </div>
+                  </>
                 )}
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </header>
