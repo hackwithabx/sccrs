@@ -83,7 +83,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">6. Intellectual Property</h2>
             <p className="text-muted-foreground leading-relaxed">
-              The Service and its original content, features, and functionality are owned by SecureCodeReviews and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws. Our content, including blog posts, OWASP guides, code examples, and security research, is provided for educational use. You may share links to our content but may not reproduce substantial portions without attribution and permission.
+              The Service and its original content, features, and functionality are owned by SecureCodeReviews and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws. Our content, including blog posts, guides about OWASP topics, code examples, and security research, is provided for educational use. You may share links to our content but may not reproduce substantial portions without attribution and permission. OWASP&reg; is a registered trademark of the OWASP Foundation. Our educational content about OWASP topics is independently authored and is not official OWASP material. OWASP materials referenced herein are available under the Creative Commons Attribution-ShareAlike 4.0 International License.
             </p>
           </section>
 

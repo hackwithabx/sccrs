@@ -3,7 +3,8 @@ import { rateLimit, getClientIP } from "@/lib/rate-limit";
 import crypto from "crypto";
 
 function signToken(payload: object): string {
-  const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD || "fallback-secret";
+  const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
+  if (!secret) throw new Error("Server misconfiguration: missing NEXTAUTH_SECRET or ADMIN_PASSWORD");
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = crypto.createHmac("sha256", secret).update(data).digest("base64url");
   return `${data}.${signature}`;
@@ -11,7 +12,8 @@ function signToken(payload: object): string {
 
 function verifyToken(token: string): { authenticated: boolean; expiresAt: number } | null {
   try {
-    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD || "fallback-secret";
+    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
+    if (!secret) return null;
     const [data, signature] = token.split(".");
     if (!data || !signature) return null;
     const expected = crypto.createHmac("sha256", secret).update(data).digest("base64url");

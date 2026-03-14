@@ -80,6 +80,10 @@ export function Footer() {
 
         <Separator className="my-8" />
 
+        <p className="text-xs text-muted-foreground/70 text-center mb-4">
+          OWASP&reg; is a registered trademark of the OWASP Foundation. This site is not affiliated with, endorsed by, or sponsored by the OWASP Foundation. All other trademarks are the property of their respective owners.
+        </p>
+
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} SecureCodeReviews.com. All rights reserved.</p>
           <div className="flex gap-4">

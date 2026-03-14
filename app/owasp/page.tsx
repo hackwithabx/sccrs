@@ -267,6 +267,11 @@ export default function OwaspPage() {
                 Visit owasp.org
                 <ExternalLink className="w-4 h-4" />
               </a>
+              <p className="mt-4 text-xs text-muted-foreground/70 max-w-2xl mx-auto">
+                OWASP&reg; is a registered trademark of the OWASP Foundation. Our educational content is inspired by OWASP materials, which are available under the{" "}
+                <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+                This site is independently operated and is not affiliated with or endorsed by the OWASP Foundation.
+              </p>
             </motion.div>
           </div>
         </div>

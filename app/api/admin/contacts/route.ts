@@ -9,7 +9,8 @@ function isAuthorized(request: NextRequest): boolean {
   if (!token) return false;
 
   try {
-    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD || "fallback-secret";
+    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
+    if (!secret) return false;
     const [data, signature] = token.split(".");
     if (!data || !signature) return false;
     const expected = crypto.createHmac("sha256", secret).update(data).digest("base64url");
