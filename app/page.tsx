@@ -109,21 +109,21 @@ const vulnerabilityTrends = [
 ];
 
 const attackVectors = [
-  { name: "Injection", value: 28, color: "#10b981" },
-  { name: "Broken Auth", value: 22, color: "#3b82f6" },
-  { name: "Misconfiguration", value: 18, color: "#f59e0b" },
-  { name: "XSS", value: 14, color: "#8b5cf6" },
-  { name: "SSRF", value: 10, color: "#ec4899" },
-  { name: "Other", value: 8, color: "#6b7280" },
+  { name: "Injection", value: 28, color: "#10b981", gradient: "from-emerald-500 to-emerald-600" },
+  { name: "Broken Auth", value: 22, color: "#3b82f6", gradient: "from-blue-500 to-blue-600" },
+  { name: "Misconfiguration", value: 18, color: "#f59e0b", gradient: "from-yellow-500 to-yellow-600" },
+  { name: "XSS", value: 14, color: "#8b5cf6", gradient: "from-violet-500 to-violet-600" },
+  { name: "SSRF", value: 10, color: "#ec4899", gradient: "from-pink-500 to-pink-600" },
+  { name: "Other", value: 8, color: "#64748b", gradient: "from-slate-500 to-slate-600" },
 ];
 
 const breachCosts = [
-  { industry: "Healthcare", cost: 9.77 },
-  { industry: "Financial", cost: 6.08 },
-  { industry: "Technology", cost: 5.45 },
-  { industry: "Energy", cost: 5.29 },
-  { industry: "Pharma", cost: 4.97 },
-  { industry: "Average", cost: 4.88 },
+  { industry: "Healthcare", cost: 9.77, fill: "#ef4444" },
+  { industry: "Financial", cost: 6.08, fill: "#f59e0b" },
+  { industry: "Technology", cost: 5.45, fill: "#3b82f6" },
+  { industry: "Energy", cost: 5.29, fill: "#8b5cf6" },
+  { industry: "Pharma", cost: 4.97, fill: "#ec4899" },
+  { industry: "Average", cost: 4.88, fill: "#64748b" },
 ];
 
 const stats = [
@@ -534,85 +534,200 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    CVE Vulnerability Trends (2019–2024)
-                  </CardTitle>
+              <Card className="overflow-hidden border-0 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <div className="rounded-lg bg-primary/10 p-1.5">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                      </div>
+                      CVE Vulnerability Trends
+                    </CardTitle>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2019–2024</span>
+                  </div>
+                  {/* Mini legend */}
+                  <div className="flex flex-wrap gap-3 mt-3">
+                    {[
+                      { label: "Critical", color: "bg-red-500" },
+                      { label: "High", color: "bg-amber-500" },
+                      { label: "Medium", color: "bg-blue-500" },
+                      { label: "Low", color: "bg-emerald-500" },
+                    ].map((l) => (
+                      <div key={l.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className={`h-2.5 w-2.5 rounded-full ${l.color}`} />
+                        {l.label}
+                      </div>
+                    ))}
+                  </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4 pb-6">
                   <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={vulnerabilityTrends}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                      <XAxis dataKey="year" fontSize={12} />
-                      <YAxis fontSize={12} />
+                    <AreaChart data={vulnerabilityTrends} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="gradCritical" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
+                          <stop offset="100%" stopColor="#ef4444" stopOpacity={0.02} />
+                        </linearGradient>
+                        <linearGradient id="gradHigh" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.02} />
+                        </linearGradient>
+                        <linearGradient id="gradMedium" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                        </linearGradient>
+                        <linearGradient id="gradLow" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} vertical={false} />
+                      <XAxis
+                        dataKey="year"
+                        fontSize={11}
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={{ stroke: "hsl(var(--border))" }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        fontSize={11}
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
+                      />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
+                          backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          color: "hsl(var(--foreground))",
+                          borderRadius: "12px",
+                          color: "hsl(var(--popover-foreground))",
+                          boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
+                          padding: "12px 16px",
+                          fontSize: "13px",
                         }}
+                        cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        labelStyle={{ fontWeight: 600, marginBottom: 6, fontSize: 14 }}
                       />
-                      <Legend />
-                      <Area type="monotone" dataKey="critical" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} name="Critical" />
-                      <Area type="monotone" dataKey="high" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.5} name="High" />
-                      <Area type="monotone" dataKey="medium" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.4} name="Medium" />
-                      <Area type="monotone" dataKey="low" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.3} name="Low" />
+                      <Area type="monotone" dataKey="low" stroke="#10b981" strokeWidth={2} fill="url(#gradLow)" name="Low" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
+                      <Area type="monotone" dataKey="medium" stroke="#3b82f6" strokeWidth={2} fill="url(#gradMedium)" name="Medium" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
+                      <Area type="monotone" dataKey="high" stroke="#f59e0b" strokeWidth={2} fill="url(#gradHigh)" name="High" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
+                      <Area type="monotone" dataKey="critical" stroke="#ef4444" strokeWidth={2.5} fill="url(#gradCritical)" name="Critical" dot={false} activeDot={{ r: 5, strokeWidth: 2 }} />
                     </AreaChart>
                   </ResponsiveContainer>
+                  {/* Trend insight */}
+                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                    <span>Critical CVEs increased <strong className="text-red-500">197%</strong> from 2019 to 2024 — nearly tripling in 5 years.</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Attack Vectors Pie Chart */}
+            {/* Attack Vectors — Donut with Custom Legend */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Top Attack Vectors (2024)
-                  </CardTitle>
+              <Card className="overflow-hidden border-0 shadow-lg h-full">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <div className="rounded-lg bg-primary/10 p-1.5">
+                        <Shield className="h-4 w-4 text-primary" />
+                      </div>
+                      Top Attack Vectors
+                    </CardTitle>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024</span>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={attackVectors}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={110}
-                        paddingAngle={3}
-                        dataKey="value"
-                        label={({ name, value }) => `${name} ${value}%`}
-                      >
-                        {attackVectors.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          color: "hsl(var(--foreground))",
-                        }}
-                        formatter={(value) => `${value}%`}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <CardContent className="pt-2 pb-6">
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    {/* Donut chart */}
+                    <div className="relative flex-shrink-0">
+                      <ResponsiveContainer width={220} height={220}>
+                        <PieChart>
+                          <defs>
+                            {attackVectors.map((entry, i) => (
+                              <linearGradient key={`pie-grad-${i}`} id={`pieGrad${i}`} x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
+                                <stop offset="100%" stopColor={entry.color} stopOpacity={0.7} />
+                              </linearGradient>
+                            ))}
+                          </defs>
+                          <Pie
+                            data={attackVectors}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={62}
+                            outerRadius={95}
+                            paddingAngle={4}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                          >
+                            {attackVectors.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={`url(#pieGrad${index})`} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--popover))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "12px",
+                              color: "hsl(var(--popover-foreground))",
+                              boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
+                              padding: "8px 14px",
+                              fontSize: "13px",
+                            }}
+                            formatter={(value) => [`${value}%`, "Share"]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      {/* Center label */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-2xl font-bold">100%</span>
+                        <span className="text-[10px] text-muted-foreground">Total Attacks</span>
+                      </div>
+                    </div>
+
+                    {/* Custom legend */}
+                    <div className="flex-1 w-full space-y-2.5 min-w-0">
+                      {attackVectors.map((item) => (
+                        <div key={item.name} className="flex items-center gap-3 group">
+                          <div className="h-3 w-3 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium truncate">{item.name}</span>
+                              <span className="text-sm font-semibold tabular-nums">{item.value}%</span>
+                            </div>
+                            <div className="mt-1 h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ backgroundColor: item.color }}
+                                initial={{ width: 0 }}
+                                whileInView={{ width: `${item.value * (100 / 28)}%` }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Insight */}
+                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-emerald-500/5 border border-emerald-500/10 rounded-lg px-3 py-2">
+                    <Shield className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    <span><strong className="text-emerald-500">Injection attacks</strong> remain the top vector — affecting over 1 in 4 applications.</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Breach Cost by Industry */}
+            {/* Breach Cost by Industry — Horizontal Bar with gradient bars */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -620,31 +735,76 @@ export default function HomePage() {
               transition={{ delay: 0.2 }}
               className="lg:col-span-2"
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    Average Data Breach Cost by Industry (2024, $M)
-                  </CardTitle>
+              <Card className="overflow-hidden border-0 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <div className="rounded-lg bg-primary/10 p-1.5">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                      </div>
+                      Average Data Breach Cost by Industry
+                    </CardTitle>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024 — IBM Cost of a Data Breach Report</span>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={breachCosts} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                      <XAxis type="number" fontSize={12} tickFormatter={(v) => `$${v}M`} />
-                      <YAxis type="category" dataKey="industry" fontSize={12} width={90} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          color: "hsl(var(--foreground))",
-                        }}
-                        formatter={(value) => `$${value}M`}
-                      />
-                      <Bar dataKey="cost" fill="#10b981" radius={[0, 4, 4, 0]} name="Avg Cost ($M)" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="pt-4 pb-6">
+                  {/* Custom visual bars instead of basic Recharts */}
+                  <div className="space-y-4">
+                    {breachCosts.map((item, i) => {
+                      const maxCost = 9.77;
+                      const pct = (item.cost / maxCost) * 100;
+                      const isAverage = item.industry === "Average";
+                      return (
+                        <motion.div
+                          key={item.industry}
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.07 }}
+                          className={`group ${isAverage ? "pt-3 border-t border-dashed border-border" : ""}`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-24 sm:w-28 text-right">
+                              <span className={`text-sm font-medium ${isAverage ? "text-muted-foreground italic" : ""}`}>
+                                {item.industry}
+                              </span>
+                            </div>
+                            <div className="flex-1 flex items-center gap-3">
+                              <div className="flex-1 h-8 bg-muted/60 rounded-lg overflow-hidden relative">
+                                <motion.div
+                                  className="h-full rounded-lg flex items-center justify-end pr-3 relative overflow-hidden"
+                                  style={{ backgroundColor: item.fill }}
+                                  initial={{ width: 0 }}
+                                  whileInView={{ width: `${pct}%` }}
+                                  viewport={{ once: true }}
+                                  transition={{ duration: 0.8, delay: i * 0.07, ease: "easeOut" }}
+                                >
+                                  {/* Glossy overlay */}
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                                  {pct > 35 && (
+                                    <span className="relative text-xs font-bold text-white drop-shadow-sm">
+                                      ${item.cost.toFixed(2)}M
+                                    </span>
+                                  )}
+                                </motion.div>
+                              </div>
+                              {pct <= 35 && (
+                                <span className="text-sm font-semibold tabular-nums" style={{ color: item.fill }}>
+                                  ${item.cost.toFixed(2)}M
+                                </span>
+                              )}
+                              {pct > 35 && <div className="w-16" />}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  {/* Insight */}
+                  <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                    <span>Healthcare breaches cost <strong className="text-red-500">$9.77M on average</strong> — nearly double the cross-industry mean of $4.88M.</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
