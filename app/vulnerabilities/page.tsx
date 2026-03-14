@@ -146,17 +146,20 @@ export default function VulnerabilitiesPage() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={monthlyTrends}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis dataKey="month" fontSize={12} />
-                  <YAxis fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="month" fontSize={12} tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} />
+                  <YAxis fontSize={12} tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: "8px",
+                      color: "hsl(var(--popover-foreground))",
                     }}
+                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
                   <Area
                     type="monotone"
                     dataKey="critical"
@@ -220,12 +223,15 @@ export default function VulnerabilitiesPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: "8px",
+                      color: "hsl(var(--popover-foreground))",
                     }}
+                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -243,15 +249,18 @@ export default function VulnerabilitiesPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={filtered} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                <XAxis type="number" fontSize={12} />
-                <YAxis dataKey="name" type="category" width={120} fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                <XAxis type="number" fontSize={12} tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} />
+                <YAxis dataKey="name" type="category" width={120} fontSize={12} tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
+                    color: "hsl(var(--popover-foreground))",
                   }}
+                  itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                  labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                 />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {filtered.map((entry, index) => (
@@ -277,17 +286,20 @@ export default function VulnerabilitiesPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={monthlyTrends}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                <XAxis dataKey="month" fontSize={12} />
-                <YAxis fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                <XAxis dataKey="month" fontSize={12} tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} />
+                <YAxis fontSize={12} tick={{ fill: "hsl(var(--muted-foreground))" }} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
+                    color: "hsl(var(--popover-foreground))",
                   }}
+                  itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                  labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} />
                 <Line
                   type="monotone"
                   dataKey="critical"

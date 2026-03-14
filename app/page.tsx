@@ -606,8 +606,9 @@ export default function HomePage() {
                           padding: "12px 16px",
                           fontSize: "13px",
                         }}
+                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                        labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600, marginBottom: 6, fontSize: 14 }}
                         cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1, strokeDasharray: "4 4" }}
-                        labelStyle={{ fontWeight: 600, marginBottom: 6, fontSize: 14 }}
                       />
                       <Area type="monotone" dataKey="low" stroke="#10b981" strokeWidth={2} fill="url(#gradLow)" name="Low" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
                       <Area type="monotone" dataKey="medium" stroke="#3b82f6" strokeWidth={2} fill="url(#gradMedium)" name="Medium" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
@@ -682,6 +683,8 @@ export default function HomePage() {
                               padding: "8px 14px",
                               fontSize: "13px",
                             }}
+                            itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                            labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                             formatter={(value) => [`${value}%`, "Share"]}
                           />
                         </PieChart>
