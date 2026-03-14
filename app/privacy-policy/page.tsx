@@ -193,6 +193,11 @@ export const metadata: Metadata = {
     description: "How SecureCodeReviews collects, uses, and protects your personal information.",
     url: "https://securecodereviews.com/privacy-policy",
   },
+  twitter: {
+    card: "summary",
+    title: "Privacy Policy | SecureCodeReviews",
+    description: "How SecureCodeReviews collects, uses, and protects your personal information.",
+  },
   alternates: {
     canonical: "/privacy-policy",
   },

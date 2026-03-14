@@ -36,5 +36,25 @@ export default function ContactLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    name: "Contact SecureCodeReviews",
+    description: "Get in touch with SecureCodeReviews for application security services, consulting, and assessments.",
+    url: "https://securecodereviews.com/contact",
+    mainEntity: {
+      "@type": "Organization",
+      name: "SecureCodeReviews",
+      url: "https://securecodereviews.com",
+      email: "support@securecodereviews.com",
+      contactPoint: { "@type": "ContactPoint", contactType: "customer service", email: "support@securecodereviews.com" },
+    },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

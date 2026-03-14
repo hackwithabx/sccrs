@@ -165,6 +165,11 @@ export const metadata: Metadata = {
     description: "The legal agreement governing use of the SecureCodeReviews platform and services.",
     url: "https://securecodereviews.com/terms-of-service",
   },
+  twitter: {
+    card: "summary",
+    title: "Terms of Service | SecureCodeReviews",
+    description: "The legal agreement governing use of the SecureCodeReviews platform and services.",
+  },
   alternates: {
     canonical: "/terms-of-service",
   },

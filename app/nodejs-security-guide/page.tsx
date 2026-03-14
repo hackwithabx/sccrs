@@ -34,8 +34,19 @@ export const metadata: Metadata = {
 };
 
 export default function NodeJsSecurityGuidePage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: "Node.js Security Guide — Best Practices & Vulnerability Prevention",
+    description: "Comprehensive Node.js security best practices, common vulnerabilities, and secure coding techniques for developers.",
+    url: "https://securecodereviews.com/nodejs-security-guide",
+    publisher: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+    mainEntityOfPage: "https://securecodereviews.com/nodejs-security-guide",
+  };
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-12 prose prose-neutral dark:prose-invert">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <h1>Node.js Security Guide</h1>
       <p>
         Node.js is a powerful platform for building scalable web applications, but its flexibility can expose apps to a wide range of security risks. This guide covers essential Node.js security best practices, common vulnerabilities, and actionable steps to secure your applications.

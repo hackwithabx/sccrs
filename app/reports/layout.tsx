@@ -37,5 +37,19 @@ export default function ReportsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Security Reports & Whitepapers",
+    description: "Download free application security reports, whitepapers, OWASP Top 10 analysis, and vulnerability trend reports.",
+    url: "https://securecodereviews.com/reports",
+    isPartOf: { "@type": "WebSite", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

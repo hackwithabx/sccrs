@@ -187,8 +187,19 @@ const checklist = [
 ];
 
 export default function CloudSecurityPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: "Cloud Security Guide — AWS, Azure, GCP Security Best Practices",
+    description: "Comprehensive cloud security guide covering AWS, Azure, and GCP. IAM best practices, network security, data encryption, compliance, CSPM, and real-world breach case studies.",
+    url: "https://securecodereviews.com/cloud-security",
+    publisher: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+    mainEntityOfPage: "https://securecodereviews.com/cloud-security",
+  };
+
   return (
     <div className="py-16">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           badge="Cloud Security"

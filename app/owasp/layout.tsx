@@ -39,5 +39,20 @@ export default function OWASPLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "OWASP Security Resources",
+    description: "Comprehensive OWASP resources: Top 10 2021, Top 10 2025, Top 10 for AI/LLM applications, and detailed vulnerability prevention guides.",
+    url: "https://securecodereviews.com/owasp",
+    isPartOf: { "@type": "WebSite", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+    about: { "@type": "Thing", name: "OWASP Top 10" },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

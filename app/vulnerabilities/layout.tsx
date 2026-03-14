@@ -39,5 +39,19 @@ export default function VulnerabilitiesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "Vulnerability Dashboard",
+    description: "Interactive vulnerability dashboard with real-time CVE data, severity distributions, CVSS scoring analysis, and trending exploit intelligence.",
+    url: "https://securecodereviews.com/vulnerabilities",
+    isPartOf: { "@type": "WebSite", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

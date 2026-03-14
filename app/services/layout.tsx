@@ -39,5 +39,21 @@ export default function ServicesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    name: "SecureCodeReviews — Application Security Services",
+    description: "Professional application security services: secure code review, penetration testing, DevSecOps consulting, and cloud security assessments.",
+    url: "https://securecodereviews.com/services",
+    provider: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+    serviceType: ["Secure Code Review", "Penetration Testing", "DevSecOps Consulting", "Cloud Security Assessment", "API Security Testing"],
+    areaServed: "Worldwide",
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

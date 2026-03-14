@@ -126,6 +126,20 @@ export default function RootLayout({
     ],
   };
 
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "SecureCodeReviews",
+    url: "https://securecodereviews.com",
+    description: "Application security platform with free tools, OWASP guides, vulnerability research, and expert code review services.",
+    publisher: { "@type": "Organization", name: "SecureCodeReviews" },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://securecodereviews.com/blog?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -146,6 +160,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         <AuthProvider>
           <ThemeProvider

@@ -39,5 +39,20 @@ export default function SecureCodeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Secure Code Examples",
+    description: "Learn secure coding with real-world vulnerable vs. secure code examples in JavaScript, TypeScript, Python, Java, and Node.js.",
+    url: "https://securecodereviews.com/secure-code",
+    isPartOf: { "@type": "WebSite", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+    about: { "@type": "Thing", name: "Secure Coding Practices" },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

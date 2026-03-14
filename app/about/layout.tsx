@@ -35,5 +35,19 @@ export default function AboutLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "About SecureCodeReviews",
+    description: "Meet the SecureCodeReviews team — experienced application security professionals with expertise in secure code review, penetration testing, and DevSecOps.",
+    url: "https://securecodereviews.com/about",
+    mainEntity: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

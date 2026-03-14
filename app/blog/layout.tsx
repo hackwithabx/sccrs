@@ -39,5 +39,19 @@ export default function BlogLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Application Security Blog",
+    description: "Expert application security articles covering OWASP Top 10, API security, DevSecOps, cloud security, AI/ML security, and secure coding best practices.",
+    url: "https://securecodereviews.com/blog",
+    isPartOf: { "@type": "WebSite", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

@@ -38,5 +38,22 @@ export default function ToolsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "SecureCodeReviews Free Security Tools",
+    description: "Free online security tools: Security Header Analyzer, CSP Generator, JWT Decoder, Hash Generator, Encoder/Decoder, Password Strength Checker, SQL Injection Tester.",
+    url: "https://securecodereviews.com/tools",
+    applicationCategory: "SecurityApplication",
+    operatingSystem: "All",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    provider: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {children}
+    </>
+  );
 }

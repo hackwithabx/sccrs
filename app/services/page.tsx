@@ -211,7 +211,7 @@ const aiServices = [
     ],
     badge: "High Demand",
     color: "from-amber-500 to-yellow-500",
-    price: "$15K-$50K",
+    price: "$5K-$18K",
   },
   {
     icon: Sparkles,
@@ -228,7 +228,7 @@ const aiServices = [
     ],
     badge: "Trending",
     color: "from-violet-500 to-fuchsia-500",
-    price: "$10K-$40K",
+    price: "$4K-$15K",
   },
   {
     icon: LineChart,
@@ -245,7 +245,7 @@ const aiServices = [
     ],
     badge: null,
     color: "from-blue-500 to-indigo-500",
-    price: "$12K-$45K",
+    price: "$4K-$16K",
   },
 ];
 
@@ -315,7 +315,7 @@ const additionalServices = [
       "OpenAPI documentation",
     ],
     color: "from-yellow-500 to-amber-500",
-    price: "$8K-$30K",
+    price: "$3K-$12K",
   },
   {
     icon: Lock,
@@ -329,7 +329,7 @@ const additionalServices = [
       "PII protection",
     ],
     color: "from-slate-500 to-gray-500",
-    price: "$8K-$25K",
+    price: "$3K-$10K",
   },
   {
     icon: Smartphone,
@@ -343,7 +343,7 @@ const additionalServices = [
       "Mobile-optimized",
     ],
     color: "from-orange-500 to-red-500",
-    price: "$10K-$35K",
+    price: "$4K-$14K",
   },
   {
     icon: LineChart,
@@ -357,7 +357,7 @@ const additionalServices = [
       "Performance monitoring",
     ],
     color: "from-teal-500 to-cyan-500",
-    price: "$5K-$20K",
+    price: "$2K-$8K",
   },
 ];
 
