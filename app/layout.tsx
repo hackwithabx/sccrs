@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { AdSenseScript } from "@/components/adsense";
+import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -179,6 +180,7 @@ export default function RootLayout({
             </div>
           </ThemeProvider>
         </AuthProvider>
+        <CookieConsent />
         <GoogleAnalytics />
         <AdSenseScript />
       </body>

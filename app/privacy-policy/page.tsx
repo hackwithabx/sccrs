@@ -51,7 +51,7 @@ export default function PrivacyPolicyPage() {
               <li>Date and time of access</li>
             </ul>
 
-            <h3 className="text-lg font-medium mb-2 mt-6">2.3 Cookies and Tracking Technologies</h3>
+            <h3 id="cookies" className="text-lg font-medium mb-2 mt-6 scroll-mt-24">2.3 Cookies and Tracking Technologies</h3>
             <p className="text-muted-foreground leading-relaxed">
               We use cookies, web beacons, and similar technologies to enhance your experience, analyze usage patterns, and deliver relevant content. You can control cookie preferences through your browser settings. We use Google Analytics for website analytics — see Google&apos;s privacy policy for details on how they process data.
             </p>
