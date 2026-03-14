@@ -6,6 +6,8 @@ import { apiSecurityArticles } from "./articles-api-security";
 import { devsecopsArticles } from "./articles-devsecops";
 import { tier2ArticlesPart1 } from "./articles-tier2-part1";
 import { tier2ArticlesPart2 } from "./articles-tier2-part2";
+import { vulnerabilityDeepDives } from "./articles-vulnerability-deep-dives";
+import { trendingSecurityArticles } from "./articles-trending-security";
 
 export interface BlogPost {
   slug: string;
@@ -3735,4 +3737,8 @@ app.post('/api/refresh', async (req, res) => {
   // Tier 2 articles
   ...tier2ArticlesPart1,
   ...tier2ArticlesPart2,
+  // Vulnerability deep-dive articles
+  ...vulnerabilityDeepDives,
+  // Trending security articles
+  ...trendingSecurityArticles,
 ];
