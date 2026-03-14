@@ -1,17 +1,27 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { hasMarketingConsent, CONSENT_EVENT } from "@/lib/cookie-consent-utils";
 
 // Your Google AdSense Publisher ID (get from AdSense dashboard)
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
 /**
  * Google AdSense initialization script
- * Add this once in layout.tsx or a top-level component
+ * Only loads when marketing consent is granted
  */
 export function AdSenseScript() {
-  if (!ADSENSE_CLIENT_ID) return null;
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    setAllowed(hasMarketingConsent());
+    const handler = () => setAllowed(hasMarketingConsent());
+    window.addEventListener(CONSENT_EVENT, handler);
+    return () => window.removeEventListener(CONSENT_EVENT, handler);
+  }, []);
+
+  if (!ADSENSE_CLIENT_ID || !allowed) return null;
 
   return (
     <Script
@@ -32,14 +42,22 @@ interface AdUnitProps {
 
 /**
  * Individual Ad Unit component
- * Use this wherever you want to display an ad
+ * Only renders when marketing consent is granted
  */
 export function AdUnit({ slot, format = "auto", responsive = true, className = "" }: AdUnitProps) {
   const adRef = useRef<HTMLDivElement>(null);
   const isAdLoaded = useRef(false);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    if (!ADSENSE_CLIENT_ID || isAdLoaded.current) return;
+    setAllowed(hasMarketingConsent());
+    const handler = () => setAllowed(hasMarketingConsent());
+    window.addEventListener(CONSENT_EVENT, handler);
+    return () => window.removeEventListener(CONSENT_EVENT, handler);
+  }, []);
+
+  useEffect(() => {
+    if (!ADSENSE_CLIENT_ID || isAdLoaded.current || !allowed) return;
 
     try {
       // Push ad to Google
@@ -49,9 +67,9 @@ export function AdUnit({ slot, format = "auto", responsive = true, className = "
     } catch (error) {
       console.error("AdSense error:", error);
     }
-  }, []);
+  }, [allowed]);
 
-  if (!ADSENSE_CLIENT_ID) {
+  if (!ADSENSE_CLIENT_ID || !allowed) {
     // Show placeholder in development
     if (process.env.NODE_ENV === "development") {
       return (

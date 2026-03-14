@@ -1,14 +1,24 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { hasMarketingConsent, CONSENT_EVENT } from "@/lib/cookie-consent-utils";
 
 // Get AdSense Publisher ID from environment
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID;
 
-// AdSense Script - Add once in layout
+// AdSense Script - Only loads when marketing consent is granted
 export function GoogleAdSenseScript() {
-  if (!ADSENSE_ID) return null;
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    setAllowed(hasMarketingConsent());
+    const handler = () => setAllowed(hasMarketingConsent());
+    window.addEventListener(CONSENT_EVENT, handler);
+    return () => window.removeEventListener(CONSENT_EVENT, handler);
+  }, []);
+
+  if (!ADSENSE_ID || !allowed) return null;
 
   return (
     <Script
@@ -33,7 +43,7 @@ interface AdUnitProps {
   style?: React.CSSProperties;
 }
 
-// Reusable Ad Unit Component
+// Reusable Ad Unit Component — only renders when marketing consent is granted
 export function AdUnit({
   slot,
   format = "auto",
@@ -42,9 +52,18 @@ export function AdUnit({
   className = "",
   style,
 }: AdUnitProps) {
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    setAllowed(hasMarketingConsent());
+    const handler = () => setAllowed(hasMarketingConsent());
+    window.addEventListener(CONSENT_EVENT, handler);
+    return () => window.removeEventListener(CONSENT_EVENT, handler);
+  }, []);
+
   useEffect(() => {
     try {
-      if (typeof window !== "undefined" && ADSENSE_ID) {
+      if (typeof window !== "undefined" && ADSENSE_ID && allowed) {
         // Push ad to be displayed
         ((window as unknown as { adsbygoogle: unknown[] }).adsbygoogle =
           (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle || []).push({});
@@ -52,9 +71,9 @@ export function AdUnit({
     } catch (err) {
       console.error("AdSense error:", err);
     }
-  }, []);
+  }, [allowed]);
 
-  if (!ADSENSE_ID) {
+  if (!ADSENSE_ID || !allowed) {
     // Show placeholder in development
     if (process.env.NODE_ENV === "development") {
       return (

@@ -3,62 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Cookie, X, ChevronDown, ChevronUp } from "lucide-react";
-
-type CookieConsent = "all" | "essential" | null;
-
-interface CookiePreferences {
-  analytics: boolean;
-  marketing: boolean;
-}
-
-const CONSENT_KEY = "scr-cookie-consent";
-const PREFERENCES_KEY = "scr-cookie-preferences";
-
-function getStoredConsent(): CookieConsent {
-  if (typeof window === "undefined") return null;
-  const stored = localStorage.getItem(CONSENT_KEY);
-  if (stored === "all" || stored === "essential") return stored;
-  return null;
-}
-
-function getStoredPreferences(): CookiePreferences {
-  if (typeof window === "undefined") return { analytics: false, marketing: false };
-  try {
-    const stored = localStorage.getItem(PREFERENCES_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return { analytics: false, marketing: false };
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const win = () => window as any;
-
-// Disable GA tracking
-function revokeAnalyticsConsent() {
-  if (typeof window === "undefined") return;
-  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-  if (gaId) {
-    // Tell GA to stop collecting
-    win()[`ga-disable-${gaId}`] = true;
-  }
-}
-
-// Enable GA tracking
-function grantAnalyticsConsent() {
-  if (typeof window === "undefined") return;
-  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-  if (gaId) {
-    win()[`ga-disable-${gaId}`] = false;
-    // Update consent mode if gtag is available
-    if (typeof win().gtag === "function") {
-      win().gtag("consent", "update", {
-        analytics_storage: "granted",
-        ad_storage: "granted",
-      });
-    }
-  }
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
+import {
+  CONSENT_KEY,
+  PREFERENCES_KEY,
+  getStoredConsent,
+  emitConsentChange,
+} from "@/lib/cookie-consent-utils";
+import type { CookiePreferences } from "@/lib/cookie-consent-utils";
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -75,13 +26,7 @@ export function CookieConsent() {
       const timer = setTimeout(() => setVisible(true), 1500);
       return () => clearTimeout(timer);
     }
-    // Apply stored consent
-    if (consent === "all") {
-      grantAnalyticsConsent();
-    } else {
-      const prefs = getStoredPreferences();
-      if (!prefs.analytics) revokeAnalyticsConsent();
-    }
+    // Consent already stored — GA/AdSense components will read it themselves
   }, []);
 
   const acceptAll = useCallback(() => {
@@ -90,7 +35,7 @@ export function CookieConsent() {
       PREFERENCES_KEY,
       JSON.stringify({ analytics: true, marketing: true })
     );
-    grantAnalyticsConsent();
+    emitConsentChange(); // tells GA & AdSense to load
     setVisible(false);
   }, []);
 
@@ -100,18 +45,14 @@ export function CookieConsent() {
       PREFERENCES_KEY,
       JSON.stringify({ analytics: false, marketing: false })
     );
-    revokeAnalyticsConsent();
+    emitConsentChange(); // tells GA & AdSense to stay off
     setVisible(false);
   }, []);
 
   const savePreferences = useCallback(() => {
     localStorage.setItem(CONSENT_KEY, preferences.analytics && preferences.marketing ? "all" : "essential");
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
-    if (preferences.analytics) {
-      grantAnalyticsConsent();
-    } else {
-      revokeAnalyticsConsent();
-    }
+    emitConsentChange(); // tells GA & AdSense to re-check
     setVisible(false);
   }, [preferences]);
 
