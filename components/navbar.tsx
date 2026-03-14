@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 const navLinks = [
+  { href: "/shieldx", label: "ShieldX", icon: Shield, highlight: true },
   { href: "/services", label: "Services", icon: Briefcase },
   { href: "/tools/ai-security-auditor", label: "AI Security", icon: Brain, highlight: true },
   { href: "/tools", label: "Tools", icon: Wrench },

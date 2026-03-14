@@ -22,6 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/nodejs-security-guide`, changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${baseUrl}/reports`, changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${baseUrl}/tools/ai-security-auditor`, changeFrequency: "monthly" as const, priority: 0.8 },
+    { url: `${baseUrl}/shieldx`, changeFrequency: "weekly" as const, priority: 0.9 },
     { url: `${baseUrl}/contact`, changeFrequency: "monthly" as const, priority: 0.6 },
     { url: `${baseUrl}/privacy-policy`, changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${baseUrl}/terms-of-service`, changeFrequency: "yearly" as const, priority: 0.3 },
