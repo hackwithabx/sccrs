@@ -151,32 +151,46 @@ export default function ToolsPage() {
 function HeaderAnalyzer() {
   const [url, setUrl] = useState("");
   const [results, setResults] = useState<
-    { header: string; status: "good" | "warning" | "bad"; message: string }[] | null
+    { header: string; value: string | null; status: "good" | "warning" | "bad" | "info"; message: string }[] | null
   >(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState<{ url: string; statusCode: number; server: string; scannedAt: string } | null>(null);
 
-  const analyzeHeaders = () => {
+  const analyzeHeaders = async () => {
     setLoading(true);
-    // Simulated analysis - in production, this would call an API
-    setTimeout(() => {
-      setResults([
-        { header: "Strict-Transport-Security", status: "good", message: "HSTS is properly configured with max-age=31536000" },
-        { header: "Content-Security-Policy", status: "warning", message: "CSP is set but uses 'unsafe-inline' which weakens protection" },
-        { header: "X-Frame-Options", status: "good", message: "Set to DENY - clickjacking protection enabled" },
-        { header: "X-Content-Type-Options", status: "good", message: "Set to nosniff - MIME sniffing protection enabled" },
-        { header: "X-XSS-Protection", status: "bad", message: "Missing - consider adding X-XSS-Protection: 1; mode=block" },
-        { header: "Referrer-Policy", status: "warning", message: "Not set - consider adding strict-origin-when-cross-origin" },
-        { header: "Permissions-Policy", status: "bad", message: "Missing - restrict browser features with Permissions-Policy" },
-        { header: "Cache-Control", status: "good", message: "Properly configured for sensitive content" },
-      ]);
+    setError(null);
+    setResults(null);
+    setMeta(null);
+
+    try {
+      const res = await fetch("/api/analyze-headers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to analyze headers");
+        return;
+      }
+
+      setResults(data.results);
+      setMeta({ url: data.url, statusCode: data.statusCode, server: data.server, scannedAt: data.scannedAt });
+    } catch {
+      setError("Network error — please check your connection and try again");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const statusIcon = (status: string) => {
-    if (status === "good") return <CheckCircle2 className="h-5 w-5 text-primary" />;
-    if (status === "warning") return <AlertTriangle className="h-5 w-5 text-chart-4" />;
-    return <XCircle className="h-5 w-5 text-destructive" />;
+    if (status === "good") return <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />;
+    if (status === "warning") return <AlertTriangle className="h-5 w-5 text-chart-4 shrink-0" />;
+    if (status === "info") return <ShieldCheck className="h-5 w-5 text-blue-500 shrink-0" />;
+    return <XCircle className="h-5 w-5 text-destructive shrink-0" />;
   };
 
   return (
@@ -187,7 +201,7 @@ function HeaderAnalyzer() {
           <CardTitle>Security Header Analyzer</CardTitle>
         </div>
         <CardDescription>
-          Check if a website has proper security headers configured
+          Performs a real HTTP request to check security headers on any public URL
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -196,33 +210,56 @@ function HeaderAnalyzer() {
             placeholder="Enter URL (e.g., https://example.com)"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && url && !loading) analyzeHeaders(); }}
             className="flex-1"
           />
           <Button onClick={analyzeHeaders} disabled={!url || loading} className="gap-2">
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Analyze
           </Button>
         </div>
 
-        {results && (
+        {error && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
+            {error}
+          </motion.div>
+        )}
+
+        {meta && results && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-2"
+            className="space-y-3"
           >
+            {/* Scan metadata */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-b pb-3">
+              <span><strong>URL:</strong> {meta.url}</span>
+              <span><strong>HTTP Status:</strong> {meta.statusCode}</span>
+              <span><strong>Server:</strong> {meta.server}</span>
+              <span><strong>Scanned:</strong> {new Date(meta.scannedAt).toLocaleString()}</span>
+            </div>
+
+            {/* Results */}
             {results.map((r) => (
               <div
                 key={r.header}
                 className="flex items-start gap-3 rounded-lg border p-3"
               >
                 {statusIcon(r.status)}
-                <div>
+                <div className="min-w-0">
                   <div className="font-mono text-sm font-semibold">{r.header}</div>
-                  <div className="text-sm text-muted-foreground">{r.message}</div>
+                  {r.value && (
+                    <div className="text-xs font-mono text-muted-foreground truncate" title={r.value}>
+                      {r.value.length > 120 ? r.value.slice(0, 120) + "…" : r.value}
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground mt-0.5">{r.message}</div>
                 </div>
               </div>
             ))}
-            <div className="flex gap-2 mt-4">
+
+            {/* Summary badges */}
+            <div className="flex flex-wrap gap-2 mt-4">
               <Badge variant="outline" className="gap-1">
                 <CheckCircle2 className="h-3 w-3 text-primary" />
                 {results.filter((r) => r.status === "good").length} Passed
@@ -234,6 +271,10 @@ function HeaderAnalyzer() {
               <Badge variant="outline" className="gap-1">
                 <XCircle className="h-3 w-3 text-destructive" />
                 {results.filter((r) => r.status === "bad").length} Failed
+              </Badge>
+              <Badge variant="outline" className="gap-1">
+                <ShieldCheck className="h-3 w-3 text-blue-500" />
+                {results.filter((r) => r.status === "info").length} Info
               </Badge>
             </div>
           </motion.div>
