@@ -1,5 +1,6 @@
 // Secure code examples data
 import { extendedCodeExamples } from "./code-examples-extended";
+import { multiLangCodeExamples } from "./code-examples-multilang";
 
 export interface CodeExample {
   id: string;
@@ -10,6 +11,10 @@ export interface CodeExample {
   vulnerable: string;
   secure: string;
   explanation: string;
+  cweId?: string;
+  cweName?: string;
+  owaspId?: string;
+  owaspName?: string;
 }
 
 export const codeExamples: CodeExample[] = [
@@ -278,4 +283,5 @@ res.cookie('accessToken', accessToken, {
     explanation: "Use strong secrets, explicit algorithms, short expiration times, and httpOnly cookies. Never use the 'none' algorithm and always validate the algorithm during verification.",
   },
   ...extendedCodeExamples,
+  ...multiLangCodeExamples,
 ];

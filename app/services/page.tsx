@@ -403,9 +403,33 @@ export default function ServicesPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-12">
         <SectionHeading
           badge="Services"
-          title="What We Do"
-          description="We offer two distinct service lines — Security Services to protect what you already have, and Development Services to build secure applications from scratch."
+          title="Security & Development Expertise"
+          description="Two service lines — Security Services to protect what you have, and Development Services to build secure applications from scratch. All powered by ShieldX technology."
         />
+
+        {/* ShieldX promotion */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 max-w-3xl mx-auto"
+        >
+          <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+            <CardContent className="py-4 px-6 flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <Shield className="h-6 w-6 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold">Looking for automated security scanning?</p>
+                  <p className="text-xs text-muted-foreground">ShieldX offers 8 security modules — secrets, dependencies, cloud, API, and more.</p>
+                </div>
+              </div>
+              <Link href="/shieldx">
+                <Button size="sm" className="gap-1">
+                  Try ShieldX <ArrowRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Jump-to navigation */}
         <div className="mt-8 flex flex-wrap justify-center gap-3">

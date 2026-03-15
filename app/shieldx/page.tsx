@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import {
   CheckCircle2, AlertTriangle, XCircle, Eye, Search,
   Activity, Play, RotateCcw, Loader2,
   GitBranch, Bell, Copy, Check, Terminal, Mail, Code, Send,
-  MessageSquare, Settings, ExternalLink,
+  MessageSquare, Settings, ExternalLink, Lock, Crown,
 } from "lucide-react";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -567,18 +568,23 @@ const DEFAULT_ALERT_RULES: AlertRule[] = [
 
 type TabKey = "secrets" | "deps" | "cloud" | "api" | "logs" | "cicd" | "alerts" | "score";
 
-const TABS: { key: TabKey; label: string; icon: typeof Shield }[] = [
+const TABS: { key: TabKey; label: string; icon: typeof Shield; proOnly?: boolean }[] = [
   { key: "secrets", label: "Secrets Scanner", icon: Key },
-  { key: "deps", label: "Dependency Scanner", icon: Package },
-  { key: "cloud", label: "Cloud Security", icon: Cloud },
-  { key: "api", label: "API Scanner", icon: Globe },
-  { key: "logs", label: "Log Analyzer", icon: Brain },
-  { key: "cicd", label: "CI/CD Integration", icon: GitBranch },
-  { key: "alerts", label: "Alerts", icon: Bell },
+  { key: "deps", label: "Dependency Scanner", icon: Package, proOnly: true },
+  { key: "cloud", label: "Cloud Security", icon: Cloud, proOnly: true },
+  { key: "api", label: "API Scanner", icon: Globe, proOnly: true },
+  { key: "logs", label: "Log Analyzer", icon: Brain, proOnly: true },
+  { key: "cicd", label: "CI/CD Integration", icon: GitBranch, proOnly: true },
+  { key: "alerts", label: "Alerts", icon: Bell, proOnly: true },
   { key: "score", label: "Security Score", icon: BarChart3 },
 ];
 
 export default function ShieldXPage() {
+  const { data: session } = useSession();
+  const userPlan = (session?.user as { shieldxPlan?: string })?.shieldxPlan || "free";
+  const isAdmin = (session?.user as { role?: string })?.role === "admin";
+  const hasPro = userPlan === "pro" || userPlan === "enterprise" || isAdmin;
+
   const [activeTab, setActiveTab] = useState<TabKey>("secrets");
   const [isDemo, setIsDemo] = useState(false);
 
@@ -821,72 +827,154 @@ export default function ShieldXPage() {
   const highConfSecrets = secretsResults?.filter((f) => f.confidence !== "low") ?? [];
   const lowConfSecrets = secretsResults?.filter((f) => f.confidence === "low") ?? [];
 
+  const isTabLocked = (tab: TabKey) => !hasPro && !isDemo && (TABS.find(t => t.key === tab)?.proOnly ?? false);
+
   return (
-    <div className="py-8 sm:py-12">
+    <div className="py-8 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
-          <Badge className="mb-4 gap-1.5 bg-primary/10 text-primary border-primary/20 px-3 py-1">
-            <Shield className="h-3.5 w-3.5" /> Production Security Platform
-          </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
-            SCR{" "}
-            <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-              ShieldX
-            </span>
-          </h1>
-          <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-            8-module security platform: scan secrets with entropy detection, check dependencies via OSV.dev,
-            audit cloud configs, test APIs against OWASP Top 10, analyze logs, integrate CI/CD, and configure alerts.
-          </p>
+        {/* ═══ PREMIUM HERO SECTION ═══ */}
+        <div className="relative mb-14 rounded-3xl overflow-hidden border border-border/50">
+          {/* Animated gradient mesh */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-cyan-500/[0.03]" />
+          <div className="absolute top-0 left-1/4 w-72 h-72 bg-primary/[0.07] rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-cyan-500/[0.07] rounded-full blur-[100px] animate-pulse [animation-delay:2s]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/[0.04] rounded-full blur-[120px]" />
 
-          <div className="mt-6 flex justify-center gap-3">
-            <Button size="lg" onClick={runDemo} className="gap-2" disabled={secretsScanning || depsScanning || apiScanning || logsScanning}>
-              <Play className="h-4 w-4" /> Run Full Demo
-            </Button>
-            {hasAnyResults && (
-              <Button size="lg" variant="outline" onClick={resetAll} className="gap-2">
-                <RotateCcw className="h-4 w-4" /> Reset All
-              </Button>
-            )}
-          </div>
-          {isDemo && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Demo mode — using sample vulnerable data to showcase all scanners
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative text-center py-16 sm:py-20 px-6"
+          >
+            {/* Product Badge */}
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/80 shadow-sm mb-8">
+              <div className="relative flex items-center justify-center">
+                <Shield className="h-5 w-5 text-primary" />
+                <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                </span>
+              </div>
+              <span className="text-sm font-semibold">Enterprise Security Platform</span>
+              {hasPro && (
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-[10px] px-2 shadow-sm">
+                  <Crown className="h-3 w-3 mr-0.5" /> PRO
+                </Badge>
+              )}
+            </div>
+
+            {/* Main Title */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05]">
+              <span className="block mb-1">SCR</span>
+              <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                ShieldX
+              </span>
+            </h1>
+
+            <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              The complete security platform for modern engineering teams.{" "}
+              <span className="hidden sm:inline">
+                Scan secrets, audit dependencies, test APIs against OWASP Top 10, and monitor your entire stack.
+              </span>
+              <span className="sm:hidden">8 security modules in one platform.</span>
             </p>
-          )}
-        </motion.div>
 
-        {/* TAB NAV */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+            {/* Stats Row */}
+            <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto">
+              {[
+                { value: "8", label: "Security Modules", icon: Shield },
+                { value: "20+", label: "Secret Patterns", icon: Key },
+                { value: "Live", label: "OSV.dev Database", icon: Package },
+                { value: "OWASP", label: "API Top 10 2023", icon: Globe },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 + i * 0.08 }}
+                  className="group p-4 rounded-2xl bg-background/60 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300"
+                >
+                  <stat.icon className="h-5 w-5 text-primary mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                  <div className="text-2xl font-extrabold tracking-tight">{stat.value}</div>
+                  <div className="text-[11px] sm:text-xs text-muted-foreground font-medium">{stat.label}</div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="mt-10 flex flex-wrap justify-center gap-3">
+              <Button
+                size="lg"
+                onClick={runDemo}
+                className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300"
+                disabled={secretsScanning || depsScanning || apiScanning || logsScanning}
               >
-                <tab.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
-                {tab.key === "secrets" && secretsResults && highConfSecrets.length > 0 && (
-                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{highConfSecrets.length}</span>
+                {(secretsScanning || depsScanning || apiScanning || logsScanning) ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Play className="h-5 w-5" />
                 )}
-                {tab.key === "deps" && depsResults && depsResults.vulnerabilities.length > 0 && (
-                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{depsResults.vulnerabilities.length}</span>
-                )}
-                {tab.key === "logs" && logsResults && logsResults.length > 0 && (
-                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{logsResults.length}</span>
-                )}
-              </button>
-            );
-          })}
+                Run Full Demo
+              </Button>
+              <Link href="/shieldx/pricing">
+                <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl hover:bg-primary/5 transition-all duration-300">
+                  <Crown className="h-5 w-5" /> View Pricing
+                </Button>
+              </Link>
+              {hasAnyResults && (
+                <Button size="lg" variant="ghost" onClick={resetAll} className="gap-2 px-6 h-12 rounded-xl">
+                  <RotateCcw className="h-4 w-4" /> Reset
+                </Button>
+              )}
+            </div>
+
+            {isDemo && (
+              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
+                <Badge variant="outline" className="gap-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 px-3 py-1.5">
+                  <Activity className="h-3.5 w-3.5" /> Demo Mode — viewing sample data across all modules
+                </Badge>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* ═══ MODULE NAVIGATION ═══ */}
+        <div className="mb-8">
+          <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-2xl bg-muted/30 border border-border/50 backdrop-blur-sm">
+            {TABS.map((tab) => {
+              const active = activeTab === tab.key;
+              const locked = isTabLocked(tab.key);
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                      : locked
+                      ? "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-muted/30"
+                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  }`}
+                >
+                  <tab.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
+                  {locked && !active && (
+                    <Lock className="h-3 w-3 opacity-50" />
+                  )}
+                  {tab.key === "secrets" && secretsResults && highConfSecrets.length > 0 && (
+                    <span className="ml-0.5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full px-1.5 py-0.5 font-bold leading-none">{highConfSecrets.length}</span>
+                  )}
+                  {tab.key === "deps" && depsResults && depsResults.vulnerabilities.length > 0 && (
+                    <span className="ml-0.5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full px-1.5 py-0.5 font-bold leading-none">{depsResults.vulnerabilities.length}</span>
+                  )}
+                  {tab.key === "logs" && logsResults && logsResults.length > 0 && (
+                    <span className="ml-0.5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full px-1.5 py-0.5 font-bold leading-none">{logsResults.length}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* TAB CONTENT */}
@@ -898,6 +986,53 @@ export default function ShieldXPage() {
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.25 }}
           >
+
+            {/* ═══ GATED TAB CONTENT ═══ */}
+            {isTabLocked(activeTab) ? (
+              <Card className="relative overflow-hidden border-2 border-dashed border-primary/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-cyan-500/[0.03]" />
+                <CardContent className="relative py-16 sm:py-20 text-center">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+                    <div className="mx-auto mb-6 inline-flex rounded-2xl bg-gradient-to-br from-primary/10 to-cyan-500/10 p-6 ring-1 ring-primary/10">
+                      <Lock className="h-10 w-10 text-primary" />
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-bold mb-3">
+                      Upgrade to{" "}
+                      <span className="bg-gradient-to-r from-primary to-cyan-500 bg-clip-text text-transparent">ShieldX Pro</span>
+                    </h3>
+                    <p className="text-muted-foreground max-w-lg mx-auto mb-2 text-base">
+                      <strong>{TABS.find(t => t.key === activeTab)?.label}</strong> is available on the Pro plan.
+                      Get full access to all 8 security modules, CI/CD integration, and real-time alerts.
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2 mt-6 mb-8">
+                      {TABS.filter(t => t.proOnly).map(t => (
+                        <Badge key={t.key} variant="outline" className="gap-1 text-xs bg-background/80">
+                          <t.icon className="h-3 w-3" /> {t.label}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-3">
+                      <Link href="/shieldx/pricing">
+                        <Button size="lg" className="gap-2 px-8 h-12 rounded-xl shadow-lg shadow-primary/25">
+                          <Crown className="h-4 w-4" /> View Plans & Pricing
+                        </Button>
+                      </Link>
+                      {!session && (
+                        <Link href="/auth/register">
+                          <Button size="lg" variant="outline" className="gap-2 px-8 h-12 rounded-xl">
+                            Create Free Account
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-6">
+                      Starting at $499/month · All 8 modules · Cancel anytime
+                    </p>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            ) : (
+            <>
 
             {/* ═══ SECRETS SCANNER ═══ */}
             {activeTab === "secrets" && (
@@ -1842,20 +1977,36 @@ export default function ShieldXPage() {
                   </Card>
                 )}
 
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    Need help fixing these issues? Our security experts can help.
-                  </p>
-                  <div className="flex justify-center gap-3">
-                    <Link href="/contact">
-                      <Button className="gap-2">Get Expert Help <ArrowRight className="h-4 w-4" /></Button>
-                    </Link>
-                    <Link href="/services">
-                      <Button variant="outline" className="gap-2">View Services</Button>
-                    </Link>
+                <div className="text-center py-12">
+                  <div className="relative rounded-2xl overflow-hidden border border-border/50 p-8 sm:p-12">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.03] to-cyan-500/[0.03]" />
+                    <div className="relative">
+                      <h3 className="text-xl sm:text-2xl font-bold mb-3">Need Help Fixing These Issues?</h3>
+                      <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+                        Our security experts can help remediate vulnerabilities, harden your infrastructure, and implement best practices.
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        <Link href="/contact">
+                          <Button size="lg" className="gap-2 rounded-xl shadow-sm">Get Expert Help <ArrowRight className="h-4 w-4" /></Button>
+                        </Link>
+                        <Link href="/services">
+                          <Button size="lg" variant="outline" className="gap-2 rounded-xl">View Services</Button>
+                        </Link>
+                        {!hasPro && (
+                          <Link href="/shieldx/pricing">
+                            <Button size="lg" variant="outline" className="gap-2 rounded-xl text-primary border-primary/30 hover:bg-primary/5">
+                              <Crown className="h-4 w-4" /> Upgrade to Pro
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+            )}
+
+            </>
             )}
 
           </motion.div>

@@ -50,6 +50,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          shieldxPlan: user.shieldxPlan || "free",
         };
       },
     }),
@@ -61,8 +62,9 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as { role?: string }).role;
+        token.role = (user as { role?: string }).role || "user";
         token.id = user.id;
+        token.shieldxPlan = ((user as { shieldxPlan?: string }).shieldxPlan || "free") as "free" | "pro" | "enterprise";
       }
       return token;
     },
@@ -70,6 +72,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { id?: string }).id = token.id as string;
+        (session.user as { shieldxPlan?: string }).shieldxPlan = token.shieldxPlan as string;
       }
       return session;
     },

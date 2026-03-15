@@ -69,7 +69,7 @@ export function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-shadow duration-300 bg-background/85 backdrop-blur-lg ${
+      className={`sticky top-0 z-[120] w-full transition-shadow duration-300 bg-background/85 backdrop-blur-lg ${
         scrolled ? "shadow-md" : "shadow-none"
       }`}
     >
@@ -184,7 +184,7 @@ export function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+              className="fixed inset-0 z-[130] bg-black/50 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileOpen(false)}
             />
 
@@ -194,7 +194,7 @@ export function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed top-0 right-0 z-50 h-full w-72 bg-background shadow-2xl lg:hidden flex flex-col"
+              className="fixed top-0 right-0 z-[140] h-full w-[280px] bg-background shadow-2xl lg:hidden flex flex-col border-l border-border/50"
             >
               {/* Mobile header */}
               <div className="flex items-center justify-between px-5 h-16 border-b border-border">

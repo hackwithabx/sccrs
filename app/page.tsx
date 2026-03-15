@@ -30,6 +30,14 @@ import {
   Star,
   Building2,
   ClipboardCheck,
+  Key,
+  Package,
+  Globe,
+  GitBranch,
+  Bell,
+  Rocket,
+  ShieldCheck,
+  Activity,
 } from "lucide-react";
 import {
   PieChart,
@@ -47,41 +55,52 @@ import {
   Legend,
 } from "recharts";
 
+const shieldxModules = [
+  { icon: Key, title: "Secrets Scanner", desc: "Detect 20+ secret patterns with entropy analysis and confidence scoring" },
+  { icon: Package, title: "Dependency Audit", desc: "Live OSV.dev integration — find CVEs in your npm, pip, go dependencies" },
+  { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
+  { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing for any HTTP endpoint" },
+  { icon: Brain, title: "Log Analyzer", desc: "AI-powered pattern detection for brute force, injection, exfiltration" },
+  { icon: GitBranch, title: "CI/CD Integration", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates" },
+  { icon: Bell, title: "Alert Rules", desc: "Configurable email, Slack, and webhook alerts on critical findings" },
+  { icon: BarChart3, title: "Security Score", desc: "Unified radar-chart security posture score across all modules" },
+];
+
 const features = [
   {
     icon: BookOpen,
     title: "Security Blog",
-    description: "Stay updated with the latest AppSec trends, OWASP guidelines, and security best practices.",
+    description: "Latest AppSec trends, OWASP guidelines, and security best practices from experts.",
     href: "/blog",
   },
   {
     icon: Code,
     title: "Secure Code Examples",
-    description: "Compare vulnerable vs. secure code patterns across multiple languages and frameworks.",
+    description: "Vulnerable vs. secure code patterns across Python, Java, Go, C#, PHP, Ruby, and more.",
     href: "/secure-code",
   },
   {
     icon: BarChart3,
-    title: "Vulnerability Visualization",
-    description: "Interactive dashboards showing real-time vulnerability trends and severity distributions.",
+    title: "Vulnerability Dashboard",
+    description: "Interactive visualizations showing real-time vulnerability trends and severity data.",
     href: "/vulnerabilities",
   },
   {
     icon: Wrench,
     title: "Free Security Tools",
-    description: "Header analyzers, CSP generators, JWT decoders, hash tools, and more — all free.",
+    description: "Header analyzers, CSP generators, JWT decoders, hash tools — 7+ tools, all free.",
     href: "/tools",
   },
   {
     icon: FileText,
     title: "Security Reports",
-    description: "Generate comprehensive security assessment reports with PDF download and branding.",
+    description: "Generate branded PDF security assessment reports with executive summaries.",
     href: "/reports",
   },
   {
     icon: Shield,
     title: "Expert Services",
-    description: "Professional code reviews, penetration testing, and security consulting from experts.",
+    description: "Professional code reviews, penetration testing, and security consulting.",
     href: "/services",
   },
   {
@@ -126,13 +145,6 @@ const breachCosts = [
   { industry: "Average", cost: 4.88, fill: "#64748b" },
 ];
 
-const stats = [
-  { value: "10K+", label: "Vulnerabilities Analyzed" },
-  { value: "500+", label: "Code Reviews Completed" },
-  { value: "50+", label: "Security Tools" },
-  { value: "99.9%", label: "Client Satisfaction" },
-];
-
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -149,12 +161,13 @@ const itemVariants = {
 export default function HomePage() {
   return (
     <div className="relative">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 sm:py-32">
-        {/* Background gradient */}
+      {/* ═══ HERO — ShieldX Showcase ═══ */}
+      <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
+        {/* Background effects */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-primary/5 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-[400px] w-[600px] rounded-full bg-accent/5 blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[700px] w-[1000px] rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-[400px] w-[600px] rounded-full bg-blue-400/5 blur-3xl" />
+          <div className="absolute top-1/3 left-10 h-[300px] w-[300px] rounded-full bg-cyan-500/5 blur-3xl" />
         </div>
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -164,49 +177,148 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-6">
-              <Lock className="h-4 w-4" />
-              Application Security Platform
-            </span>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-              Secure Your Code.
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-8">
+              <ShieldCheck className="h-4 w-4" />
+              Announcing ShieldX — Enterprise Security Platform
+              <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
+              Security Your Startup
               <br />
-              <span className="text-primary">Protect Your Users.</span>
+              <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                Can Actually Afford
+              </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-              The modern AppSec platform for developers. Expert code reviews, vulnerability
-              analysis, free security tools, and comprehensive educational resources — all in one place.
+
+            <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
+              ShieldX gives you 8 enterprise-grade security modules in one platform — secrets scanning, dependency auditing,
+              cloud security, API testing, and more. Built for startups and growing teams who need real security, not just compliance checkboxes.
             </p>
+
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/tools">
-                <Button size="lg" className="gap-2 text-base px-8">
-                  <Wrench className="h-5 w-5" />
-                  Try Free Tools
+              <Link href="/shieldx">
+                <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
+                  <Rocket className="h-5 w-5" />
+                  Launch ShieldX — Free
                 </Button>
               </Link>
-              <Link href="/services">
-                <Button size="lg" variant="outline" className="gap-2 text-base px-8">
-                  Explore Services
+              <Link href="/shieldx/pricing">
+                <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl">
+                  View Pricing
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
             </div>
+
+            {/* Trust badges */}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> No code stored</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> SOC 2 ready</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> OWASP compliant</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Free tier available</span>
+            </div>
           </motion.div>
 
-          {/* Stats */}
+          {/* ShieldX Module Cards */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8"
+            className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4"
           >
-            {stats.map((stat) => (
+            {shieldxModules.map((mod, i) => (
+              <motion.div
+                key={mod.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + i * 0.06 }}
+              >
+                <Card className="h-full border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 group">
+                  <CardContent className="p-5">
+                    <div className="mb-3 inline-flex rounded-xl bg-primary/10 p-2.5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                      <mod.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="text-sm font-semibold mb-1">{mod.title}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{mod.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8"
+          >
+            {[
+              { value: "8", label: "Security Modules" },
+              { value: "20+", label: "Secret Patterns" },
+              { value: "50+", label: "Free Tools" },
+              { value: "99.9%", label: "Client Satisfaction" },
+            ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-bold text-primary">{stat.value}</div>
                 <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* ═══ WHY SHIELDX FOR STARTUPS ═══ */}
+      <section className="py-20 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            badge="For Startups"
+            title="Enterprise Security Without the Enterprise Price"
+            description="Most startups skip security because enterprise tools cost $50K+/year. ShieldX gives you the same capabilities at a fraction of the cost."
+          />
+
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Lock,
+                title: "Zero Code Storage",
+                desc: "Your code is analyzed in real-time and never stored on our servers. We process, report, and discard — your IP stays yours.",
+                highlight: "Privacy First",
+              },
+              {
+                icon: Zap,
+                title: "Instant Results",
+                desc: "No lengthy onboarding. Paste your code, upload your package.json, or point us at your API — get results in seconds.",
+                highlight: "No Setup",
+              },
+              {
+                icon: Activity,
+                title: "Unified Dashboard",
+                desc: "One security score across all 8 modules. Track your security posture over time with radar charts and trend analytics.",
+                highlight: "All-in-One",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-shadow">
+                  <CardContent className="p-8">
+                    <Badge className="mb-4 bg-primary/10 text-primary border-0">{item.highlight}</Badge>
+                    <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -832,20 +944,22 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
+            <Badge className="mb-4 bg-primary/10 text-primary border-0">Get Started Today</Badge>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Ready to Secure Your Applications?
+              Ready to Secure Your Application?
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Start with our free tools or get a professional security assessment from our team.
+              Start with ShieldX for free, explore our tools, or get a professional security assessment from our expert team.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/auth/register">
-                <Button size="lg" className="gap-2 text-base px-8">
-                  Create Free Account
+              <Link href="/shieldx">
+                <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
+                  <Shield className="h-5 w-5" />
+                  Try ShieldX Free
                 </Button>
               </Link>
               <Link href="/contact?subject=Free+Sample+Code+Review">
-                <Button size="lg" variant="outline" className="gap-2 text-base px-8">
+                <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl">
                   Request Free Code Review
                 </Button>
               </Link>

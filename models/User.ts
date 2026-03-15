@@ -25,6 +25,15 @@ const UserSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    shieldxPlan: {
+      type: String,
+      enum: ["free", "pro", "enterprise"],
+      default: "free",
+    },
+    shieldxExpiry: {
+      type: Date,
+      default: null,
+    },
     avatar: {
       type: String,
       default: "",

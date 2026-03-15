@@ -34,55 +34,55 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0f1c;
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #0a0f1c;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #0a0f1c;
-  --primary: #10b981;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
-  --secondary-foreground: #0a0f1c;
+  --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  --accent: #06d6a0;
-  --accent-foreground: #0a0f1c;
-  --destructive: #ef4444;
+  --accent: #3b82f6;
+  --accent-foreground: #0f172a;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #10b981;
+  --ring: #2563eb;
   --radius: 0.625rem;
-  --chart-1: #10b981;
-  --chart-2: #06d6a0;
+  --chart-1: #2563eb;
+  --chart-2: #0891b2;
   --chart-3: #3b82f6;
   --chart-4: #f59e0b;
   --chart-5: #ef4444;
 }
 
 .dark {
-  --background: #0a0f1c;
-  --foreground: #f8fafc;
-  --card: #111827;
-  --card-foreground: #f8fafc;
-  --popover: #111827;
-  --popover-foreground: #f8fafc;
-  --primary: #10b981;
+  --background: #030712;
+  --foreground: #f1f5f9;
+  --card: #0f172a;
+  --card-foreground: #f1f5f9;
+  --popover: #0f172a;
+  --popover-foreground: #f1f5f9;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
   --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
+  --secondary-foreground: #f1f5f9;
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
-  --accent: #06d6a0;
-  --accent-foreground: #f8fafc;
+  --accent: #60a5fa;
+  --accent-foreground: #f1f5f9;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #1e293b;
   --input: #1e293b;
-  --ring: #10b981;
-  --chart-1: #10b981;
-  --chart-2: #06d6a0;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #06b6d4;
   --chart-3: #60a5fa;
   --chart-4: #fbbf24;
   --chart-5: #f87171;
@@ -143,6 +143,6 @@ html {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+  0%, 100% { box-shadow: 0 0 5px rgba(79, 70, 229, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.6); }
 }
