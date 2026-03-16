@@ -7,12 +7,16 @@ export const planFeatures: Record<PlanTier, string[]> = {
     "basic-modules",
     "limited-scans",
     "demo",
+    "secrets-scan",
   ],
   pro: [
     "basic-modules",
     "api-security",
     "dependency-audit",
     "secrets-scan",
+    "cloud-security",
+    "log-analyzer",
+    "alerts",
     "higher-scan-limit",
   ],
   enterprise: [
@@ -28,8 +32,19 @@ export const planFeatures: Record<PlanTier, string[]> = {
   ],
 };
 
+export const planScanLimits: Record<PlanTier, number> = {
+  demo: 3,
+  free: 10,
+  pro: 1000,
+  enterprise: 9999999, // unlimited
+};
+
 export function isFeatureEnabled(plan: PlanTier, feature: string): boolean {
-  return planFeatures[plan]?.includes(feature);
+  return planFeatures[plan]?.includes(feature) || planFeatures[plan]?.includes("all-modules") || plan === "enterprise";
+}
+
+export function getScanLimit(plan: PlanTier): number {
+  return planScanLimits[plan] || 0;
 }
 
 // Example: isFeatureEnabled(user.planTier, "api-security")

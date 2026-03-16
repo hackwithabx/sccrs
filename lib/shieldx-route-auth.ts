@@ -9,7 +9,7 @@ import {
   findUserByShieldXApiKey,
   readShieldXApiKeyFromRequest,
 } from "@/lib/shieldx-api-key";
-import { isFeatureEnabled } from "@/lib/feature-flags";
+import { isFeatureEnabled, getScanLimit } from "@/lib/feature-flags";
 
 function getEffectiveShieldXPlan(user: {
   shieldxPlan?: ShieldXPlan;
@@ -31,15 +31,18 @@ function getEffectiveShieldXPlan(user: {
 
   // RBAC: Enforce feature access and scan limits
   export function enforceShieldXFeatureAccess(user: any, feature: string) {
-    if (!isFeatureEnabled(user.planTier || user.shieldxPlan, feature)) {
-      throw new Error("Access denied: Feature not enabled for your plan.");
+    const plan = user.planTier || user.shieldxPlan || "free";
+    if (!isFeatureEnabled(plan, feature)) {
+      throw new Error(`Access denied: Feature '${feature}' not enabled for your ${plan} plan.`);
     }
   }
 
   export function enforceShieldXScanLimit(user: any, requestedScans = 1) {
-    const quota = user.scanQuota ?? 0;
-    if (quota < requestedScans) {
-      throw new Error("Scan limit exceeded for your plan.");
+    const plan = user.planTier || user.shieldxPlan || "free";
+    const limit = getScanLimit(plan);
+    const used = user.scanCount ?? 0; // Usage tracked in DB
+    if (used + requestedScans > limit) {
+      throw new Error(`Scan limit exceeded for your ${plan} plan. Limit is ${limit} scans.`);
     }
   }
 

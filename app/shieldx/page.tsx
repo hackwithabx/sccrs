@@ -22,6 +22,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { generateSecurityReportPDF } from "@/lib/pdf-generator";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 /* ═══════════════════════════════════════════════════════════
    ███  ENTROPY & CONFIDENCE SCORING  ███
@@ -575,14 +576,14 @@ const DEFAULT_ALERT_RULES: AlertRule[] = [
 
 type TabKey = "secrets" | "deps" | "cloud" | "api" | "logs" | "cicd" | "alerts" | "score";
 
-const TABS: { key: TabKey; label: string; icon: typeof Shield; proOnly?: boolean }[] = [
-  { key: "secrets", label: "Secrets Scanner", icon: Key, proOnly: true },
-  { key: "deps", label: "Dependency Scanner", icon: Package, proOnly: true },
-  { key: "cloud", label: "Cloud Security", icon: Cloud, proOnly: true },
-  { key: "api", label: "API Scanner", icon: Globe, proOnly: true },
-  { key: "logs", label: "Log Analyzer", icon: Brain, proOnly: true },
-  { key: "cicd", label: "CI/CD Integration", icon: GitBranch, proOnly: true },
-  { key: "alerts", label: "Alerts", icon: Bell, proOnly: true },
+const TABS: { key: TabKey; label: string; icon: typeof Shield }[] = [
+  { key: "secrets", label: "Secrets Scanner", icon: Key },
+  { key: "deps", label: "Dependency Scanner", icon: Package },
+  { key: "cloud", label: "Cloud Security", icon: Cloud },
+  { key: "api", label: "API Scanner", icon: Globe },
+  { key: "logs", label: "Log Analyzer", icon: Brain },
+  { key: "cicd", label: "CI/CD Integration", icon: GitBranch },
+  { key: "alerts", label: "Alerts", icon: Bell },
   { key: "score", label: "Security Score", icon: BarChart3 },
 ];
 
@@ -763,6 +764,24 @@ export default function ShieldXPage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("score");
   const [isDemo, setIsDemo] = useState(false);
+
+  // Demo Signup State
+  const [showDemoSignup, setShowDemoSignup] = useState(false);
+  const [demoForm, setDemoForm] = useState({
+    fullName: "",
+    email: "",
+    mobile: "",
+    city: "",
+    usageType: "Individual / Self"
+  });
+  const [demoFormSubmitting, setDemoFormSubmitting] = useState(false);
+
+  const isTabLocked = useCallback((tab: TabKey) => {
+    if (tab === "score") return false;
+    if (isDemo && tab !== "cicd" && tab !== "alerts") return false; // Demo mode allows core modules (mocked)
+    const featureMap: Record<TabKey, string> = { secrets: "secrets-scan", deps: "dependency-audit", cloud: "cloud-security", api: "api-security", logs: "log-analyzer", cicd: "cicd-integrations", alerts: "alerts", score: "basic-modules" };
+    return !isFeatureEnabled(planTier, featureMap[tab]);
+  }, [planTier, isDemo]);
 
   // Secrets state
   const [secretsInput, setSecretsInput] = useState("");
@@ -1344,6 +1363,11 @@ export default function ShieldXPage() {
 
   // RUN DEMO
   const runDemo = useCallback(async () => {
+    if (!hasPro && !isDemo && !localStorage.getItem("demo_signed_up")) {
+      setShowDemoSignup(true);
+      return;
+    }
+
     setIsDemo(true);
 
     setSecretsInput(DEMO_CODE);
@@ -1395,7 +1419,26 @@ export default function ShieldXPage() {
     setLogsScanning(false);
 
     setActiveTab("score");
-  }, []);
+  }, [hasPro, isDemo]);
+
+  const handleDemoSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDemoFormSubmitting(true);
+    try {
+      await fetch("/api/leads/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoForm)
+      });
+      localStorage.setItem("demo_signed_up", "true");
+      setShowDemoSignup(false);
+      await runDemo();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDemoFormSubmitting(false);
+    }
+  };
 
   // RESET ALL
   const resetAll = useCallback(() => {
@@ -1817,10 +1860,59 @@ export default function ShieldXPage() {
     return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
   };
 
-  const isTabLocked = (tab: TabKey) => !hasPro && !isDemo && (TABS.find(t => t.key === tab)?.proOnly ?? false);
-
   return (
     <div className="py-8 sm:py-16">
+      {showDemoSignup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-background border border-border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden"
+          >
+            <div className="p-6 border-b border-border/50">
+              <h2 className="text-xl font-bold">Access Free Demo</h2>
+              <p className="text-sm text-muted-foreground mt-1">Please provide your details to access the interactive ShieldX demo workspace.</p>
+            </div>
+            <form onSubmit={handleDemoSignup} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Full Name <span className="text-red-500">*</span></label>
+                <Input required value={demoForm.fullName} onChange={e => setDemoForm({...demoForm, fullName: e.target.value})} placeholder="Jane Doe" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email <span className="text-red-500">*</span></label>
+                <Input required type="email" value={demoForm.email} onChange={e => setDemoForm({...demoForm, email: e.target.value})} placeholder="jane@example.com" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mobile Number <span className="text-red-500">*</span></label>
+                <Input required type="tel" value={demoForm.mobile} onChange={e => setDemoForm({...demoForm, mobile: e.target.value})} placeholder="+1 (555) 000-0000" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">City <span className="text-red-500">*</span></label>
+                <Input required value={demoForm.city} onChange={e => setDemoForm({...demoForm, city: e.target.value})} placeholder="San Francisco" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Usage Type <span className="text-red-500">*</span></label>
+                <select 
+                  required
+                  value={demoForm.usageType} 
+                  onChange={e => setDemoForm({...demoForm, usageType: e.target.value})}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="Individual / Self">Individual / Self</option>
+                  <option value="Organization">Organization</option>
+                </select>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <Button type="button" variant="ghost" onClick={() => setShowDemoSignup(false)}>Cancel</Button>
+                <Button type="submit" disabled={demoFormSubmitting}>
+                  {demoFormSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Start Demo
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         {/* ═══ PREMIUM HERO SECTION ═══ */}
@@ -1849,9 +1941,9 @@ export default function ShieldXPage() {
                 {hasPro ? "ShieldX Paid Workspace" : "ShieldX Demo Workspace"}
               </span>
               {hasPro ? (
-                <Badge className={`bg-gradient-to-r ${userPlan === "enterprise" ? "from-blue-600 to-cyan-500" : "from-amber-500 to-orange-500"} text-white border-0 text-[10px] px-2 shadow-sm`}>
+                <Badge className={`bg-gradient-to-r ${planTier === "enterprise" ? "from-blue-600 to-cyan-500" : "from-amber-500 to-orange-500"} text-white border-0 text-[10px] px-2 shadow-sm`}>
                   <Crown className="h-3 w-3 mr-0.5" />
-                  {userPlan === "enterprise" ? "ENTERPRISE" : "PRO"}
+                  {planTier === "enterprise" ? "ENTERPRISE" : "PRO"}
                 </Badge>
               ) : (
                 <Badge variant="outline" className="text-[10px] uppercase">
@@ -1900,6 +1992,7 @@ export default function ShieldXPage() {
 
             {/* CTA Buttons */}
             <div className="mt-10 flex flex-wrap justify-center gap-3">
+              {!hasPro && (
               <Button
                 size="lg"
                 onClick={runDemo}
@@ -1913,6 +2006,7 @@ export default function ShieldXPage() {
                 )}
                 Run Full Demo
               </Button>
+              )}
               <Link href="/shieldx/pricing">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl hover:bg-primary/5 transition-all duration-300">
                   <Crown className="h-5 w-5" /> {hasPro ? "Manage Plan" : "View Pricing"}
@@ -2027,15 +2121,14 @@ export default function ShieldXPage() {
                       <Lock className="h-10 w-10 text-primary" />
                     </div>
                     <h3 className="text-2xl sm:text-3xl font-bold mb-3">
-                      Upgrade to{" "}
-                      <span className="bg-gradient-to-r from-primary to-cyan-500 bg-clip-text text-transparent">ShieldX Pro</span>
+                      Upgrade your Plan
                     </h3>
                     <p className="text-muted-foreground max-w-lg mx-auto mb-2 text-base">
                       <strong>{TABS.find(t => t.key === activeTab)?.label}</strong> is part of the paid ShieldX workspace.
-                      Free accounts can still run the full demo, while Pro and Enterprise unlock real scans, saved history, CI/CD, and alerts.
+                      Pro and Enterprise unlock real scans, saved history, CI/CD, and alerts.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2 mt-6 mb-8">
-                      {TABS.filter(t => t.proOnly).map(t => (
+                      {TABS.filter(t => !isFeatureEnabled("free", t.key) && t.key !== "score").map(t => (
                         <Badge key={t.key} variant="outline" className="gap-1 text-xs bg-background/80">
                           <t.icon className="h-3 w-3" /> {t.label}
                         </Badge>

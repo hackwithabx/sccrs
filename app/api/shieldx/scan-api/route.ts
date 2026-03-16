@@ -386,7 +386,7 @@ export async function POST(request: NextRequest) {
     }
         // Secure SaaS: enforce plan tier, scan limits, and feature access
         const { enforceShieldXFeatureAccess, enforceShieldXScanLimit } = await import("@/lib/shieldx-route-auth");
-        const { planFeatures } = await import("@/lib/feature-flags");
+        const { isFeatureEnabled } = await import("@/lib/feature-flags");
 
     if (!["http:", "https:"].includes(parsedUrl.protocol)) {
       return NextResponse.json(
@@ -415,8 +415,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Demo scan limit exceeded" }, { status: 403 });
       }
       // Restrict modules/features for demo
-      // Only allow basic-modules
-      if (!planFeatures.demo.includes("basic-modules")) {
+      // Use feature flag check
+      if (!isFeatureEnabled("demo", "basic-modules")) {
         return NextResponse.json({ error: "Demo access restricted to basic modules" }, { status: 403 });
       }
     } else {
