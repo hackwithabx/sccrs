@@ -79,8 +79,7 @@ export default function ToolsPage() {
             </Card>
           </Link>
         </motion.div>
-        {/* ...rest of the file remains unchanged... */
-
+        
         {/* Quick Navigation */}
         <div className="mt-8 flex flex-wrap gap-2 justify-center">
           {[
