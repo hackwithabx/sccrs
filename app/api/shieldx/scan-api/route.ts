@@ -424,8 +424,8 @@ export async function POST(request: NextRequest) {
       try {
         enforceShieldXFeatureAccess(authorizedUser, "api-security");
         enforceShieldXScanLimit(authorizedUser, 1);
-      } catch (err) {
-        return NextResponse.json({ error: err.message || "Access denied" }, { status: 403 });
+      } catch (err: any) {
+        return NextResponse.json({ error: err?.message || "Access denied" }, { status: 403 });
       }
     }
 
