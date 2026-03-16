@@ -92,7 +92,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH - Update a user's role
+// PATCH - Update a user's role and/or ShieldX plan
 export async function PATCH(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -105,13 +105,44 @@ export async function PATCH(request: NextRequest) {
   try {
     await connectDB();
     const body = await request.json();
-    const { id, role } = body;
+    const { id, role, shieldxPlan } = body;
 
-    if (!id || !role || !["user", "admin"].includes(role)) {
-      return NextResponse.json({ error: "Invalid id or role" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    const updated = await User.findByIdAndUpdate(id, { role }, { new: true });
+    const updates: Record<string, string | null> = {};
+
+    if (role !== undefined) {
+      if (!["user", "admin"].includes(role)) {
+        return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+      }
+      updates.role = role;
+    }
+
+    if (shieldxPlan !== undefined) {
+      if (!["free", "pro", "enterprise"].includes(shieldxPlan)) {
+        return NextResponse.json(
+          { error: "Invalid ShieldX plan" },
+          { status: 400 }
+        );
+      }
+
+      updates.shieldxPlan = shieldxPlan;
+
+      if (shieldxPlan === "free") {
+        updates.shieldxExpiry = null;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: "No valid updates supplied" },
+        { status: 400 }
+      );
+    }
+
+    const updated = await User.findByIdAndUpdate(id, updates, { new: true });
 
     if (!updated) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

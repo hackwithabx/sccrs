@@ -31,6 +31,8 @@ import {
   UserX,
   ShieldCheck,
   Activity,
+  Zap,
+  Crown,
 } from "lucide-react";
 import { blogPosts } from "@/lib/blog-data";
 
@@ -53,6 +55,8 @@ interface UserRecord {
   name: string;
   email: string;
   role: "user" | "admin";
+  shieldxPlan: "free" | "pro" | "enterprise";
+  shieldxExpiry?: string | null;
   avatar: string;
   createdAt: string;
   updatedAt: string;
@@ -266,6 +270,33 @@ export default function AdminPage() {
     }
   };
 
+  const updateUserPlan = async (
+    id: string,
+    currentPlan: UserRecord["shieldxPlan"],
+    nextPlan: UserRecord["shieldxPlan"]
+  ) => {
+    if (currentPlan === nextPlan) return;
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id, shieldxPlan: nextPlan }),
+      });
+
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((user) =>
+            user._id === id ? { ...user, shieldxPlan: nextPlan } : user
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update plan:", err);
+    }
+  };
+
   const deleteReport = async (id: string, appName: string) => {
     if (!confirm(`Delete the report for "${appName}"? This cannot be undone.`)) return;
     try {
@@ -337,6 +368,30 @@ export default function AdminPage() {
       /* ignore */
     }
     setAuthenticated(false);
+  };
+
+  const renderPlanBadge = (plan: UserRecord["shieldxPlan"]) => {
+    if (plan === "enterprise") {
+      return (
+        <Badge className="bg-amber-500 text-white text-xs">
+          <Crown className="h-3 w-3 mr-1" /> Enterprise
+        </Badge>
+      );
+    }
+
+    if (plan === "pro") {
+      return (
+        <Badge className="bg-primary text-primary-foreground text-xs">
+          <Zap className="h-3 w-3 mr-1" /> Pro
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="secondary" className="text-xs">
+        Free
+      </Badge>
+    );
   };
 
   /* ========== RENDER ========== */
@@ -733,6 +788,7 @@ export default function AdminPage() {
                             <th className="text-left p-3 font-medium">Name</th>
                             <th className="text-left p-3 font-medium">Email</th>
                             <th className="text-left p-3 font-medium">Role</th>
+                            <th className="text-left p-3 font-medium">ShieldX Plan</th>
                             <th className="text-left p-3 font-medium">Joined</th>
                             <th className="text-right p-3 font-medium">
                               Actions
@@ -765,6 +821,27 @@ export default function AdminPage() {
                                 >
                                   {user.role}
                                 </Badge>
+                              </td>
+                              <td className="p-3">
+                                <div className="space-y-2">
+                                  {renderPlanBadge(user.shieldxPlan)}
+                                  <select
+                                    aria-label={`ShieldX plan for ${user.name}`}
+                                    className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                                    value={user.shieldxPlan}
+                                    onChange={(e) =>
+                                      updateUserPlan(
+                                        user._id,
+                                        user.shieldxPlan,
+                                        e.target.value as UserRecord["shieldxPlan"]
+                                      )
+                                    }
+                                  >
+                                    <option value="free">Free</option>
+                                    <option value="pro">Pro</option>
+                                    <option value="enterprise">Enterprise</option>
+                                  </select>
+                                </div>
                               </td>
                               <td className="p-3 text-xs text-muted-foreground">
                                 {new Date(user.createdAt).toLocaleDateString()}

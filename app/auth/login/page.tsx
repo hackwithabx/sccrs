@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -33,7 +33,16 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password");
       } else {
-        router.push("/dashboard");
+        const session = await getSession();
+        const shieldxPlan =
+          (session?.user as { shieldxPlan?: "free" | "pro" | "enterprise" } | undefined)
+            ?.shieldxPlan || "free";
+
+        router.push(
+          shieldxPlan === "pro" || shieldxPlan === "enterprise"
+            ? "/shieldx"
+            : "/dashboard"
+        );
         router.refresh();
       }
     } catch {

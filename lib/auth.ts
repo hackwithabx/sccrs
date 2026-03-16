@@ -5,6 +5,26 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { rateLimit } from "@/lib/rate-limit";
 
+type ShieldXPlan = "free" | "pro" | "enterprise";
+
+function getEffectiveShieldXPlan(user: {
+  shieldxPlan?: ShieldXPlan;
+  shieldxExpiry?: Date | string | null;
+}): ShieldXPlan {
+  const plan = user.shieldxPlan || "free";
+
+  if (plan === "free" || !user.shieldxExpiry) {
+    return plan;
+  }
+
+  const expiry = new Date(user.shieldxExpiry);
+  if (Number.isNaN(expiry.getTime()) || expiry.getTime() > Date.now()) {
+    return plan;
+  }
+
+  return "free";
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -30,7 +50,9 @@ export const authOptions: NextAuthOptions = {
 
         await dbConnect();
 
-        const user = await User.findOne({ email: credentials.email.toLowerCase() }).select('+password');
+        const user = await User.findOne({
+          email: credentials.email.toLowerCase(),
+        }).select("+password role shieldxPlan shieldxExpiry");
 
         if (!user || !user.password) {
           throw new Error("Invalid credentials");
@@ -50,7 +72,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          shieldxPlan: user.shieldxPlan || "free",
+          shieldxPlan: getEffectiveShieldXPlan(user),
         };
       },
     }),
@@ -64,15 +86,39 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = (user as { role?: string }).role || "user";
         token.id = user.id;
-        token.shieldxPlan = ((user as { shieldxPlan?: string }).shieldxPlan || "free") as "free" | "pro" | "enterprise";
+        token.shieldxPlan = ((user as { shieldxPlan?: ShieldXPlan }).shieldxPlan ||
+          "free") as ShieldXPlan;
+        return token;
       }
+
+      if (token.id) {
+        try {
+          await dbConnect();
+          const latestUser = (await User.findById(token.id)
+            .select("role shieldxPlan shieldxExpiry")
+            .lean()) as {
+            role?: string;
+            shieldxPlan?: ShieldXPlan;
+            shieldxExpiry?: Date | string | null;
+          } | null;
+
+          if (latestUser) {
+            token.role = latestUser.role || "user";
+            token.shieldxPlan = getEffectiveShieldXPlan(latestUser);
+          }
+        } catch (error) {
+          console.error("Failed to refresh session claims:", error);
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { id?: string }).id = token.id as string;
-        (session.user as { shieldxPlan?: string }).shieldxPlan = token.shieldxPlan as string;
+        (session.user as { shieldxPlan?: string }).shieldxPlan =
+          token.shieldxPlan as string;
       }
       return session;
     },

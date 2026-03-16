@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,14 +94,33 @@ function FeatureCell({ value }: { value: boolean | string }) {
    ═══════════════════════════════════════════════════════════ */
 
 export default function ShieldXPricingPage() {
-  const { data: session } = useSession();
-  const currentPlan = (session?.user as { shieldxPlan?: string })?.shieldxPlan || "free";
 
-  const getCtaLink = (planKey: string) => {
-    if (!session) return "/auth/register";
-    if (planKey === "enterprise") return "/contact";
-    if (planKey === "pro") return "/contact?subject=ShieldX+Pro+Subscription";
-    return "/shieldx";
+  const { data: session, update: updateSession } = useSession();
+  const currentPlan = (session?.user as { shieldxPlan?: string })?.shieldxPlan || "free";
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [successPlan, setSuccessPlan] = useState<string | null>(null);
+
+  // Handles plan upgrade for logged-in users
+  const handleUpgrade = async (planKey: string) => {
+    setLoadingPlan(planKey);
+    setSuccessPlan(null);
+    try {
+      const res = await fetch("/api/shieldx/upgrade-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessPlan(planKey);
+        await updateSession();
+      } else {
+        alert(data.error || "Upgrade failed");
+      }
+    } catch {
+      alert("Upgrade failed");
+    }
+    setLoadingPlan(null);
   };
 
   return (
@@ -181,13 +201,27 @@ export default function ShieldXPricingPage() {
                       <Button className="w-full" variant="outline" disabled>
                         Current Plan
                       </Button>
+                    ) : session ? (
+                      <Button
+                        className={`w-full gap-2 ${plan.highlight ? "" : ""}`}
+                        variant={plan.highlight ? "default" : "outline"}
+                        size="lg"
+                        onClick={() => handleUpgrade(plan.key)}
+                        disabled={loadingPlan === plan.key}
+                      >
+                        {loadingPlan === plan.key ? (
+                          <span className="flex items-center gap-2"><Zap className="h-4 w-4 animate-spin" /> Upgrading...</span>
+                        ) : successPlan === plan.key ? (
+                          <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Upgraded!</span>
+                        ) : (
+                          <>
+                            {plan.cta} <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
                     ) : (
-                      <Link href={getCtaLink(plan.key)}>
-                        <Button
-                          className={`w-full gap-2 ${plan.highlight ? "" : ""}`}
-                          variant={plan.highlight ? "default" : "outline"}
-                          size="lg"
-                        >
+                      <Link href="/auth/register">
+                        <Button className="w-full gap-2" variant={plan.highlight ? "default" : "outline"} size="lg">
                           {plan.cta} <ArrowRight className="h-4 w-4" />
                         </Button>
                       </Link>

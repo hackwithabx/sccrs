@@ -28,6 +28,7 @@ import {
   Briefcase,
   Star,
   TrendingUp,
+  Crown,
 } from "lucide-react";
 
 const fadeIn = {
@@ -135,12 +136,116 @@ const securityTips = [
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [randomTip] = useState(
+    () => securityTips[Math.floor(Math.random() * securityTips.length)]
+  );
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/login");
     }
   }, [status, router]);
+
+  const shieldxPlan =
+    (session?.user as { shieldxPlan?: "free" | "pro" | "enterprise" } | undefined)
+      ?.shieldxPlan || "free";
+  const hasShieldXAccess =
+    shieldxPlan === "pro" || shieldxPlan === "enterprise";
+  const isEnterprise = shieldxPlan === "enterprise";
+
+  const subscriptionStats = hasShieldXAccess
+    ? [
+        {
+          label: "Current Plan",
+          value: isEnterprise ? "Enterprise" : "Pro",
+          icon: isEnterprise ? Crown : Zap,
+          color: isEnterprise ? "text-amber-500" : "text-primary",
+        },
+        {
+          label: "ShieldX Modules",
+          value: "8/8",
+          icon: Shield,
+          color: "text-emerald-500",
+        },
+        {
+          label: "Scans",
+          value: "Unlimited",
+          icon: BarChart3,
+          color: "text-blue-500",
+        },
+        {
+          label: "Support",
+          value: isEnterprise ? "<4hr" : "Standard",
+          icon: Briefcase,
+          color: isEnterprise ? "text-amber-500" : "text-cyan-500",
+        },
+      ]
+    : [
+        {
+          label: "Code Patterns",
+          value: "18",
+          icon: Code,
+          color: "text-emerald-500",
+        },
+        {
+          label: "Free Tools",
+          value: "7",
+          icon: Wrench,
+          color: "text-blue-500",
+        },
+        {
+          label: "OWASP Guides",
+          value: "5",
+          icon: ShieldAlert,
+          color: "text-orange-500",
+        },
+        {
+          label: "Blog Posts",
+          value: "9+",
+          icon: BookOpen,
+          color: "text-purple-500",
+        },
+      ];
+
+  const primaryQuickLinks = hasShieldXAccess
+    ? [
+        {
+          icon: Shield,
+          title: "ShieldX Workspace",
+          description: "Run real scans across all 8 premium modules",
+          href: "/shieldx",
+          badge: isEnterprise ? "Enterprise" : "Pro",
+          color: isEnterprise ? "text-amber-500" : "text-primary",
+        },
+        {
+          icon: BookOpen,
+          title: "ShieldX Docs",
+          description: "Integration, module, and workflow guides",
+          href: "/shieldx/docs",
+          badge: "Product Manual",
+          color: "text-blue-500",
+        },
+      ]
+    : [
+        {
+          icon: Shield,
+          title: "ShieldX Demo",
+          description: "Try the full product with guided sample data",
+          href: "/shieldx",
+          badge: "Run Demo",
+          color: "text-primary",
+        },
+        {
+          icon: Zap,
+          title: "Upgrade Plan",
+          description: "Unlock premium scans, CI/CD, and alerts",
+          href: "/shieldx/pricing",
+          badge: "Pro / Enterprise",
+          color: "text-amber-500",
+        },
+      ];
+
+  const dashboardLinks = [...primaryQuickLinks, ...quickLinks];
 
   if (status === "loading") {
     return (
@@ -151,12 +256,6 @@ export default function DashboardPage() {
   }
 
   if (!session) return null;
-
-  const [randomTip, setRandomTip] = useState(securityTips[0]);
-
-  useEffect(() => {
-    setRandomTip(securityTips[Math.floor(Math.random() * securityTips.length)]);
-  }, []);
 
   return (
     <div className="min-h-screen py-12">
@@ -183,17 +282,106 @@ export default function DashboardPage() {
                   <p className="text-sm text-muted-foreground">
                     {session.user?.email}
                   </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Badge
+                      variant={hasShieldXAccess ? "default" : "secondary"}
+                      className={isEnterprise ? "bg-amber-500 text-white" : ""}
+                    >
+                      {isEnterprise
+                        ? "Enterprise"
+                        : hasShieldXAccess
+                        ? "Pro"
+                        : "Free"}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {hasShieldXAccess
+                        ? "ShieldX premium access is active for this account."
+                        : "You're on the free plan. Demo mode and public resources are available."}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {hasShieldXAccess && (
+                <Link href="/shieldx">
+                  <Button className="gap-2 w-full sm:w-auto">
+                    <Shield className="w-4 h-4" />
+                    Open ShieldX
+                  </Button>
+                </Link>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className={`mb-6 rounded-xl border p-5 ${
+            hasShieldXAccess
+              ? "border-primary/20 bg-primary/5"
+              : "border-amber-500/20 bg-amber-500/5"
+          }`}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-start gap-3">
+              {isEnterprise ? (
+                <Crown className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+              ) : hasShieldXAccess ? (
+                <Zap className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+              ) : (
+                <Shield className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+              )}
+              <div>
+                <p className="text-sm font-medium">
+                  {isEnterprise
+                    ? "Enterprise Access Active"
+                    : hasShieldXAccess
+                    ? "Pro Access Active"
+                    : "Free Access Active"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isEnterprise
+                    ? "Your account can use all ShieldX modules and enterprise onboarding paths. Reach out for team setup, custom integrations, or priority support."
+                    : hasShieldXAccess
+                    ? "All ShieldX scanning modules are unlocked for this account. You can run real scans, use CI/CD integration, and access premium workflows."
+                    : "Your account currently uses the free experience. Run the demo or upgrade to unlock real multi-module ShieldX scanning."}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/shieldx">
+                <Button
+                  variant={hasShieldXAccess ? "default" : "outline"}
+                  className="gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  {hasShieldXAccess ? "Launch ShieldX" : "Try Demo"}
+                </Button>
+              </Link>
+              <Link
+                href={
+                  isEnterprise
+                    ? "/contact?subject=ShieldX+Enterprise+Onboarding"
+                    : "/shieldx/pricing"
+                }
+              >
+                <Button variant="outline" className="gap-2">
+                  {isEnterprise ? "Enterprise Onboarding" : "View Plans"}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </motion.div>
 
@@ -217,32 +405,7 @@ export default function DashboardPage() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {[
-            {
-              label: "Code Patterns",
-              value: "18",
-              icon: Code,
-              color: "text-emerald-500",
-            },
-            {
-              label: "Free Tools",
-              value: "7",
-              icon: Wrench,
-              color: "text-blue-500",
-            },
-            {
-              label: "OWASP Guides",
-              value: "5",
-              icon: ShieldAlert,
-              color: "text-orange-500",
-            },
-            {
-              label: "Blog Posts",
-              value: "9+",
-              icon: BookOpen,
-              color: "text-purple-500",
-            },
-          ].map((stat, i) => (
+          {subscriptionStats.map((stat, i) => (
             <motion.div
               key={stat.label}
               custom={i}
@@ -268,10 +431,14 @@ export default function DashboardPage() {
         {/* Quick Access Grid */}
         <SectionHeading
           title="Quick Access"
-          description="Jump into your most-used security resources and tools."
+          description={
+            hasShieldXAccess
+              ? "Open your ShieldX workspace and the rest of the SecureCodeReviews toolkit."
+              : "Jump into your most-used security resources and free tools."
+          }
         />
         <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {quickLinks.map((link, i) => (
+          {dashboardLinks.map((link, i) => (
             <motion.div
               key={link.href}
               custom={i}

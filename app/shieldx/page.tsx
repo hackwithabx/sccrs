@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,12 +14,14 @@ import {
   CheckCircle2, AlertTriangle, XCircle, Eye, Search,
   Activity, Play, RotateCcw, Loader2,
   GitBranch, Bell, Copy, Check, Terminal, Mail, Code, Send,
-  MessageSquare, Settings, ExternalLink, Lock, Crown,
+  MessageSquare, Settings, ExternalLink, Lock, Crown, Download,
+  FileText, Trash2, Users, UserPlus, Building2,
 } from "lucide-react";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer,
 } from "recharts";
+import { generateSecurityReportPDF } from "@/lib/pdf-generator";
 
 /* ═══════════════════════════════════════════════════════════
    ███  ENTROPY & CONFIDENCE SCORING  ███
@@ -579,11 +581,153 @@ const TABS: { key: TabKey; label: string; icon: typeof Shield; proOnly?: boolean
   { key: "score", label: "Security Score", icon: BarChart3 },
 ];
 
+interface SavedScanFinding {
+  category: string;
+  status: "pass" | "warning" | "fail";
+  finding: string;
+  recommendation: string;
+  severity: "Critical" | "High" | "Medium" | "Low" | "Info";
+}
+
+interface SavedScan {
+  _id: string;
+  scanType: "secrets" | "deps" | "cloud" | "api" | "logs" | "cicd" | "score";
+  title: string;
+  source: "manual" | "cicd" | "snapshot";
+  status: "completed" | "failed";
+  target: string;
+  overallScore: number;
+  summary: string;
+  counts: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    findingsTotal: number;
+  };
+  findings: SavedScanFinding[];
+  createdAt: string;
+}
+
+interface TeamMember {
+  userId?: string | null;
+  name: string;
+  email: string;
+  role: "owner" | "admin" | "member" | "viewer";
+  status: "active" | "invited";
+  joinedAt?: string | null;
+}
+
+interface TeamInvite {
+  email: string;
+  name?: string;
+  role: "admin" | "member" | "viewer";
+  status: "pending" | "accepted" | "revoked";
+  invitedAt?: string | null;
+}
+
+interface TeamPayload {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  companyName: string;
+  seatLimit: number;
+  seatsUsed: number;
+  seatsRemaining: number;
+  viewerRole: "owner" | "admin" | "member" | "viewer" | null;
+  canManage: boolean;
+  members: TeamMember[];
+  invites: TeamInvite[];
+  pendingInvite: TeamInvite | null;
+}
+
+function createEmptyCloudAnswers() {
+  const init: Record<string, boolean | null> = {};
+  CLOUD_CHECKS.forEach((check) => {
+    init[check.id] = null;
+  });
+  return init;
+}
+
+function formatRelativeDate(value: string) {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) {
+    return "Just now";
+  }
+
+  const diffMinutes = Math.max(1, Math.round((Date.now() - time) / 60000));
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min ago`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+
+  return new Date(value).toLocaleDateString();
+}
+
+function buildSeverityCounts(
+  levels: Array<"critical" | "high" | "medium" | "low">
+) {
+  return levels.reduce(
+    (acc, level) => {
+      acc[level] += 1;
+      acc.findingsTotal += 1;
+      return acc;
+    },
+    { critical: 0, high: 0, medium: 0, low: 0, findingsTotal: 0 }
+  );
+}
+
+function exportSavedScan(scan: SavedScan) {
+  generateSecurityReportPDF({
+    appName: scan.title,
+    appUrl: scan.target,
+    notes: scan.summary,
+    score: Math.round(scan.overallScore * 10),
+    passCount: scan.findings.filter((finding) => finding.status === "pass").length,
+    warnCount: scan.findings.filter((finding) => finding.status === "warning").length,
+    failCount: scan.findings.filter((finding) => finding.status === "fail").length,
+    items:
+      scan.findings.length > 0
+        ? scan.findings
+        : [
+            {
+              category: "ShieldX Summary",
+              status: scan.status === "completed" ? "warning" : "fail",
+              finding: scan.summary,
+              recommendation:
+                "Review the stored ShieldX findings and remediate the highest severity issues first.",
+              severity:
+                scan.counts.critical > 0
+                  ? "Critical"
+                  : scan.counts.high > 0
+                  ? "High"
+                  : scan.counts.medium > 0
+                  ? "Medium"
+                  : "Low",
+            },
+          ],
+  });
+}
+
 export default function ShieldXPage() {
   const { data: session } = useSession();
   const userPlan = (session?.user as { shieldxPlan?: string })?.shieldxPlan || "free";
   const isAdmin = (session?.user as { role?: string })?.role === "admin";
   const hasPro = userPlan === "pro" || userPlan === "enterprise" || isAdmin;
+  const isEnterprise = userPlan === "enterprise" || isAdmin;
+  const userId = (session?.user as { id?: string } | undefined)?.id || "";
+  const userEmail =
+    (session?.user as { email?: string | null } | undefined)?.email || "";
 
   const [activeTab, setActiveTab] = useState<TabKey>("secrets");
   const [isDemo, setIsDemo] = useState(false);
@@ -600,11 +744,9 @@ export default function ShieldXPage() {
   const [depsError, setDepsError] = useState("");
 
   // Cloud state
-  const [cloudAnswers, setCloudAnswers] = useState<Record<string, boolean | null>>(() => {
-    const init: Record<string, boolean | null> = {};
-    CLOUD_CHECKS.forEach((c) => (init[c.id] = null));
-    return init;
-  });
+  const [cloudAnswers, setCloudAnswers] = useState<Record<string, boolean | null>>(
+    () => createEmptyCloudAnswers()
+  );
 
   // API state
   const [apiUrl, setApiUrl] = useState("");
@@ -638,6 +780,24 @@ export default function ShieldXPage() {
   const [alertRules, setAlertRules] = useState<AlertRule[]>(DEFAULT_ALERT_RULES);
   const [alertSaved, setAlertSaved] = useState(false);
   const [alertTestSent, setAlertTestSent] = useState(false);
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alertTesting, setAlertTesting] = useState(false);
+  const [alertStatusMessage, setAlertStatusMessage] = useState("");
+  const [alertErrorMessage, setAlertErrorMessage] = useState("");
+
+  // History + Enterprise state
+  const [scanHistory, setScanHistory] = useState<SavedScan[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historySaving, setHistorySaving] = useState(false);
+  const [historyMessage, setHistoryMessage] = useState("");
+  const [teamData, setTeamData] = useState<TeamPayload | null>(null);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamMessage, setTeamMessage] = useState("");
+  const [teamError, setTeamError] = useState("");
+  const [teamInviteName, setTeamInviteName] = useState("");
+  const [teamInviteEmail, setTeamInviteEmail] = useState("");
+  const [teamInviteRole, setTeamInviteRole] = useState<"admin" | "member" | "viewer">("member");
+  const [teamCompanyName, setTeamCompanyName] = useState("");
 
   // Scores (derived)
   const scores = calculateScores({
@@ -657,12 +817,467 @@ export default function ShieldXPage() {
     { category: "Logs", score: scores.logs },
   ];
 
+  const hasAnyResults =
+    secretsResults !== null ||
+    depsResults !== null ||
+    apiResults !== null ||
+    logsResults !== null ||
+    Object.values(cloudAnswers).some((value) => value !== null);
+
+  const highConfSecrets =
+    secretsResults?.filter((finding) => finding.confidence !== "low") ?? [];
+  const lowConfSecrets =
+    secretsResults?.filter((finding) => finding.confidence === "low") ?? [];
+
   // Copy to clipboard
   const copyToClipboard = useCallback(async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedSnippet(id);
     setTimeout(() => setCopiedSnippet(null), 2000);
   }, []);
+
+  const loadScanHistory = useCallback(async () => {
+    if (!userId || !hasPro) {
+      setScanHistory([]);
+      return;
+    }
+
+    setHistoryLoading(true);
+    try {
+      const response = await fetch("/api/shieldx/history?limit=8");
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load scan history");
+      }
+      setScanHistory(data.scans || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [hasPro, userId]);
+
+  const loadAlertConfig = useCallback(async () => {
+    if (!userId || !hasPro) {
+      setAlertRules(DEFAULT_ALERT_RULES);
+      setAlertEmail("");
+      setAlertSlackWebhook("");
+      setAlertCustomWebhook("");
+      setAlertThreshold("critical");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/shieldx/alerts");
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load alert configuration");
+      }
+
+      const config = data.config;
+      setAlertEmail(config?.email || userEmail || "");
+      setAlertSlackWebhook(config?.slackWebhook || "");
+      setAlertCustomWebhook(config?.customWebhook || "");
+      setAlertThreshold(config?.threshold || "critical");
+      setAlertRules(config?.rules?.length ? config.rules : DEFAULT_ALERT_RULES);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [hasPro, userEmail, userId]);
+
+  const loadTeam = useCallback(async () => {
+    if (!userId) {
+      setTeamData(null);
+      return;
+    }
+
+    setTeamLoading(true);
+    try {
+      const response = await fetch("/api/shieldx/team");
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load team");
+      }
+
+      setTeamData(data.team || null);
+      setTeamCompanyName(data.team?.companyName || "");
+    } catch (error) {
+      console.error(error);
+      setTeamData(null);
+    } finally {
+      setTeamLoading(false);
+    }
+  }, [userId]);
+
+  const persistScanRecord = useCallback(
+    async (payload: {
+      scanType: SavedScan["scanType"];
+      title: string;
+      source: SavedScan["source"];
+      status: SavedScan["status"];
+      target: string;
+      overallScore: number;
+      summary: string;
+      counts: SavedScan["counts"];
+      findings: SavedScan["findings"];
+      metadata?: Record<string, unknown>;
+    }) => {
+      if (!userId || !hasPro) {
+        return;
+      }
+
+      setHistorySaving(true);
+      setHistoryMessage("");
+
+      try {
+        const response = await fetch("/api/shieldx/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to save scan history");
+        }
+
+        setScanHistory((prev) => [data.scan, ...prev.filter((scan) => scan._id !== data.scan._id)].slice(0, 8));
+        setHistoryMessage(`${payload.title} saved to scan history.`);
+        setTimeout(() => setHistoryMessage(""), 3500);
+      } catch (error) {
+        console.error(error);
+        setHistoryMessage("Unable to save this scan to history right now.");
+        setTimeout(() => setHistoryMessage(""), 3500);
+      } finally {
+        setHistorySaving(false);
+      }
+    },
+    [hasPro, userId]
+  );
+
+  const deleteHistoryItem = useCallback(
+    async (id: string) => {
+      try {
+        const response = await fetch(`/api/shieldx/history?id=${id}`, {
+          method: "DELETE",
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to delete scan history item");
+        }
+        setScanHistory((prev) => prev.filter((scan) => scan._id !== id));
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    []
+  );
+
+  const saveAlertConfiguration = useCallback(async () => {
+    if (!hasPro) {
+      return;
+    }
+
+    setAlertSaving(true);
+    setAlertSaved(false);
+    setAlertErrorMessage("");
+    setAlertStatusMessage("");
+
+    try {
+      const response = await fetch("/api/shieldx/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: alertEmail,
+          slackWebhook: alertSlackWebhook,
+          customWebhook: alertCustomWebhook,
+          threshold: alertThreshold,
+          rules: alertRules,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save alert configuration");
+      }
+
+      setAlertSaved(true);
+      setAlertStatusMessage("Alert configuration saved for your paid ShieldX workspace.");
+      setTimeout(() => {
+        setAlertSaved(false);
+        setAlertStatusMessage("");
+      }, 3000);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save alert configuration";
+      setAlertErrorMessage(message);
+    } finally {
+      setAlertSaving(false);
+    }
+  }, [
+    alertCustomWebhook,
+    alertEmail,
+    alertRules,
+    alertSlackWebhook,
+    alertThreshold,
+    hasPro,
+  ]);
+
+  const sendTestAlert = useCallback(async () => {
+    if (!hasPro) {
+      return;
+    }
+
+    setAlertTesting(true);
+    setAlertTestSent(false);
+    setAlertErrorMessage("");
+    setAlertStatusMessage("");
+
+    try {
+      const response = await fetch("/api/shieldx/alerts/test", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send test alert");
+      }
+
+      setAlertTestSent(true);
+      setAlertStatusMessage(
+        `Test alert recorded for ${Array.isArray(data.channels) ? data.channels.join(", ") : "configured channels"}.`
+      );
+      setTimeout(() => {
+        setAlertTestSent(false);
+        setAlertStatusMessage("");
+      }, 3500);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to send test alert";
+      setAlertErrorMessage(message);
+    } finally {
+      setAlertTesting(false);
+    }
+  }, [hasPro]);
+
+  const saveScoreSnapshot = useCallback(async () => {
+    const findingLevels: Array<"critical" | "high" | "medium" | "low"> = [];
+    const confirmedSecrets =
+      secretsResults?.filter((finding) => finding.confidence !== "low") ?? [];
+
+    confirmedSecrets.forEach((finding) => findingLevels.push(finding.severity));
+    depsResults?.vulnerabilities.forEach((finding) => findingLevels.push(finding.severity));
+    logsResults?.forEach((finding) => findingLevels.push(finding.severity));
+    apiResults?.headers
+      .filter((header) => header.status !== "pass")
+      .forEach((header) => {
+        findingLevels.push(
+          header.severity === "critical" || header.severity === "high" || header.severity === "medium"
+            ? (header.severity as "critical" | "high" | "medium")
+            : "low"
+        );
+      });
+
+    const counts = buildSeverityCounts(findingLevels);
+    const cloudFailures = Object.values(cloudAnswers).filter((value) => value === false).length;
+    counts.high += cloudFailures;
+    counts.findingsTotal += cloudFailures;
+
+    const findings: SavedScanFinding[] = [
+      {
+        category: "Security Score",
+        status: scores.overall >= 7 ? "warning" : "fail",
+        finding: `Overall ShieldX posture score is ${scores.overall}/10.`,
+        recommendation:
+          scores.overall >= 7
+            ? "Address remaining high-severity issues and keep monitoring."
+            : "Prioritize critical and high findings before the next release.",
+        severity:
+          scores.overall >= 8
+            ? "Low"
+            : scores.overall >= 6
+            ? "Medium"
+            : scores.overall >= 4
+            ? "High"
+            : "Critical",
+      },
+      {
+        category: "Coverage",
+        status: hasAnyResults ? "warning" : "fail",
+        finding: hasAnyResults
+          ? "Multiple ShieldX modules have produced live results for this workspace."
+          : "No live ShieldX results have been recorded yet.",
+        recommendation: hasAnyResults
+          ? "Export a PDF report and share the remediation plan with the team."
+          : "Run at least one paid scan before saving a score snapshot.",
+        severity: hasAnyResults ? "Info" : "Medium",
+      },
+    ];
+
+    await persistScanRecord({
+      scanType: "score",
+      title: "Security Score Snapshot",
+      source: "snapshot",
+      status: "completed",
+      target: "",
+      overallScore: scores.overall,
+      summary: `Saved score snapshot with ${counts.findingsTotal} tracked issues across ShieldX modules.`,
+      counts,
+      findings,
+      metadata: {
+        secretsScore: scores.secrets,
+        dependencyScore: scores.deps,
+        cloudScore: scores.cloud,
+        apiScore: scores.api,
+        logScore: scores.logs,
+      },
+    });
+  }, [
+    apiResults,
+    cloudAnswers,
+    depsResults,
+    hasAnyResults,
+    logsResults,
+    persistScanRecord,
+    secretsResults,
+    scores,
+  ]);
+
+  const acceptEnterpriseInvite = useCallback(async () => {
+    setTeamMessage("");
+    setTeamError("");
+
+    try {
+      const response = await fetch("/api/shieldx/team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "accept" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to accept enterprise invite");
+      }
+
+      setTeamData(data.team);
+      setTeamCompanyName(data.team?.companyName || "");
+      setTeamMessage("Enterprise invite accepted. Refresh your session after reloading if you were already signed in.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to accept enterprise invite";
+      setTeamError(message);
+    }
+  }, []);
+
+  const inviteTeamMember = useCallback(async () => {
+    setTeamMessage("");
+    setTeamError("");
+
+    try {
+      const response = await fetch("/api/shieldx/team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "invite",
+          name: teamInviteName,
+          email: teamInviteEmail,
+          role: teamInviteRole,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to invite team member");
+      }
+
+      setTeamData(data.team);
+      setTeamCompanyName(data.team?.companyName || "");
+      setTeamInviteName("");
+      setTeamInviteEmail("");
+      setTeamInviteRole("member");
+      setTeamMessage(data.message || "Team member updated.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to invite team member";
+      setTeamError(message);
+    }
+  }, [teamInviteEmail, teamInviteName, teamInviteRole]);
+
+  const saveTeamSettings = useCallback(async () => {
+    setTeamMessage("");
+    setTeamError("");
+
+    try {
+      const response = await fetch("/api/shieldx/team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "settings",
+          companyName: teamCompanyName,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save team settings");
+      }
+
+      setTeamData(data.team);
+      setTeamCompanyName(data.team?.companyName || "");
+      setTeamMessage("Team settings saved.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save team settings";
+      setTeamError(message);
+    }
+  }, [teamCompanyName]);
+
+  const patchTeamMember = useCallback(
+    async (email: string, nextRole?: "admin" | "member" | "viewer", remove?: boolean) => {
+      setTeamMessage("");
+      setTeamError("");
+
+      try {
+        const response = await fetch("/api/shieldx/team", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            role: nextRole,
+            remove,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update team member");
+        }
+
+        setTeamData(data.team);
+        setTeamCompanyName(data.team?.companyName || "");
+        setTeamMessage(remove ? "Team member removed." : "Team role updated.");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to update team member";
+        setTeamError(message);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!userId) {
+      setScanHistory([]);
+      setTeamData(null);
+      return;
+    }
+
+    loadTeam();
+
+    if (hasPro) {
+      loadScanHistory();
+      loadAlertConfig();
+      return;
+    }
+
+    setScanHistory([]);
+  }, [hasPro, loadAlertConfig, loadScanHistory, loadTeam, userId]);
 
   // RUN DEMO
   const runDemo = useCallback(async () => {
@@ -724,11 +1339,7 @@ export default function ShieldXPage() {
     setIsDemo(false);
     setSecretsInput(""); setSecretsResults(null);
     setDepsInput(""); setDepsResults(null); setDepsError("");
-    setCloudAnswers(() => {
-      const i: Record<string, boolean | null> = {};
-      CLOUD_CHECKS.forEach((c) => (i[c.id] = null));
-      return i;
-    });
+    setCloudAnswers(() => createEmptyCloudAnswers());
     setApiUrl(""); setApiResults(null); setApiError("");
     setLogsInput(""); setLogsResults(null);
     setCicdTestResult(null);
@@ -739,7 +1350,48 @@ export default function ShieldXPage() {
   // Scanner actions
   const runSecretsScan = () => {
     setSecretsScanning(true);
-    setTimeout(() => { setSecretsResults(scanSecrets(secretsInput)); setSecretsScanning(false); }, 500);
+    setTimeout(() => {
+      const findings = scanSecrets(secretsInput);
+      setSecretsResults(findings);
+      setSecretsScanning(false);
+
+      const confirmedFindings = findings.filter((finding) => finding.confidence !== "low");
+      const counts = buildSeverityCounts(confirmedFindings.map((finding) => finding.severity));
+      const secretsScore = calculateScores({
+        secrets: findings,
+        depsVulns: [],
+        depTotal: 0,
+        cloudAnswers: createEmptyCloudAnswers(),
+        apiScore: null,
+        logFindings: [],
+      }).secrets;
+
+      void persistScanRecord({
+        scanType: "secrets",
+        title: "Secrets Exposure Scan",
+        source: "manual",
+        status: "completed",
+        target: `${secretsInput.split("\n").length} lines analyzed`,
+        overallScore: secretsScore,
+        summary:
+          confirmedFindings.length > 0
+            ? `${confirmedFindings.length} confirmed secret finding(s) detected.`
+            : "No confirmed hardcoded secrets detected.",
+        counts,
+        findings: confirmedFindings.slice(0, 10).map((finding) => ({
+          category: "Secrets",
+          status: "fail",
+          finding: `${finding.pattern} detected on line ${finding.line}: ${finding.match}`,
+          recommendation: finding.fix,
+          severity:
+            finding.severity === "critical"
+              ? "Critical"
+              : finding.severity === "high"
+              ? "High"
+              : "Medium",
+        })),
+      });
+    }, 500);
   };
 
   const runDepsScan = async () => {
@@ -753,7 +1405,56 @@ export default function ShieldXPage() {
       });
       const data = await resp.json();
       if (data.error) setDepsError(data.error);
-      else setDepsResults(data);
+      else {
+        setDepsResults(data);
+        const counts = buildSeverityCounts(
+          data.vulnerabilities.map(
+            (finding: OsvVuln) => finding.severity as "critical" | "high" | "medium" | "low"
+          )
+        );
+        const depsScore = calculateScores({
+          secrets: [],
+          depsVulns: data.vulnerabilities,
+          depTotal: data.totalDeps,
+          cloudAnswers: createEmptyCloudAnswers(),
+          apiScore: null,
+          logFindings: [],
+        }).deps;
+
+        void persistScanRecord({
+          scanType: "deps",
+          title: "Dependency Vulnerability Scan",
+          source: "manual",
+          status: "completed",
+          target: `${data.scannedPackages}/${data.totalDeps} packages (${data.ecosystem})`,
+          overallScore: depsScore,
+          summary:
+            data.vulnerabilities.length > 0
+              ? `${data.vulnerabilities.length} vulnerable package(s) identified via ${data.source}.`
+              : "No known dependency vulnerabilities detected.",
+          counts,
+          findings: data.vulnerabilities.slice(0, 10).map((finding: OsvVuln) => ({
+            category: "Dependencies",
+            status: "fail",
+            finding: `${finding.package} ${finding.version} is affected by ${finding.id}.`,
+            recommendation: finding.fixedIn
+              ? `Upgrade to ${finding.fixedIn} or later.`
+              : "Review the advisory and upgrade to the latest safe release.",
+            severity:
+              finding.severity === "critical"
+                ? "Critical"
+                : finding.severity === "high"
+                ? "High"
+                : finding.severity === "medium"
+                ? "Medium"
+                : "Low",
+          })),
+          metadata: {
+            ecosystem: data.ecosystem,
+            source: data.source,
+          },
+        });
+      }
     } catch {
       setDepsError("Failed to scan dependencies");
     }
@@ -771,7 +1472,76 @@ export default function ShieldXPage() {
       });
       const data = await resp.json();
       if (data.error) setApiError(data.error);
-      else setApiResults(data);
+      else {
+        setApiResults(data);
+        const issueLevels = [
+          ...data.headers
+            .filter((header: { status: string }) => header.status !== "pass")
+            .map((header: { severity: string }) =>
+              header.severity === "critical" || header.severity === "high" || header.severity === "medium"
+                ? (header.severity as "critical" | "high" | "medium")
+                : "low"
+            ),
+          ...data.apiChecks
+            .filter((check: { status: string }) => check.status !== "pass")
+            .map((check: { severity: string }) =>
+              check.severity === "critical" || check.severity === "high" || check.severity === "medium"
+                ? (check.severity as "critical" | "high" | "medium")
+                : "low"
+            ),
+        ];
+
+        void persistScanRecord({
+          scanType: "api",
+          title: "API Security Scan",
+          source: "manual",
+          status: "completed",
+          target: apiUrl,
+          overallScore: data.score,
+          summary: `${issueLevels.length} API security issue(s) or warnings observed for ${apiUrl}.`,
+          counts: buildSeverityCounts(issueLevels),
+          findings: [
+            ...data.headers
+              .filter((header: { status: string }) => header.status !== "pass")
+              .slice(0, 6)
+              .map((header: { name: string; message: string; severity: string }) => ({
+                category: "API Headers",
+                status: "fail" as const,
+                finding: `${header.name}: ${header.message}`,
+                recommendation: `Harden ${header.name} based on ShieldX guidance for ${apiUrl}.`,
+                severity:
+                  header.severity === "critical"
+                    ? "Critical"
+                    : header.severity === "high"
+                    ? "High"
+                    : header.severity === "medium"
+                    ? "Medium"
+                    : "Low",
+              })),
+            ...data.apiChecks
+              .filter((check: { status: string }) => check.status !== "pass")
+              .slice(0, 6)
+              .map((check: { name: string; message: string; severity: string }) => ({
+                category: "API Checks",
+                status: "fail" as const,
+                finding: `${check.name}: ${check.message}`,
+                recommendation: "Review the flagged API control and tighten the endpoint before production use.",
+                severity:
+                  check.severity === "critical"
+                    ? "Critical"
+                    : check.severity === "high"
+                    ? "High"
+                    : check.severity === "medium"
+                    ? "Medium"
+                    : "Low",
+              })),
+          ].slice(0, 10),
+          metadata: {
+            scannedAt: data.scannedAt,
+            totalChecks: data.totalChecks,
+          },
+        });
+      }
     } catch {
       setApiError("Failed to scan endpoint");
     }
@@ -780,7 +1550,51 @@ export default function ShieldXPage() {
 
   const runLogsScan = () => {
     setLogsScanning(true);
-    setTimeout(() => { setLogsResults(analyzeLogs(logsInput)); setLogsScanning(false); }, 500);
+    setTimeout(() => {
+      const findings = analyzeLogs(logsInput);
+      setLogsResults(findings);
+      setLogsScanning(false);
+
+      const counts = buildSeverityCounts(
+        findings.map((finding) => finding.severity)
+      );
+      const logScore = calculateScores({
+        secrets: [],
+        depsVulns: [],
+        depTotal: 0,
+        cloudAnswers: createEmptyCloudAnswers(),
+        apiScore: null,
+        logFindings: findings,
+      }).logs;
+
+      void persistScanRecord({
+        scanType: "logs",
+        title: "Threat Log Analysis",
+        source: "manual",
+        status: "completed",
+        target: `${logsInput.split("\n").length} lines analyzed`,
+        overallScore: logScore,
+        summary:
+          findings.length > 0
+            ? `${findings.length} suspicious log pattern(s) detected.`
+            : "No suspicious log patterns detected.",
+        counts,
+        findings: findings.slice(0, 10).map((finding) => ({
+          category: "Logs",
+          status: "fail",
+          finding: finding.details,
+          recommendation: finding.fix,
+          severity:
+            finding.severity === "critical"
+              ? "Critical"
+              : finding.severity === "high"
+              ? "High"
+              : finding.severity === "medium"
+              ? "Medium"
+              : "Low",
+        })),
+      });
+    }, 500);
   };
 
   const runCicdTest = async () => {
@@ -797,6 +1611,73 @@ export default function ShieldXPage() {
       });
       const data = await resp.json();
       setCicdTestResult(data);
+
+      const ciFindings: SavedScanFinding[] = [];
+      const ciLevels: Array<"critical" | "high" | "medium" | "low"> = [];
+
+      if (data.secrets?.total > 0) {
+        ciFindings.push({
+          category: "CI/CD Secrets",
+          status: "fail",
+          finding: `${data.secrets.total} secret finding(s) were detected in the pipeline test.`,
+          recommendation: "Rotate exposed secrets and block deployment until the findings are remediated.",
+          severity: data.secrets.critical > 0 ? "Critical" : "High",
+        });
+        for (let i = 0; i < (data.secrets.critical || 0); i += 1) {
+          ciLevels.push("critical");
+        }
+        for (let i = 0; i < Math.max((data.secrets.total || 0) - (data.secrets.critical || 0), 0); i += 1) {
+          ciLevels.push("high");
+        }
+      }
+
+      if (data.dependencies?.vulnerabilities?.length > 0) {
+        ciFindings.push({
+          category: "CI/CD Dependencies",
+          status: "fail",
+          finding: `${data.dependencies.vulnerabilities.length} vulnerable dependency result(s) were returned in CI.`,
+          recommendation: "Patch or pin the vulnerable packages before merging.",
+          severity: "High",
+        });
+        data.dependencies.vulnerabilities.forEach(
+          (finding: OsvVuln) =>
+            ciLevels.push(
+              finding.severity === "critical" || finding.severity === "high" || finding.severity === "medium"
+                ? (finding.severity as "critical" | "high" | "medium")
+                : "low"
+            )
+        );
+      }
+
+      void persistScanRecord({
+        scanType: "cicd",
+        title: "CI/CD Test Scan",
+        source: "cicd",
+        status: data.verdict === "PASS" ? "completed" : "failed",
+        target: "POST /api/shieldx/ci-scan",
+        overallScore: data.verdict === "PASS" ? 9 : Math.max(2, 8 - ciLevels.length),
+        summary:
+          data.verdict === "PASS"
+            ? "CI/CD test passed without blocking findings."
+            : "CI/CD test found issues that should fail the pipeline.",
+        counts: buildSeverityCounts(ciLevels),
+        findings:
+          ciFindings.length > 0
+            ? ciFindings
+            : [
+                {
+                  category: "CI/CD",
+                  status: "pass",
+                  finding: "The ShieldX CI/CD test completed without blocking findings.",
+                  recommendation: "Keep this pipeline gate enabled for every merge request.",
+                  severity: "Info",
+                },
+              ],
+        metadata: {
+          verdict: data.verdict,
+          exitCode: data.exitCode,
+        },
+      });
     } catch {
       setCicdTestResult({ verdict: "ERROR", exitCode: 1 });
     }
@@ -820,12 +1701,6 @@ export default function ShieldXPage() {
     if (s === "fail") return <XCircle className="h-4 w-4 text-red-500" />;
     return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
   };
-
-  const hasAnyResults = secretsResults !== null || depsResults !== null || apiResults !== null || logsResults !== null ||
-    Object.values(cloudAnswers).some((v) => v !== null);
-
-  const highConfSecrets = secretsResults?.filter((f) => f.confidence !== "low") ?? [];
-  const lowConfSecrets = secretsResults?.filter((f) => f.confidence === "low") ?? [];
 
   const isTabLocked = (tab: TabKey) => !hasPro && !isDemo && (TABS.find(t => t.key === tab)?.proOnly ?? false);
 
@@ -857,8 +1732,9 @@ export default function ShieldXPage() {
               </div>
               <span className="text-sm font-semibold">Enterprise Security Platform</span>
               {hasPro && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-[10px] px-2 shadow-sm">
-                  <Crown className="h-3 w-3 mr-0.5" /> PRO
+                <Badge className={`bg-gradient-to-r ${userPlan === "enterprise" ? "from-blue-600 to-cyan-500" : "from-amber-500 to-orange-500"} text-white border-0 text-[10px] px-2 shadow-sm`}>
+                  <Crown className="h-3 w-3 mr-0.5" />
+                  {userPlan === "enterprise" ? "ENTERPRISE" : "PRO"}
                 </Badge>
               )}
             </div>
@@ -939,6 +1815,39 @@ export default function ShieldXPage() {
         </div>
 
         {/* ═══ MODULE NAVIGATION ═══ */}
+        {teamData?.pendingInvite && !hasPro && (
+          <Card className="mb-8 border-blue-500/20 bg-blue-500/5">
+            <CardContent className="p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
+                  <Users className="h-4 w-4" />
+                  Enterprise Invite Available
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  <strong>{teamData.companyName || `${teamData.ownerName}'s team`}</strong> has reserved an
+                  Enterprise seat for {teamData.pendingInvite.email}.
+                </p>
+              </div>
+              <Button onClick={acceptEnterpriseInvite} className="gap-2 self-start sm:self-auto">
+                <Crown className="h-4 w-4" />
+                Accept Invite
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {(teamMessage || teamError) && activeTab !== "score" && (
+          <div
+            className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+              teamError
+                ? "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
+                : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            }`}
+          >
+            {teamError || teamMessage}
+          </div>
+        )}
+
         <div className="mb-8">
           <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-2xl bg-muted/30 border border-border/50 backdrop-blur-sm">
             {TABS.map((tab) => {
@@ -1667,7 +2576,12 @@ export default function ShieldXPage() {
                         <Input
                           placeholder="security@company.com"
                           value={alertEmail}
-                          onChange={(e) => { setAlertEmail(e.target.value); setAlertSaved(false); }}
+                          onChange={(e) => {
+                            setAlertEmail(e.target.value);
+                            setAlertSaved(false);
+                            setAlertStatusMessage("");
+                            setAlertErrorMessage("");
+                          }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -1677,7 +2591,12 @@ export default function ShieldXPage() {
                         <Input
                           placeholder="https://hooks.slack.com/services/..."
                           value={alertSlackWebhook}
-                          onChange={(e) => { setAlertSlackWebhook(e.target.value); setAlertSaved(false); }}
+                          onChange={(e) => {
+                            setAlertSlackWebhook(e.target.value);
+                            setAlertSaved(false);
+                            setAlertStatusMessage("");
+                            setAlertErrorMessage("");
+                          }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -1687,7 +2606,12 @@ export default function ShieldXPage() {
                         <Input
                           placeholder="https://api.company.com/webhooks/security"
                           value={alertCustomWebhook}
-                          onChange={(e) => { setAlertCustomWebhook(e.target.value); setAlertSaved(false); }}
+                          onChange={(e) => {
+                            setAlertCustomWebhook(e.target.value);
+                            setAlertSaved(false);
+                            setAlertStatusMessage("");
+                            setAlertErrorMessage("");
+                          }}
                         />
                       </div>
                     </div>
@@ -1703,7 +2627,12 @@ export default function ShieldXPage() {
                         ]).map((opt) => (
                           <button
                             key={opt.value}
-                            onClick={() => { setAlertThreshold(opt.value); setAlertSaved(false); }}
+                            onClick={() => {
+                              setAlertThreshold(opt.value);
+                              setAlertSaved(false);
+                              setAlertStatusMessage("");
+                              setAlertErrorMessage("");
+                            }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                               alertThreshold === opt.value
                                 ? "bg-primary text-primary-foreground"
@@ -1720,40 +2649,56 @@ export default function ShieldXPage() {
                     <div className="flex gap-3">
                       <Button
                         className="gap-2"
-                        onClick={() => {
-                          setAlertSaved(true);
-                          setTimeout(() => setAlertSaved(false), 3000);
-                        }}
-                        disabled={!alertEmail && !alertSlackWebhook && !alertCustomWebhook}
+                        onClick={saveAlertConfiguration}
+                        disabled={
+                          alertSaving ||
+                          (!alertEmail && !alertSlackWebhook && !alertCustomWebhook)
+                        }
                       >
-                        <Settings className="h-4 w-4" />
-                        {alertSaved ? "Saved!" : "Save Configuration"}
+                        {alertSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Settings className="h-4 w-4" />
+                        )}
+                        {alertSaving ? "Saving..." : alertSaved ? "Saved!" : "Save Configuration"}
                       </Button>
                       <Button
                         variant="outline"
                         className="gap-2"
-                        onClick={() => {
-                          setAlertTestSent(true);
-                          setTimeout(() => setAlertTestSent(false), 3000);
-                        }}
-                        disabled={!alertEmail && !alertSlackWebhook && !alertCustomWebhook}
+                        onClick={sendTestAlert}
+                        disabled={
+                          alertTesting ||
+                          (!alertEmail && !alertSlackWebhook && !alertCustomWebhook)
+                        }
                       >
-                        <Send className="h-4 w-4" />
-                        {alertTestSent ? "Test Sent!" : "Send Test Alert"}
+                        {alertTesting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                        {alertTesting ? "Testing..." : alertTestSent ? "Test Sent!" : "Send Test Alert"}
                       </Button>
                     </div>
 
-                    {alertSaved && (
-                      <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Alert configuration saved. You&apos;ll receive notifications for {alertThreshold === "critical" ? "critical" : alertThreshold === "high" ? "critical and high" : "all"} severity findings.
+                    {alertStatusMessage && (
+                      <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+                        alertSaved
+                          ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                          : "bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400"
+                      }`}>
+                        {alertSaved ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          <Bell className="h-4 w-4" />
+                        )}
+                        {alertStatusMessage}
                       </div>
                     )}
 
-                    {alertTestSent && (
-                      <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-sm">
-                        <Bell className="h-4 w-4" />
-                        Test alert dispatched to configured channels.
+                    {alertErrorMessage && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+                        <XCircle className="h-4 w-4" />
+                        {alertErrorMessage}
                       </div>
                     )}
                   </CardContent>
@@ -1787,7 +2732,16 @@ export default function ShieldXPage() {
                               <p className="text-xs text-muted-foreground">{rule.description}</p>
                             </div>
                             <button
-                              onClick={() => setAlertRules((prev) => prev.map((r) => r.id === rule.id ? { ...r, enabled: !r.enabled } : r))}
+                              onClick={() => {
+                                setAlertRules((prev) =>
+                                  prev.map((r) =>
+                                    r.id === rule.id ? { ...r, enabled: !r.enabled } : r
+                                  )
+                                );
+                                setAlertSaved(false);
+                                setAlertStatusMessage("");
+                                setAlertErrorMessage("");
+                              }}
                               className={`relative w-11 h-6 rounded-full transition-colors ${
                                 rule.enabled ? "bg-primary" : "bg-muted"
                               }`}
@@ -1869,6 +2823,37 @@ export default function ShieldXPage() {
                             Run scanners in other tabs or click &quot;Run Full Demo&quot; to see a real score.
                           </p>
                         )}
+                        {hasPro && (
+                          <div className="mt-6 flex flex-wrap gap-3 justify-center lg:justify-start">
+                            <Button
+                              onClick={saveScoreSnapshot}
+                              disabled={!hasAnyResults || historySaving}
+                              className="gap-2"
+                            >
+                              {historySaving ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FileText className="h-4 w-4" />
+                              )}
+                              {historySaving ? "Saving..." : "Save Score Snapshot"}
+                            </Button>
+                            {scanHistory[0] && (
+                              <Button
+                                variant="outline"
+                                onClick={() => exportSavedScan(scanHistory[0])}
+                                className="gap-2"
+                              >
+                                <Download className="h-4 w-4" />
+                                Export Latest PDF
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                        {historyMessage && (
+                          <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400">
+                            {historyMessage}
+                          </div>
+                        )}
                       </div>
 
                       <div className="h-[280px]">
@@ -1918,16 +2903,16 @@ export default function ShieldXPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {[
-                        { name: "Secrets Scanner", icon: Key, desc: "20 patterns + entropy", active: secretsResults !== null },
-                        { name: "Dependency Scanner", icon: Package, desc: "Real-time OSV.dev", active: depsResults !== null },
-                        { name: "Cloud Security", icon: Cloud, desc: "18 config checks", active: Object.values(cloudAnswers).some((v) => v !== null) },
-                        { name: "API Scanner", icon: Globe, desc: "OWASP API Top 10", active: apiResults !== null },
-                        { name: "Log Analyzer", icon: Brain, desc: "7 threat categories", active: logsResults !== null },
-                        { name: "CI/CD Integration", icon: GitBranch, desc: "GitHub/GitLab/cURL", active: cicdTestResult !== null },
-                        { name: "Alerts", icon: Bell, desc: "Email/Slack/Webhook", active: alertSaved },
-                        { name: "Security Score", icon: BarChart3, desc: "Real-time dashboard", active: hasAnyResults },
-                      ].map((mod, i) => (
+                        {[
+                          { name: "Secrets Scanner", icon: Key, desc: "20 patterns + entropy", active: secretsResults !== null },
+                          { name: "Dependency Scanner", icon: Package, desc: "Real-time OSV.dev", active: depsResults !== null },
+                          { name: "Cloud Security", icon: Cloud, desc: "18 config checks", active: Object.values(cloudAnswers).some((v) => v !== null) },
+                          { name: "API Scanner", icon: Globe, desc: "OWASP API Top 10", active: apiResults !== null },
+                          { name: "Log Analyzer", icon: Brain, desc: "7 threat categories", active: logsResults !== null },
+                          { name: "CI/CD Integration", icon: GitBranch, desc: "GitHub/GitLab/cURL", active: cicdTestResult !== null },
+                          { name: "Alerts", icon: Bell, desc: "Email/Slack/Webhook", active: Boolean(alertEmail || alertSlackWebhook || alertCustomWebhook) },
+                          { name: "Security Score", icon: BarChart3, desc: "Real-time dashboard", active: hasAnyResults },
+                        ].map((mod, i) => (
                         <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border ${mod.active ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"}`}>
                           <mod.icon className={`h-5 w-5 shrink-0 ${mod.active ? "text-emerald-500" : "text-muted-foreground"}`} />
                           <div>
@@ -1975,6 +2960,333 @@ export default function ShieldXPage() {
                       </div>
                     </CardContent>
                   </Card>
+                )}
+
+                {hasPro && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <FileText className="h-5 w-5 text-primary" />
+                        Recent Scan History & Reports
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Paid ShieldX workspaces keep summary-only scan records here so you can export reports without storing raw code or manifests.
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      {historyLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading saved scans...
+                        </div>
+                      ) : scanHistory.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
+                          Run a paid scan or save a score snapshot to start building your report history.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {scanHistory.map((scan) => (
+                            <div
+                              key={scan._id}
+                              className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                            >
+                              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="space-y-2">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-semibold">{scan.title}</span>
+                                    <Badge variant="outline" className="text-[10px] uppercase">
+                                      {scan.scanType}
+                                    </Badge>
+                                    <Badge
+                                      variant={scan.status === "completed" ? "outline" : "destructive"}
+                                      className="text-[10px] uppercase"
+                                    >
+                                      {scan.status}
+                                    </Badge>
+                                    <Badge className="bg-primary/10 text-primary border-primary/20">
+                                      {scan.overallScore}/10
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">{scan.summary}</p>
+                                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                                    <span>{formatRelativeDate(scan.createdAt)}</span>
+                                    {scan.target && <span>{scan.target}</span>}
+                                    <span>{scan.counts.findingsTotal} tracked findings</span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-2"
+                                    onClick={() => exportSavedScan(scan)}
+                                  >
+                                    <Download className="h-3.5 w-3.5" />
+                                    Export PDF
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="gap-2 text-muted-foreground"
+                                    onClick={() => deleteHistoryItem(scan._id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {isEnterprise && (
+                  <div className="grid xl:grid-cols-[1.2fr,0.8fr] gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Users className="h-5 w-5 text-primary" />
+                          Enterprise Team Management
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Invite teammates, assign seat roles, and keep Enterprise access out of the free/demo path.
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {teamLoading ? (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading Enterprise workspace...
+                          </div>
+                        ) : teamData ? (
+                          <>
+                            <div className="grid sm:grid-cols-3 gap-4">
+                              <div className="rounded-lg border bg-muted/30 p-4">
+                                <div className="text-xs uppercase tracking-wide text-muted-foreground">Team</div>
+                                <div className="mt-1 text-lg font-semibold">{teamData.companyName || "Enterprise Team"}</div>
+                              </div>
+                              <div className="rounded-lg border bg-muted/30 p-4">
+                                <div className="text-xs uppercase tracking-wide text-muted-foreground">Seats Used</div>
+                                <div className="mt-1 text-lg font-semibold">{teamData.seatsUsed}/{teamData.seatLimit}</div>
+                              </div>
+                              <div className="rounded-lg border bg-muted/30 p-4">
+                                <div className="text-xs uppercase tracking-wide text-muted-foreground">Seats Remaining</div>
+                                <div className="mt-1 text-lg font-semibold">{teamData.seatsRemaining}</div>
+                              </div>
+                            </div>
+
+                            {(teamMessage || teamError) && (
+                              <div
+                                className={`rounded-lg border px-4 py-3 text-sm ${
+                                  teamError
+                                    ? "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
+                                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                }`}
+                              >
+                                {teamError || teamMessage}
+                              </div>
+                            )}
+
+                            <div className="space-y-3">
+                              <label className="text-sm font-medium flex items-center gap-2">
+                                <Building2 className="h-4 w-4" />
+                                Workspace Name
+                              </label>
+                              <div className="flex flex-col gap-3 sm:flex-row">
+                                <Input
+                                  value={teamCompanyName}
+                                  onChange={(e) => setTeamCompanyName(e.target.value)}
+                                  placeholder="Acme Platform Security"
+                                />
+                                <Button onClick={saveTeamSettings} className="gap-2 sm:w-auto">
+                                  <Settings className="h-4 w-4" />
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+
+                            {teamData.canManage && (
+                              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                                <div className="flex items-center gap-2 font-medium">
+                                  <UserPlus className="h-4 w-4 text-primary" />
+                                  Invite or Add a Teammate
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-3">
+                                  <Input
+                                    placeholder="Full name"
+                                    value={teamInviteName}
+                                    onChange={(e) => setTeamInviteName(e.target.value)}
+                                  />
+                                  <Input
+                                    placeholder="teammate@company.com"
+                                    value={teamInviteEmail}
+                                    onChange={(e) => setTeamInviteEmail(e.target.value)}
+                                  />
+                                  <select
+                                    value={teamInviteRole}
+                                    onChange={(e) =>
+                                      setTeamInviteRole(
+                                        e.target.value as "admin" | "member" | "viewer"
+                                      )
+                                    }
+                                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                                  >
+                                    <option value="member">Member</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="viewer">Viewer</option>
+                                  </select>
+                                </div>
+                                <Button
+                                  onClick={inviteTeamMember}
+                                  disabled={!teamInviteEmail.trim()}
+                                  className="gap-2"
+                                >
+                                  <UserPlus className="h-4 w-4" />
+                                  Invite to Enterprise
+                                </Button>
+                              </div>
+                            )}
+
+                            <div className="space-y-3">
+                              <div className="text-sm font-medium">Active Team Members</div>
+                              <div className="space-y-2">
+                                {teamData.members.map((member) => (
+                                  <div
+                                    key={member.email}
+                                    className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
+                                  >
+                                    <div>
+                                      <div className="font-medium">{member.name}</div>
+                                      <div className="text-sm text-muted-foreground">{member.email}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="uppercase text-[10px]">
+                                        {member.role}
+                                      </Badge>
+                                      {teamData.canManage && member.role !== "owner" && (
+                                        <>
+                                          <select
+                                            value={member.role}
+                                            onChange={(e) =>
+                                              patchTeamMember(
+                                                member.email,
+                                                e.target.value as "admin" | "member" | "viewer"
+                                              )
+                                            }
+                                            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                                          >
+                                            <option value="admin">Admin</option>
+                                            <option value="member">Member</option>
+                                            <option value="viewer">Viewer</option>
+                                          </select>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="gap-2 text-muted-foreground"
+                                            onClick={() => patchTeamMember(member.email, undefined, true)}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                            Remove
+                                          </Button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {teamData.invites.length > 0 && (
+                              <div className="space-y-3">
+                                <div className="text-sm font-medium">Pending Invites</div>
+                                <div className="space-y-2">
+                                  {teamData.invites.map((invite) => (
+                                    <div
+                                      key={invite.email}
+                                      className="flex flex-col gap-3 rounded-lg border border-dashed p-4 md:flex-row md:items-center md:justify-between"
+                                    >
+                                      <div>
+                                        <div className="font-medium">{invite.name || invite.email}</div>
+                                        <div className="text-sm text-muted-foreground">
+                                          {invite.email} · invited {invite.invitedAt ? formatRelativeDate(invite.invitedAt) : "recently"}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="uppercase text-[10px]">
+                                          {invite.role}
+                                        </Badge>
+                                        {teamData.canManage && (
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="gap-2 text-muted-foreground"
+                                            onClick={() => patchTeamMember(invite.email, undefined, true)}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                            Revoke
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
+                            Enterprise team management will appear here once your workspace finishes loading.
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Crown className="h-5 w-5 text-primary" />
+                          Enterprise Onboarding
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Keep onboarding visible inside the product so Enterprise accounts do not fall back to a demo-only experience.
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="rounded-lg border bg-muted/30 p-4">
+                          <div className="font-medium">Priority Support</div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Enterprise onboarding requests can go through the contact form or your existing support inbox for white-label reporting, on-prem questions, and rollout planning.
+                          </p>
+                        </div>
+                        <div className="rounded-lg border bg-muted/30 p-4">
+                          <div className="font-medium">Suggested Next Steps</div>
+                          <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+                            <li>Invite your engineering leads and security champions.</li>
+                            <li>Save a baseline score snapshot, then export the first PDF report.</li>
+                            <li>Configure alerts so critical findings leave the dashboard.</li>
+                            <li>Run the CI/CD test and gate your next merge on ShieldX results.</li>
+                          </ul>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          <Link href="/contact">
+                            <Button className="gap-2">
+                              <Mail className="h-4 w-4" />
+                              Contact Onboarding
+                            </Button>
+                          </Link>
+                          <Link href="/shieldx/docs">
+                            <Button variant="outline" className="gap-2">
+                              <ExternalLink className="h-4 w-4" />
+                              Open Docs
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
 
                 <div className="text-center py-12">

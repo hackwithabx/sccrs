@@ -34,6 +34,15 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    shieldxTeamOwnerId: {
+      type: String,
+      default: null,
+    },
+    shieldxSeatRole: {
+      type: String,
+      enum: ["owner", "admin", "member", "viewer", null],
+      default: null,
+    },
     avatar: {
       type: String,
       default: "",
