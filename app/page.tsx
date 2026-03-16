@@ -169,22 +169,21 @@ export default function HomePage() {
             </div>
 
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-              <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                Fast, Actionable Security
+              <span className="block mb-2 text-foreground">DevSecOps for Startups</span>
+              <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent text-4xl sm:text-5xl lg:text-6xl xl:text-7xl">
+                No Security Team Required
               </span>
-              <br />
-              Built for Developers & Startups
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-              ShieldX delivers instant, developer-first security scanning—no security team required. Run your first scan in 60 seconds, get clear findings with real code fixes, and protect your stack without enterprise overhead. Built for lean teams, solo builders, and fast-moving startups.
+              Security that developers actually want to use. Run comprehensive scans in under 60 seconds. Stop overpaying for bloated, fragmented tools. ShieldX gives you everything you need—faster and infinitely more affordable.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/shieldx/pricing">
+              <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
                   <Rocket className="h-5 w-5" />
-                  View ShieldX Plans
+                  Upgrade to Pro
                 </Button>
               </Link>
               <Link href="/shieldx">
@@ -912,10 +911,10 @@ export default function HomePage() {
               Open the ShieldX demo, request the right subscription plan for your team, or get a professional security assessment from our experts.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/shieldx/pricing">
+              <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
                   <Shield className="h-5 w-5" />
-                  View ShieldX Plans
+                  Upgrade to Pro
                 </Button>
               </Link>
             </div>
