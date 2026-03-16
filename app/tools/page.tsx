@@ -1,70 +1,3 @@
-      {/* Free Sample Code Review CTA (moved from homepage) */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <Card className="border-0 bg-gradient-to-br from-violet-600 to-indigo-700 text-white overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/2" />
-              <CardContent className="relative p-8 md:p-12 flex flex-col lg:flex-row items-center gap-8">
-                <div className="flex-1 space-y-4">
-                  <Badge className="bg-white/20 text-white border-0 gap-1">
-                    <Star className="h-3 w-3" /> Limited Offer
-                  </Badge>
-                  <h2 className="text-3xl font-bold">Request a Free Sample Code Review</h2>
-                  <p className="text-lg opacity-90 max-w-xl">
-                    Send us 20–30 lines of your code — we&apos;ll review it for security vulnerabilities and
-                    send you a mini-report with findings and fixes. <strong>Completely free, no strings attached.</strong>
-                  </p>
-                  <ul className="space-y-2">
-                    {[
-                      "Expert review of your code snippet (any language)",
-                      "Vulnerability findings with severity ratings",
-                      "Specific remediation recommendations",
-                      "Delivered within 48 hours",
-                    ].map((item) => (
-                      <li key={item} className="flex items-center gap-2 text-sm opacity-90">
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="pt-4 flex flex-wrap gap-3">
-                    <Link href="/contact?subject=Free+Sample+Code+Review">
-                      <Button size="lg" className="bg-white text-violet-700 hover:bg-gray-100 gap-2 font-semibold">
-                        <ClipboardCheck className="h-5 w-5" />
-                        Request Free Review
-                      </Button>
-                    </Link>
-                    <Link href="/services">
-                      <Button size="lg" variant="ghost" className="text-white hover:bg-white/10 gap-2">
-                        View Full Services <ArrowRight className="h-5 w-5" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-                <div className="shrink-0 hidden lg:block">
-                  <div className="rounded-xl bg-white/10 backdrop-blur-sm p-6 font-mono text-sm space-y-2 w-80">
-                    <div className="flex items-center gap-2 text-white/60 mb-3">
-                      <FileSearch className="h-4 w-4" />
-                      <span>sample-review.txt</span>
-                    </div>
-                    <div className="text-red-300">SQL Injection - Critical</div>
-                    <div className="text-white/80">db.query(`SELECT * FROM users</div>
-                    <div className="text-white/80">  WHERE id = $&#123;req.params.id&#125;`);</div>
-                    <div className="mt-3 text-emerald-300">Fix - Parameterized Query</div>
-                    <div className="text-white/80">db.query(&apos;SELECT * FROM users</div>
-                    <div className="text-white/80">  WHERE id = $1&apos;, [req.params.id]);</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </section>
 "use client";
 
 import { useState } from "react";
@@ -78,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionHeading } from "@/components/section-heading";
 import { Separator } from "@/components/ui/separator";
+...existing code...
 import Link from "next/link";
 import {
   Globe,
