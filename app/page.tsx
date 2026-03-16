@@ -170,14 +170,14 @@ export default function HomePage() {
 
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
               <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                Security That Developers
+                Fast, Actionable Security
               </span>
               <br />
-              Actually Want to Use
+              Built for Developers & Startups
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-              Security scanning that developers can run in 60 seconds. ShieldX gives startups DevSecOps security without a dedicated security team, with one workspace for secrets, dependencies, APIs, cloud reviews, logs, alerts, and CI/CD gates.
+              ShieldX delivers instant, developer-first security scanning—no security team required. Run your first scan in 60 seconds, get clear findings with real code fixes, and protect your stack without enterprise overhead. Built for lean teams, solo builders, and fast-moving startups.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -916,11 +916,6 @@ export default function HomePage() {
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
                   <Shield className="h-5 w-5" />
                   View ShieldX Plans
-                </Button>
-              </Link>
-              <Link href="/contact?subject=Free+Sample+Code+Review">
-                <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl">
-                  Request Free Code Review
                 </Button>
               </Link>
             </div>

@@ -1,0 +1,86 @@
+﻿Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+npx : ΓÜá The "middleware" file convention is deprecated. Please use "proxy" 
+instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+At line:1 char:1
++ npx next build 2>&1 | Out-File -FilePath "X:\SCRs\build-check.txt" -E ...
++ ~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá The "middle...leware-to-proxy 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 8.9s
+  Running TypeScript ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/107) ...
+  Generating static pages using 15 workers (26/107) 
+  Generating static pages using 15 workers (53/107) 
+  Generating static pages using 15 workers (80/107) 
+Γ£ô Generating static pages using 15 workers (107/107) in 2.5s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /about
+Γö£ Γùï /admin
+Γö£ Γùï /admin/shieldx
+Γö£ ╞Æ /api/admin/auth
+Γö£ ╞Æ /api/admin/blog
+Γö£ ╞Æ /api/admin/contacts
+Γö£ ╞Æ /api/admin/reports
+Γö£ ╞Æ /api/admin/security-reports
+Γö£ ╞Æ /api/admin/users
+Γö£ ╞Æ /api/analyze-headers
+Γö£ ╞Æ /api/auth/[...nextauth]
+Γö£ ╞Æ /api/auth/register
+Γö£ ╞Æ /api/blog
+Γö£ ╞Æ /api/contact
+Γö£ ╞Æ /api/security-reports
+Γö£ ╞Æ /api/shieldx/ci-scan
+Γö£ ╞Æ /api/shieldx/scan-api
+Γö£ ╞Æ /api/shieldx/scan-deps
+Γö£ Γùï /auth/login
+Γö£ Γùï /auth/register
+Γö£ Γùï /blog
+Γö£ ΓùÅ /blog/[slug]
+Γöé Γö£ /blog/owasp-top-10-2025
+Γöé Γö£ /blog/secure-api-design-patterns
+Γöé Γö£ /blog/supply-chain-security
+Γöé Γöö [+59 more paths]
+Γö£ Γùï /blog/submit
+Γö£ Γùï /cloud-security
+Γö£ Γùï /contact
+Γö£ Γùï /dashboard
+Γö£ ╞Æ /feed.xml
+Γö£ Γùï /nodejs-security-guide
+Γö£ Γùï /owasp
+Γö£ Γùï /owasp/history
+Γö£ Γùï /owasp/top-10
+Γö£ Γùï /owasp/top-10-2025
+Γö£ Γùï /owasp/top-10-ai
+Γö£ Γùï /privacy-policy
+Γö£ Γùï /privacy-policy/no-code-storage
+Γö£ Γùï /reports
+Γö£ Γùï /reports/weekly
+Γö£ Γùï /robots.txt
+Γö£ Γùï /secure-code
+Γö£ Γùï /services
+Γö£ Γùï /shieldx
+Γö£ Γùï /shieldx/docs
+Γö£ Γùï /shieldx/pricing
+Γö£ Γùï /sitemap.xml
+Γö£ Γùï /terms-of-service
+Γö£ Γùï /tools
+Γö£ Γùï /tools/ai-security-auditor
+Γöö Γùï /vulnerabilities
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+ΓùÅ  (SSG)      prerendered as static HTML (uses generateStaticParams)
+╞Æ  (Dynamic)  server-rendered on demand
+
