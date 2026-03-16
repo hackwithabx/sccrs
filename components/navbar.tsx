@@ -25,7 +25,6 @@ import {
 const navLinks = [
   { href: "/shieldx", label: "ShieldX", icon: Shield, highlight: true },
   { href: "/services", label: "Services", icon: Briefcase },
-  { href: "/tools/ai-security-auditor", label: "AI Auditor", icon: Brain },
   { href: "/tools", label: "Tools", icon: Wrench },
   { href: "/owasp", label: "Learn", icon: BookOpen, matchAlso: ["/secure-code", "/cloud-security", "/vulnerabilities"] },
   { href: "/blog", label: "Blog", icon: BookOpen },
@@ -83,9 +82,7 @@ export function Navbar() {
           <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map(({ href, label, highlight, matchAlso }) => {
               const active = isActive(href, matchAlso);
-              // Prevent "Tools" from being active when AI Security is active
-              const suppressActive = href === "/tools" && isActive("/tools/ai-security-auditor");
-              const showActive = active && !suppressActive;
+              const showActive = active;
 
               return (
                 <Link
@@ -212,8 +209,7 @@ export function Navbar() {
                 <ul className="space-y-0.5">
                   {navLinks.map(({ href, label, icon: Icon, highlight, matchAlso }) => {
                     const active = isActive(href, matchAlso);
-                    const suppressActive = href === "/tools" && isActive("/tools/ai-security-auditor");
-                    const showActive = active && !suppressActive;
+                  const showActive = active;
 
                     return (
                       <li key={href}>
