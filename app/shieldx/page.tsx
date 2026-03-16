@@ -22,7 +22,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { generateSecurityReportPDF } from "@/lib/pdf-generator";
-import { isFeatureEnabled } from "@/lib/feature-flags";
+import { isFeatureEnabled, planFeatures, type PlanTier } from "@/lib/feature-flags";
 
 /* ═══════════════════════════════════════════════════════════
    ███  ENTROPY & CONFIDENCE SCORING  ███
@@ -749,9 +749,8 @@ export default function ShieldXPage() {
   const showDemo = planTier === "free" || planTier === "demo";
 
   // Feature flag logic
-  // Import at top: import { isFeatureEnabled, planFeatures } from "@/lib/feature-flags";
-  const enabledFeatures = planFeatures?.[planTier] || [];
-  function UpgradePrompt({ feature }) {
+  const enabledFeatures = planFeatures?.[planTier as PlanTier] || [];
+  function UpgradePrompt({ feature }: { feature: string }) {
     if (!isFeatureEnabled(planTier, feature)) {
       return (
         <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
