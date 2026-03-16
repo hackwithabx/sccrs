@@ -11,7 +11,75 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionHeading } from "@/components/section-heading";
 import { Separator } from "@/components/ui/separator";
-...existing code...
+import Link from "next/link";
+import {
+  Globe,
+  Hash,
+  KeyRound,
+  ArrowRightLeft,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Copy,
+  Check,
+  RefreshCw,
+  ShieldCheck,
+  FileCode,
+  Search,
+  ArrowRight,
+  Brain,
+  Sparkles,
+} from "lucide-react";
+
+export default function ToolsPage() {
+  return (
+    <div className="py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          badge="Security Tools"
+          title="Security Tools"
+          description="Online tools for security testing, encoding, hashing, and analysis. No sign-up required."
+        />
+
+        {/* Featured AI Security Auditor */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 mb-12"
+        >
+          <Link href="/tools/ai-security-auditor">
+            <Card className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950 dark:to-indigo-950 border-2 border-violet-200 dark:border-violet-700 hover:shadow-lg transition-all cursor-pointer">
+              <CardContent className="p-8">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Brain className="h-8 w-8 text-violet-600" />
+                      <Badge className="bg-violet-600 gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        Free AI Tool
+                      </Badge>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">AI Security Auditor</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Public AI and LLM security assessment tool for prompt injection, data leakage, and OWASP LLM risk reviews.
+                      It stays separate from paid ShieldX subscriptions and does not consume any paid workspace access.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <Badge variant="outline">Prompt Injection Detection</Badge>
+                      <Badge variant="outline">PII Scanning</Badge>
+                      <Badge variant="outline">OWASP LLM Top 10</Badge>
+                      <Badge variant="outline">PDF Reports</Badge>
+                    </div>
+                    <Button className="gap-2 bg-violet-600 hover:bg-violet-700">
+                      Try AI Security Auditor <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </motion.div>
+        {/* ...rest of the file remains unchanged... */
 import Link from "next/link";
 import {
   Globe,
