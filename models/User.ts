@@ -102,6 +102,25 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+      planTier: {
+        type: String,
+        enum: ["free", "pro", "enterprise", "demo"],
+        default: "free",
+        index: true,
+      },
+      scanQuota: {
+        type: Number,
+        default: 0,
+      },
+      demoSignupInfo: {
+        fullName: { type: String },
+        email: { type: String },
+        mobile: { type: String },
+        city: { type: String },
+        usageType: { type: String },
+        organization: { type: String },
+        individual: { type: Boolean },
+      },
   },
   {
     timestamps: true,

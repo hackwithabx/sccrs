@@ -274,6 +274,15 @@ export default function DashboardPage() {
           badge: "Product Manual",
           color: "text-blue-500",
         },
+          // Add upgrade prompt for restricted modules
+          {
+            icon: Zap,
+            title: "Upgrade Plan",
+            description: "Unlock advanced modules, CI/CD, and unlimited scans",
+            href: "/shieldx/pricing",
+            badge: "Upgrade",
+            color: "text-amber-500",
+          },
       ]
     : [
         {

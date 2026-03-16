@@ -384,6 +384,9 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
     }
+        // Secure SaaS: enforce plan tier, scan limits, and feature access
+        const { enforceShieldXFeatureAccess, enforceShieldXScanLimit } = await import("@/lib/shieldx-route-auth");
+        const { planFeatures } = await import("@/lib/feature-flags");
 
     if (!["http:", "https:"].includes(parsedUrl.protocol)) {
       return NextResponse.json(
@@ -396,6 +399,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Private and internal URLs cannot be scanned" },
         { status: 400 }
+        // Demo mode: enforce demo scan limits and restrict modules
+        if (demoMode) {
+          // Only allow demo users
+          if (authorizedUser && ["pro", "enterprise"].includes(authorizedUser.planTier || authorizedUser.shieldxPlan)) {
+            return NextResponse.redirect("/dashboard");
+          }
+          // Limit demo scans (example: max 3 per user)
+          try {
+            enforceShieldXScanLimit(authorizedUser || {}, 1);
+          } catch (err) {
+            return NextResponse.json({ error: "Demo scan limit exceeded" }, { status: 403 });
+          }
+          // Restrict modules/features for demo
+          // Only allow basic-modules
+          if (!planFeatures.demo.includes("basic-modules")) {
+            return NextResponse.json({ error: "Demo access restricted to basic modules" }, { status: 403 });
+          }
+        } else {
+          // Paid users: enforce scan limits and feature access
+          try {
+            enforceShieldXFeatureAccess(authorizedUser, "api-security");
+            enforceShieldXScanLimit(authorizedUser, 1);
+          } catch (err) {
+            return NextResponse.json({ error: err.message || "Access denied" }, { status: 403 });
+          }
+        }
       );
     }
 

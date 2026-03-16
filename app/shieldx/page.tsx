@@ -732,13 +732,34 @@ function exportSavedScan(scan: SavedScan) {
 
 export default function ShieldXPage() {
   const { data: session } = useSession();
-  const userPlan = (session?.user as { shieldxPlan?: string })?.shieldxPlan || "free";
+  // Plan tier logic for RBAC and UI
+  function getUserPlanTier(session) {
+    return session?.user?.planTier || session?.user?.shieldxPlan || "free";
+  }
+  const planTier = getUserPlanTier(session);
   const isAdmin = (session?.user as { role?: string })?.role === "admin";
-  const hasPro = userPlan === "pro" || userPlan === "enterprise" || isAdmin;
-  const isEnterprise = userPlan === "enterprise" || isAdmin;
+  const hasPro = planTier === "pro" || planTier === "enterprise" || isAdmin;
+  const isEnterprise = planTier === "enterprise" || isAdmin;
   const userId = (session?.user as { id?: string } | undefined)?.id || "";
   const userEmail =
     (session?.user as { email?: string | null } | undefined)?.email || "";
+
+  // Hide demo button for paid users
+  const showDemo = planTier === "free" || planTier === "demo";
+
+  // Feature flag logic
+  // Import at top: import { isFeatureEnabled, planFeatures } from "@/lib/feature-flags";
+  const enabledFeatures = planFeatures?.[planTier] || [];
+  function UpgradePrompt({ feature }) {
+    if (!isFeatureEnabled(planTier, feature)) {
+      return (
+        <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+          <span className="font-semibold text-yellow-700">Upgrade required:</span> This module is only available on Pro or Enterprise plans. <Link href="/shieldx/pricing" className="underline text-yellow-700">Upgrade now</Link>.
+        </div>
+      );
+    }
+    return null;
+  }
 
   const [activeTab, setActiveTab] = useState<TabKey>("score");
   const [isDemo, setIsDemo] = useState(false);

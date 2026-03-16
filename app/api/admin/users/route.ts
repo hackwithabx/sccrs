@@ -1,33 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
-import crypto from "crypto";
 import {
   detachUserFromEnterpriseTeam,
   teardownEnterpriseWorkspace,
 } from "@/lib/shieldx-billing";
+import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
-function isAuthorized(request: NextRequest): boolean {
-  const token = request.cookies.get("scr-admin-token")?.value;
-  if (!token) return false;
-
-  try {
-    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
-    if (!secret) return false;
-    const [data, signature] = token.split(".");
-    if (!data || !signature) return false;
-    const expected = crypto.createHmac("sha256", secret).update(data).digest("base64url");
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return false;
-    const decoded = JSON.parse(Buffer.from(data, "base64url").toString());
-    return decoded.authenticated === true && Date.now() < decoded.expiresAt;
-  } catch {
-    return false;
-  }
+function generateTemporaryPassword(): string {
+  const alphabet =
+    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+  const bytes = crypto.randomBytes(14);
+  return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join("");
 }
 
 // GET - Fetch all registered users (password excluded by default via select:false)
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -42,10 +33,21 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
     const role = searchParams.get("role");
+    const plan = searchParams.get("plan");
+    const search = searchParams.get("search")?.trim();
     const skip = (page - 1) * limit;
 
-    const filter: Record<string, string> = {};
+    const filter: Record<string, unknown> = {};
     if (role && ["user", "admin"].includes(role)) filter.role = role;
+    if (plan && ["free", "pro", "enterprise"].includes(plan)) {
+      filter.shieldxPlan = plan;
+    }
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
       User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
 
 // DELETE - Remove a user by ID
 export async function DELETE(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -81,6 +83,32 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    const existingUser = await User.findById(id).select(
+      "email shieldxPlan shieldxTeamOwnerId"
+    );
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (
+      existingUser.shieldxPlan === "enterprise" &&
+      existingUser.shieldxTeamOwnerId === existingUser._id.toString()
+    ) {
+      await teardownEnterpriseWorkspace(existingUser._id.toString());
+    }
+
+    if (
+      existingUser.shieldxTeamOwnerId &&
+      existingUser.shieldxTeamOwnerId !== existingUser._id.toString()
+    ) {
+      await detachUserFromEnterpriseTeam({
+        userId: existingUser._id.toString(),
+        email: existingUser.email,
+        teamOwnerId: existingUser.shieldxTeamOwnerId,
+      });
     }
 
     const deleted = await User.findByIdAndDelete(id);
@@ -98,7 +126,7 @@ export async function DELETE(request: NextRequest) {
 
 // PATCH - Update a user's role and/or ShieldX plan
 export async function PATCH(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -109,7 +137,7 @@ export async function PATCH(request: NextRequest) {
   try {
     await connectDB();
     const body = await request.json();
-    const { id, role, shieldxPlan } = body;
+    const { id, role, shieldxPlan, resetPassword, temporaryPassword } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -123,7 +151,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const updates: Record<string, string | boolean | null> = {};
+    const updates: Record<string, string | boolean | Date | null> = {};
+    let generatedPassword: string | null = null;
 
     if (role !== undefined) {
       if (!["user", "admin"].includes(role)) {
@@ -158,6 +187,25 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    if (resetPassword === true) {
+      const nextTemporaryPassword =
+        typeof temporaryPassword === "string" && temporaryPassword.trim()
+          ? temporaryPassword.trim()
+          : generateTemporaryPassword();
+
+      if (nextTemporaryPassword.length < 10 || nextTemporaryPassword.length > 128) {
+        return NextResponse.json(
+          { error: "Temporary password must be between 10 and 128 characters" },
+          { status: 400 }
+        );
+      }
+
+      generatedPassword = nextTemporaryPassword;
+      updates.password = await bcrypt.hash(nextTemporaryPassword, 12);
+      updates.passwordResetRequired = true;
+      updates.passwordResetIssuedAt = new Date();
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
         { error: "No valid updates supplied" },
@@ -189,7 +237,13 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await User.findByIdAndUpdate(id, updates, { new: true });
 
-    return NextResponse.json({ user: updated });
+    return NextResponse.json({
+      user: updated,
+      temporaryPassword: generatedPassword,
+      message: generatedPassword
+        ? "Temporary password generated. Share it securely with the user and ask them to change it after sign-in."
+        : "User updated successfully.",
+    });
   } catch (error) {
     console.error("Failed to update user:", error);
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
