@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -225,8 +224,6 @@ export default function AiSecurityAuditorPage() {
   const [activeTab, setActiveTab] = useState("prompt-injection");
   const [prompt, setPrompt] = useState("");
   const [output, setOutput] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [apiEndpoint, setApiEndpoint] = useState("");
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [score, setScore] = useState<SecurityScore | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -241,8 +238,6 @@ export default function AiSecurityAuditorPage() {
 
     setIsLoading(true);
     const results: TestResult[] = [];
-    let criticalCount = 0;
-    let highCount = 0;
 
     injectionPatterns.forEach((pattern) => {
       pattern.patterns.forEach((p) => {
@@ -251,11 +246,9 @@ export default function AiSecurityAuditorPage() {
             category: pattern.name,
             severity: pattern.severity as "Critical" | "High" | "Medium" | "Low",
             finding: `Detected potential ${pattern.name.toLowerCase()} pattern: "${p}"`,
-            description: pattern.description,
-            remediation: `Review and sanitize prompt inputs. Implement prompt filtering and validation techniques. Consider using prompt templating libraries.`,
-          });
-          if (pattern.severity === "Critical") criticalCount++;
-          if (pattern.severity === "High") highCount++;
+              description: pattern.description,
+              remediation: `Review and sanitize prompt inputs. Implement prompt filtering and validation techniques. Consider using prompt templating libraries.`,
+            });
         }
       });
     });
@@ -269,8 +262,6 @@ export default function AiSecurityAuditorPage() {
         remediation: "Continue monitoring and implementing input validation best practices",
       });
     }
-
-    const injectionScore = results.length === 0 ? 95 : Math.max(10, 95 - criticalCount * 30 - highCount * 15);
 
     setTestResults(results);
     setTimeout(() => setIsLoading(false), 800);
@@ -327,7 +318,7 @@ export default function AiSecurityAuditorPage() {
     }
 
     setIsLoading(true);
-    let allResults: TestResult[] = [];
+    const allResults: TestResult[] = [];
 
     // Run injection tests
     if (prompt.trim()) {
@@ -530,12 +521,12 @@ export default function AiSecurityAuditorPage() {
           <div className="flex justify-center mb-4">
             <Badge className="bg-violet-600 gap-2">
               <Sparkles className="h-4 w-4" />
-              Enterprise Tool
+              Free AI Tool
             </Badge>
           </div>
           <h1 className="text-4xl font-bold mb-4">AI Security Auditor</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Professional security assessment tool for AI/LLM applications. Test for prompt injection, data leakage, and OWASP Top 10 LLM vulnerabilities.
+            Free security assessment tool for AI and LLM applications. Test for prompt injection, data leakage, and OWASP Top 10 LLM vulnerabilities without using your paid ShieldX subscription.
           </p>
         </motion.div>
 
@@ -563,7 +554,7 @@ export default function AiSecurityAuditorPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                       Prompt Injection Testing
                     </CardTitle>
                     <CardDescription>
@@ -605,7 +596,7 @@ export default function AiSecurityAuditorPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Database className="h-5 w-5 text-red-600" />
+                      <Database className="h-5 w-5 text-red-600 dark:text-red-400" />
                       Data Leakage Analysis
                     </CardTitle>
                     <CardDescription>
@@ -647,7 +638,7 @@ export default function AiSecurityAuditorPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-violet-600" />
+                      <Shield className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                       Comprehensive Security Audit
                     </CardTitle>
                     <CardDescription>
@@ -759,19 +750,19 @@ export default function AiSecurityAuditorPage() {
               </motion.div>
             )}
 
-            <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+            <Card className="bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800">
               <CardContent className="p-4 space-y-2 text-sm">
                 <p className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                  <span><strong>Prompt Injection:</strong> Tests against known jailbreak patterns</span>
+                  <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                  <span className="text-blue-900 dark:text-blue-100"><strong>Prompt Injection:</strong> Tests against known jailbreak patterns</span>
                 </p>
                 <p className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                  <span><strong>Data Leakage:</strong> Scans for PII, APIs, credentials</span>
+                  <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                  <span className="text-blue-900 dark:text-blue-100"><strong>Data Leakage:</strong> Scans for PII, APIs, credentials</span>
                 </p>
                 <p className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                  <span><strong>OWASP LLM Top 10:</strong> Coverage assessment</span>
+                  <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                  <span className="text-blue-900 dark:text-blue-100"><strong>OWASP LLM Top 10:</strong> Coverage assessment</span>
                 </p>
               </CardContent>
             </Card>
@@ -826,7 +817,7 @@ export default function AiSecurityAuditorPage() {
                           </div>
                           {result.cvss && (
                             <div className="text-right">
-                              <div className="text-2xl font-bold text-red-600">{result.cvss}</div>
+                              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{result.cvss}</div>
                               <div className="text-xs text-muted-foreground">CVSS</div>
                             </div>
                           )}
@@ -876,7 +867,7 @@ export default function AiSecurityAuditorPage() {
                     <p className="text-xs text-muted-foreground mb-3">{cat.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">CVSS</span>
-                      <span className="font-bold text-red-600">{cat.cvss}</span>
+                      <span className="font-bold text-red-600 dark:text-red-400">{cat.cvss}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -939,7 +930,7 @@ export default function AiSecurityAuditorPage() {
             >
               <Card>
                 <CardContent className="p-6">
-                  <feature.icon className="h-8 w-8 text-violet-600 mb-3" />
+                  <feature.icon className="h-8 w-8 text-violet-600 dark:text-violet-400 mb-3" />
                   <h3 className="font-semibold mb-2">{feature.title}</h3>
                   <p className="text-sm text-muted-foreground">{feature.desc}</p>
                 </CardContent>

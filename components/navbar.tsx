@@ -25,7 +25,7 @@ import {
 const navLinks = [
   { href: "/shieldx", label: "ShieldX", icon: Shield, highlight: true },
   { href: "/services", label: "Services", icon: Briefcase },
-  { href: "/tools/ai-security-auditor", label: "AI Security", icon: Brain, highlight: true },
+  { href: "/tools/ai-security-auditor", label: "AI Auditor", icon: Brain },
   { href: "/tools", label: "Tools", icon: Wrench },
   { href: "/owasp", label: "Learn", icon: BookOpen, matchAlso: ["/secure-code", "/cloud-security", "/vulnerabilities"] },
   { href: "/blog", label: "Blog", icon: BookOpen },
@@ -46,11 +46,6 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -68,6 +63,7 @@ export function Navbar() {
   );
 
   return (
+    <>
     <header
       className={`sticky top-0 z-[120] w-full transition-shadow duration-300 bg-background/85 backdrop-blur-lg ${
         scrolled ? "shadow-md" : "shadow-none"
@@ -173,6 +169,7 @@ export function Navbar() {
 
       {/* Active indicator bottom border for desktop */}
       <div className="hidden lg:block h-px bg-border" />
+    </header>
 
       {/* ─── Mobile overlay + slide-in menu ─── */}
       <AnimatePresence>
@@ -194,7 +191,7 @@ export function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed top-0 right-0 z-[140] h-full w-[280px] bg-background shadow-2xl lg:hidden flex flex-col border-l border-border/50"
+              className="fixed top-0 right-0 z-[140] h-dvh w-[280px] bg-background shadow-2xl lg:hidden flex flex-col border-l border-border/50"
             >
               {/* Mobile header */}
               <div className="flex items-center justify-between px-5 h-16 border-b border-border">
@@ -222,6 +219,7 @@ export function Navbar() {
                       <li key={href}>
                         <Link
                           href={href}
+                          onClick={() => setMobileOpen(false)}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                             showActive
                               ? "bg-primary/10 text-primary"
@@ -248,6 +246,7 @@ export function Navbar() {
                   <>
                     <Link
                       href="/dashboard"
+                      onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
                     >
                       <LayoutDashboard className="h-4 w-4" />
@@ -268,12 +267,14 @@ export function Navbar() {
                   <>
                     <Link
                       href="/auth/login"
+                      onClick={() => setMobileOpen(false)}
                       className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-accent/50 transition-colors"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/auth/register"
+                      onClick={() => setMobileOpen(false)}
                       className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                     >
                       Get Started
@@ -286,6 +287,6 @@ export function Navbar() {
           </>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

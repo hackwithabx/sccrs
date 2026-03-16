@@ -5,6 +5,9 @@ import {
   getShieldXSessionUser,
   hasShieldXAccess,
 } from "@/lib/shieldx-access";
+import { sendShieldXScanAlerts } from "@/lib/shieldx-alerts";
+
+export const runtime = "nodejs";
 
 type FindingSeverity = "Critical" | "High" | "Medium" | "Low" | "Info";
 type FindingStatus = "pass" | "warning" | "fail";
@@ -67,7 +70,17 @@ function sanitizeFindings(findings: unknown) {
         severity: severity as FindingSeverity,
       };
     })
-    .filter(Boolean);
+    .filter(
+      (
+        item
+      ): item is {
+        category: string;
+        status: FindingStatus;
+        finding: string;
+        recommendation: string;
+        severity: FindingSeverity;
+      } => Boolean(item)
+    );
 }
 
 export async function GET(request: NextRequest) {
@@ -184,7 +197,23 @@ export async function POST(request: NextRequest) {
         body?.metadata && typeof body.metadata === "object" ? body.metadata : {},
     });
 
-    return NextResponse.json({ success: true, scan }, { status: 201 });
+    const alertDelivery = await sendShieldXScanAlerts({
+      userId: sessionUser.id,
+      userEmail: sessionUser.email,
+      userName: sessionUser.name,
+      scanType,
+      title: title.slice(0, 120),
+      target: target.slice(0, 240),
+      overallScore,
+      summary: summary.slice(0, 500),
+      counts,
+      findings,
+    });
+
+    return NextResponse.json(
+      { success: true, scan, alertDelivery },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Failed to save ShieldX history:", error);
     return NextResponse.json(
@@ -233,4 +262,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

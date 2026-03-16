@@ -30,9 +30,42 @@ const UserSchema = new mongoose.Schema(
       enum: ["free", "pro", "enterprise"],
       default: "free",
     },
+    shieldxPlanSource: {
+      type: String,
+      enum: ["free", "admin", "billing", "team"],
+      default: "free",
+    },
     shieldxExpiry: {
       type: Date,
       default: null,
+    },
+    shieldxBillingProvider: {
+      type: String,
+      default: null,
+    },
+    shieldxBillingStatus: {
+      type: String,
+      default: "inactive",
+    },
+    shieldxSubscriptionId: {
+      type: String,
+      default: null,
+      index: true,
+      sparse: true,
+    },
+    shieldxCustomerId: {
+      type: String,
+      default: null,
+      index: true,
+      sparse: true,
+    },
+    shieldxPlanId: {
+      type: String,
+      default: null,
+    },
+    shieldxCancelAtPeriodEnd: {
+      type: Boolean,
+      default: false,
     },
     shieldxTeamOwnerId: {
       type: String,

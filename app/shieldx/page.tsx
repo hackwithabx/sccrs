@@ -571,7 +571,7 @@ const DEFAULT_ALERT_RULES: AlertRule[] = [
 type TabKey = "secrets" | "deps" | "cloud" | "api" | "logs" | "cicd" | "alerts" | "score";
 
 const TABS: { key: TabKey; label: string; icon: typeof Shield; proOnly?: boolean }[] = [
-  { key: "secrets", label: "Secrets Scanner", icon: Key },
+  { key: "secrets", label: "Secrets Scanner", icon: Key, proOnly: true },
   { key: "deps", label: "Dependency Scanner", icon: Package, proOnly: true },
   { key: "cloud", label: "Cloud Security", icon: Cloud, proOnly: true },
   { key: "api", label: "API Scanner", icon: Globe, proOnly: true },
@@ -729,7 +729,7 @@ export default function ShieldXPage() {
   const userEmail =
     (session?.user as { email?: string | null } | undefined)?.email || "";
 
-  const [activeTab, setActiveTab] = useState<TabKey>("secrets");
+  const [activeTab, setActiveTab] = useState<TabKey>("score");
   const [isDemo, setIsDemo] = useState(false);
 
   // Secrets state
@@ -1045,7 +1045,8 @@ export default function ShieldXPage() {
 
       setAlertTestSent(true);
       setAlertStatusMessage(
-        `Test alert recorded for ${Array.isArray(data.channels) ? data.channels.join(", ") : "configured channels"}.`
+        data.message ||
+          `Test alert sent to ${Array.isArray(data.channels) ? data.channels.join(", ") : "configured channels"}.`
       );
       setTimeout(() => {
         setAlertTestSent(false);
@@ -1730,11 +1731,17 @@ export default function ShieldXPage() {
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                 </span>
               </div>
-              <span className="text-sm font-semibold">Enterprise Security Platform</span>
-              {hasPro && (
+              <span className="text-sm font-semibold">
+                {hasPro ? "ShieldX Paid Workspace" : "ShieldX Demo Workspace"}
+              </span>
+              {hasPro ? (
                 <Badge className={`bg-gradient-to-r ${userPlan === "enterprise" ? "from-blue-600 to-cyan-500" : "from-amber-500 to-orange-500"} text-white border-0 text-[10px] px-2 shadow-sm`}>
                   <Crown className="h-3 w-3 mr-0.5" />
                   {userPlan === "enterprise" ? "ENTERPRISE" : "PRO"}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] uppercase">
+                  Free Demo
                 </Badge>
               )}
             </div>
@@ -1748,11 +1755,11 @@ export default function ShieldXPage() {
             </h1>
 
             <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              The complete security platform for modern engineering teams.{" "}
+              ShieldX keeps the paid workspace and free demo separate by design.{" "}
               <span className="hidden sm:inline">
-                Scan secrets, audit dependencies, test APIs against OWASP Top 10, and monitor your entire stack.
+                Paid plans unlock real scans, saved history, alerts, and team workflows, while the free experience stays demo-only.
               </span>
-              <span className="sm:hidden">8 security modules in one platform.</span>
+              <span className="sm:hidden">Free is demo-only. Paid unlocks real scans.</span>
             </p>
 
             {/* Stats Row */}
@@ -1794,7 +1801,7 @@ export default function ShieldXPage() {
               </Button>
               <Link href="/shieldx/pricing">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl hover:bg-primary/5 transition-all duration-300">
-                  <Crown className="h-5 w-5" /> View Pricing
+                  <Crown className="h-5 w-5" /> {hasPro ? "Manage Plan" : "View Pricing"}
                 </Button>
               </Link>
               {hasAnyResults && (
@@ -1910,8 +1917,8 @@ export default function ShieldXPage() {
                       <span className="bg-gradient-to-r from-primary to-cyan-500 bg-clip-text text-transparent">ShieldX Pro</span>
                     </h3>
                     <p className="text-muted-foreground max-w-lg mx-auto mb-2 text-base">
-                      <strong>{TABS.find(t => t.key === activeTab)?.label}</strong> is available on the Pro plan.
-                      Get full access to all 8 security modules, CI/CD integration, and real-time alerts.
+                      <strong>{TABS.find(t => t.key === activeTab)?.label}</strong> is part of the paid ShieldX workspace.
+                      Free accounts can still run the full demo, while Pro and Enterprise unlock real scans, saved history, CI/CD, and alerts.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2 mt-6 mb-8">
                       {TABS.filter(t => t.proOnly).map(t => (
@@ -1920,14 +1927,14 @@ export default function ShieldXPage() {
                         </Badge>
                       ))}
                     </div>
-                    <div className="flex flex-wrap justify-center gap-3">
-                      <Link href="/shieldx/pricing">
+                     <div className="flex flex-wrap justify-center gap-3">
+                        <Link href="/shieldx/pricing">
                         <Button size="lg" className="gap-2 px-8 h-12 rounded-xl shadow-lg shadow-primary/25">
                           <Crown className="h-4 w-4" /> View Plans & Pricing
                         </Button>
                       </Link>
-                      {!session && (
-                        <Link href="/auth/register">
+                        {!session && (
+                          <Link href="/auth/register">
                           <Button size="lg" variant="outline" className="gap-2 px-8 h-12 rounded-xl">
                             Create Free Account
                           </Button>
@@ -3311,6 +3318,11 @@ export default function ShieldXPage() {
                             </Button>
                           </Link>
                         )}
+                        <Link href="/tools/ai-security-auditor">
+                          <Button size="lg" variant="ghost" className="gap-2 px-8 h-12 rounded-xl">
+                            Free AI Tool
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

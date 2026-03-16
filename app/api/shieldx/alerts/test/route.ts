@@ -5,6 +5,9 @@ import {
   getShieldXSessionUser,
   hasShieldXAccess,
 } from "@/lib/shieldx-access";
+import { sendShieldXTestAlert } from "@/lib/shieldx-alerts";
+
+export const runtime = "nodejs";
 
 export async function POST() {
   const sessionUser = await getShieldXSessionUser();
@@ -43,14 +46,16 @@ export async function POST() {
       );
     }
 
-    config.lastTestedAt = new Date();
-    await config.save();
+    const results = await sendShieldXTestAlert({
+      config,
+      userEmail: sessionUser.email,
+    });
 
     return NextResponse.json({
       success: true,
-      message:
-        "Test alert recorded. Hook up SMTP or outgoing webhook delivery next if you want live outbound notifications from production.",
+      message: "ShieldX test alert sent to your configured delivery channels.",
       channels: configuredChannels,
+      deliveries: results,
       testedAt: config.lastTestedAt,
     });
   } catch (error) {
@@ -61,4 +66,3 @@ export async function POST() {
     );
   }
 }
-

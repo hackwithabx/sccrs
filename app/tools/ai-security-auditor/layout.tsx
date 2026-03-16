@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "AI Security Auditor — Free LLM Security Scanner",
     description:
-      "Scan your AI/LLM applications for prompt injection, data leakage, and OWASP AI vulnerabilities. Free enterprise-grade security assessment tool.",
+      "Scan your AI/LLM applications for prompt injection, data leakage, and OWASP AI vulnerabilities. Free public security assessment tool.",
     url: "https://securecodereviews.com/tools/ai-security-auditor",
     type: "website",
     images: [

@@ -6,6 +6,7 @@ import User from "@/models/User";
 import { rateLimit } from "@/lib/rate-limit";
 
 type ShieldXPlan = "free" | "pro" | "enterprise";
+type ShieldXPlanSource = "free" | "admin" | "billing" | "team";
 
 function getEffectiveShieldXPlan(user: {
   shieldxPlan?: ShieldXPlan;
@@ -52,7 +53,9 @@ export const authOptions: NextAuthOptions = {
 
         const user = await User.findOne({
           email: credentials.email.toLowerCase(),
-        }).select("+password role shieldxPlan shieldxExpiry");
+        }).select(
+          "+password role shieldxPlan shieldxPlanSource shieldxExpiry shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId"
+        );
 
         if (!user || !user.password) {
           throw new Error("Invalid credentials");
@@ -73,6 +76,13 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           shieldxPlan: getEffectiveShieldXPlan(user),
+          shieldxPlanSource: (user.shieldxPlanSource || "free") as ShieldXPlanSource,
+          shieldxBillingProvider: user.shieldxBillingProvider || null,
+          shieldxBillingStatus: user.shieldxBillingStatus || "inactive",
+          shieldxExpiry: user.shieldxExpiry || null,
+          shieldxCancelAtPeriodEnd: Boolean(user.shieldxCancelAtPeriodEnd),
+          shieldxSeatRole: user.shieldxSeatRole || null,
+          shieldxTeamOwnerId: user.shieldxTeamOwnerId || null,
         };
       },
     }),
@@ -88,6 +98,25 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.shieldxPlan = ((user as { shieldxPlan?: ShieldXPlan }).shieldxPlan ||
           "free") as ShieldXPlan;
+        token.shieldxPlanSource = (
+          (user as { shieldxPlanSource?: ShieldXPlanSource }).shieldxPlanSource ||
+          "free"
+        ) as ShieldXPlanSource;
+        token.shieldxBillingProvider =
+          (user as { shieldxBillingProvider?: string | null }).shieldxBillingProvider ||
+          null;
+        token.shieldxBillingStatus =
+          (user as { shieldxBillingStatus?: string }).shieldxBillingStatus ||
+          "inactive";
+        token.shieldxExpiry =
+          (user as { shieldxExpiry?: Date | string | null }).shieldxExpiry || null;
+        token.shieldxCancelAtPeriodEnd = Boolean(
+          (user as { shieldxCancelAtPeriodEnd?: boolean }).shieldxCancelAtPeriodEnd
+        );
+        token.shieldxSeatRole =
+          (user as { shieldxSeatRole?: string | null }).shieldxSeatRole || null;
+        token.shieldxTeamOwnerId =
+          (user as { shieldxTeamOwnerId?: string | null }).shieldxTeamOwnerId || null;
         return token;
       }
 
@@ -95,16 +124,34 @@ export const authOptions: NextAuthOptions = {
         try {
           await dbConnect();
           const latestUser = (await User.findById(token.id)
-            .select("role shieldxPlan shieldxExpiry")
+            .select(
+              "role shieldxPlan shieldxPlanSource shieldxExpiry shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId"
+            )
             .lean()) as {
             role?: string;
             shieldxPlan?: ShieldXPlan;
+            shieldxPlanSource?: ShieldXPlanSource;
             shieldxExpiry?: Date | string | null;
+            shieldxBillingProvider?: string | null;
+            shieldxBillingStatus?: string;
+            shieldxCancelAtPeriodEnd?: boolean;
+            shieldxSeatRole?: string | null;
+            shieldxTeamOwnerId?: string | null;
           } | null;
 
           if (latestUser) {
             token.role = latestUser.role || "user";
             token.shieldxPlan = getEffectiveShieldXPlan(latestUser);
+            token.shieldxPlanSource = latestUser.shieldxPlanSource || "free";
+            token.shieldxBillingProvider = latestUser.shieldxBillingProvider || null;
+            token.shieldxBillingStatus =
+              latestUser.shieldxBillingStatus || "inactive";
+            token.shieldxExpiry = latestUser.shieldxExpiry || null;
+            token.shieldxCancelAtPeriodEnd = Boolean(
+              latestUser.shieldxCancelAtPeriodEnd
+            );
+            token.shieldxSeatRole = latestUser.shieldxSeatRole || null;
+            token.shieldxTeamOwnerId = latestUser.shieldxTeamOwnerId || null;
           }
         } catch (error) {
           console.error("Failed to refresh session claims:", error);
@@ -119,6 +166,22 @@ export const authOptions: NextAuthOptions = {
         (session.user as { id?: string }).id = token.id as string;
         (session.user as { shieldxPlan?: string }).shieldxPlan =
           token.shieldxPlan as string;
+        (session.user as { shieldxPlanSource?: string }).shieldxPlanSource =
+          token.shieldxPlanSource as string;
+        (session.user as { shieldxBillingProvider?: string | null }).shieldxBillingProvider =
+          (token.shieldxBillingProvider as string | null) || null;
+        (session.user as { shieldxBillingStatus?: string }).shieldxBillingStatus =
+          token.shieldxBillingStatus as string;
+        (session.user as { shieldxExpiry?: string | null }).shieldxExpiry =
+          token.shieldxExpiry
+            ? new Date(token.shieldxExpiry as string | number | Date).toISOString()
+            : null;
+        (session.user as { shieldxCancelAtPeriodEnd?: boolean }).shieldxCancelAtPeriodEnd =
+          Boolean(token.shieldxCancelAtPeriodEnd);
+        (session.user as { shieldxSeatRole?: string | null }).shieldxSeatRole =
+          (token.shieldxSeatRole as string | null) || null;
+        (session.user as { shieldxTeamOwnerId?: string | null }).shieldxTeamOwnerId =
+          (token.shieldxTeamOwnerId as string | null) || null;
       }
       return session;
     },

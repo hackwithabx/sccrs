@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
-import { getShieldXSessionUser } from "@/lib/shieldx-access";
+import {
+  getShieldXSessionUser,
+  isShieldXAdmin,
+} from "@/lib/shieldx-access";
 
 const PLAN_DURATION_DAYS: Record<"pro" | "enterprise", number> = {
   pro: 30,
@@ -14,6 +17,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!isShieldXAdmin(sessionUser)) {
+    return NextResponse.json(
+      {
+        error:
+          "Manual ShieldX plan changes are restricted to admins. Paid upgrades must go through billing.",
+      },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await request.json();
     const plan = body?.plan;
@@ -24,8 +37,15 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const updates: Record<string, Date | string | null> = {
+    const updates: Record<string, Date | string | boolean | null> = {
       shieldxPlan: plan,
+      shieldxPlanSource: plan === "free" ? "free" : "admin",
+      shieldxBillingProvider: null,
+      shieldxBillingStatus: plan === "free" ? "inactive" : "manual",
+      shieldxSubscriptionId: null,
+      shieldxPlanId: null,
+      shieldxCustomerId: null,
+      shieldxCancelAtPeriodEnd: false,
     };
 
     if (plan === "free") {
@@ -53,7 +73,7 @@ export async function POST(request: NextRequest) {
       message:
         plan === "free"
           ? "Plan changed to Free."
-          : "Plan updated. Replace this temporary upgrade route with a real billing webhook before production launch.",
+          : "Plan updated manually by an admin.",
     });
   } catch (error) {
     console.error("ShieldX plan upgrade failed:", error);
@@ -63,4 +83,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

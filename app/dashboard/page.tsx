@@ -133,12 +133,25 @@ const securityTips = [
   "Review your dependencies weekly — supply chain attacks are on the rise.",
 ];
 
+interface BillingState {
+  plan: "free" | "pro" | "enterprise";
+  planSource: "free" | "admin" | "billing" | "team";
+  billingProvider: string | null;
+  billingStatus: string;
+  subscriptionId: string | null;
+  expiresAt: string | null;
+  cancelAtPeriodEnd: boolean;
+  teamManaged: boolean;
+  teamContext: { ownerId: string; ownerName: string; companyName: string } | null;
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [randomTip] = useState(
     () => securityTips[Math.floor(Math.random() * securityTips.length)]
   );
+  const [billingState, setBillingState] = useState<BillingState | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -146,12 +159,36 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
+  useEffect(() => {
+    const loadBillingState = async () => {
+      if (!session) {
+        setBillingState(null);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/shieldx/billing/subscription");
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load subscription");
+        }
+        setBillingState(data.subscription || null);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    void loadBillingState();
+  }, [session]);
+
   const shieldxPlan =
     (session?.user as { shieldxPlan?: "free" | "pro" | "enterprise" } | undefined)
       ?.shieldxPlan || "free";
   const hasShieldXAccess =
     shieldxPlan === "pro" || shieldxPlan === "enterprise";
   const isEnterprise = shieldxPlan === "enterprise";
+  const hasDirectBilling =
+    billingState?.billingProvider === "razorpay" && !billingState.teamManaged;
 
   const subscriptionStats = hasShieldXAccess
     ? [
@@ -384,6 +421,136 @@ export default function DashboardPage() {
             </div>
           </div>
         </motion.div>
+
+        <div className="mb-10 grid gap-6 lg:grid-cols-2">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+          >
+            <Card className="h-full border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
+                  ShieldX Subscription
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                {billingState?.teamManaged ? (
+                  <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                    Your Enterprise access is managed by{" "}
+                    <strong>
+                      {billingState.teamContext?.companyName ||
+                        billingState.teamContext?.ownerName ||
+                        "your team owner"}
+                    </strong>
+                    . Billing controls stay with the team owner account.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border bg-muted/20 p-4">
+                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Plan
+                      </div>
+                      <div className="mt-1 text-lg font-semibold capitalize">
+                        {shieldxPlan}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-muted/20 p-4">
+                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Provider
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        {billingState?.billingProvider === "razorpay"
+                          ? "Razorpay"
+                          : hasShieldXAccess
+                          ? "Manual access"
+                          : "Demo only"}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-muted/20 p-4">
+                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Access Until
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        {billingState?.expiresAt
+                          ? new Date(billingState.expiresAt).toLocaleDateString()
+                          : hasShieldXAccess
+                          ? "Active"
+                          : "Demo only"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-muted-foreground">
+                  {hasShieldXAccess
+                    ? "Your paid ShieldX workspace is separate from the free public tools and AI utilities."
+                    : "This account currently has demo-only ShieldX access. Public tools and the AI auditor remain available below."}
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/shieldx">
+                    <Button className="gap-2">
+                      <Shield className="w-4 h-4" />
+                      {hasShieldXAccess ? "Open ShieldX" : "Open Demo"}
+                    </Button>
+                  </Link>
+                  <Link href="/shieldx/pricing">
+                    <Button variant="outline" className="gap-2">
+                      {hasDirectBilling ? "Manage Billing" : "View Plans"}
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+
+                {billingState?.cancelAtPeriodEnd && (
+                  <p className="text-xs text-muted-foreground">
+                    Cancellation is already scheduled for the end of the current billing cycle.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+          >
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="w-5 h-5 text-violet-600" />
+                  Free AI and Public Tools
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <p className="text-muted-foreground">
+                  These tools stay outside your paid ShieldX subscription, so they never overlap with Pro or Enterprise entitlements.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Link href="/tools/ai-security-auditor">
+                    <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 transition-colors hover:border-violet-500/40">
+                      <div className="font-semibold">AI Security Auditor</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Free prompt injection and AI app review tool
+                      </div>
+                    </div>
+                  </Link>
+                  <Link href="/tools">
+                    <div className="rounded-xl border bg-muted/20 p-4 transition-colors hover:border-primary/30">
+                      <div className="font-semibold">Security Tools</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Header analysis, CSP, JWT, hashing, encoding, and more
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
 
         {/* Security Tip Banner */}
         <motion.div

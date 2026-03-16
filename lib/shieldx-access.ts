@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 
 export type ShieldXPlan = "free" | "pro" | "enterprise";
 export type ShieldXSeatRole = "owner" | "admin" | "member" | "viewer";
+export type ShieldXPlanSource = "free" | "admin" | "billing" | "team";
 
 export interface ShieldXSessionUser {
   id: string;
@@ -10,6 +11,13 @@ export interface ShieldXSessionUser {
   name: string;
   role: string;
   shieldxPlan: ShieldXPlan;
+  shieldxPlanSource?: ShieldXPlanSource;
+  shieldxBillingProvider?: string | null;
+  shieldxBillingStatus?: string;
+  shieldxExpiry?: string | null;
+  shieldxCancelAtPeriodEnd?: boolean;
+  shieldxSeatRole?: ShieldXSeatRole | null;
+  shieldxTeamOwnerId?: string | null;
 }
 
 const PLAN_LEVEL: Record<ShieldXPlan, number> = {
@@ -30,6 +38,13 @@ export async function getShieldXSessionUser(): Promise<ShieldXSessionUser | null
     name?: string | null;
     role?: string;
     shieldxPlan?: ShieldXPlan;
+    shieldxPlanSource?: ShieldXPlanSource;
+    shieldxBillingProvider?: string | null;
+    shieldxBillingStatus?: string;
+    shieldxExpiry?: string | null;
+    shieldxCancelAtPeriodEnd?: boolean;
+    shieldxSeatRole?: ShieldXSeatRole | null;
+    shieldxTeamOwnerId?: string | null;
   };
 
   if (!user.id || !user.email) {
@@ -42,6 +57,13 @@ export async function getShieldXSessionUser(): Promise<ShieldXSessionUser | null
     name: user.name || "ShieldX User",
     role: user.role || "user",
     shieldxPlan: user.shieldxPlan || "free",
+    shieldxPlanSource: user.shieldxPlanSource || "free",
+    shieldxBillingProvider: user.shieldxBillingProvider || null,
+    shieldxBillingStatus: user.shieldxBillingStatus || "inactive",
+    shieldxExpiry: user.shieldxExpiry || null,
+    shieldxCancelAtPeriodEnd: Boolean(user.shieldxCancelAtPeriodEnd),
+    shieldxSeatRole: user.shieldxSeatRole || null,
+    shieldxTeamOwnerId: user.shieldxTeamOwnerId || null,
   };
 }
 
@@ -63,4 +85,3 @@ export function hasShieldXAccess(
 
   return PLAN_LEVEL[user.shieldxPlan] >= PLAN_LEVEL[requiredPlan];
 }
-

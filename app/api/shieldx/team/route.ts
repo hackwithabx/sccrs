@@ -95,7 +95,6 @@ async function ensureEnterpriseTeam(user: {
   }
 
   await User.findByIdAndUpdate(user.id, {
-    shieldxPlan: "enterprise",
     shieldxTeamOwnerId: user.id,
     shieldxSeatRole: "owner",
   });
@@ -267,6 +266,7 @@ export async function POST(request: NextRequest) {
 
       await User.findByIdAndUpdate(sessionUser.id, {
         shieldxPlan: "enterprise",
+        shieldxPlanSource: "team",
         shieldxTeamOwnerId: team.ownerId,
         shieldxSeatRole: invite.role,
       });
@@ -379,6 +379,7 @@ export async function POST(request: NextRequest) {
 
       await User.findByIdAndUpdate(existingUser._id, {
         shieldxPlan: "enterprise",
+        shieldxPlanSource: "team",
         shieldxTeamOwnerId: team.ownerId,
         shieldxSeatRole: role,
       });
@@ -485,10 +486,12 @@ export async function PATCH(request: NextRequest) {
         await User.findOneAndUpdate(
           {
             _id: removedMember.userId,
+            shieldxPlanSource: "team",
             shieldxTeamOwnerId: team.ownerId,
           },
           {
             shieldxPlan: "free",
+            shieldxPlanSource: "free",
             shieldxTeamOwnerId: null,
             shieldxSeatRole: null,
             shieldxExpiry: null,
@@ -498,10 +501,12 @@ export async function PATCH(request: NextRequest) {
         await User.findOneAndUpdate(
           {
             email,
+            shieldxPlanSource: "team",
             shieldxTeamOwnerId: team.ownerId,
           },
           {
             shieldxPlan: "free",
+            shieldxPlanSource: "free",
             shieldxTeamOwnerId: null,
             shieldxSeatRole: null,
             shieldxExpiry: null,

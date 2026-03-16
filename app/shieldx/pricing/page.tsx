@@ -1,20 +1,30 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  Shield, CheckCircle2, XCircle, ArrowRight, Zap, Star, Crown,
-  Key, Package, Cloud, Globe, Brain, GitBranch, Bell, BarChart3,
+  ArrowRight,
+  BarChart3,
+  Bell,
+  Brain,
+  CheckCircle2,
+  Cloud,
+  Crown,
+  Globe,
+  GitBranch,
+  Key,
+  Package,
+  Shield,
+  Star,
+  XCircle,
+  Zap,
 } from "lucide-react";
-
-/* ═══════════════════════════════════════════════════════════
-   PLAN DEFINITIONS
-   ═══════════════════════════════════════════════════════════ */
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PlanFeature {
   name: string;
@@ -24,27 +34,33 @@ interface PlanFeature {
   enterprise: boolean | string;
 }
 
+interface BillingState {
+  plan: "free" | "pro" | "enterprise";
+  planSource: "free" | "admin" | "billing" | "team";
+  billingProvider: string | null;
+  billingStatus: string;
+  subscriptionId: string | null;
+  expiresAt: string | null;
+  cancelAtPeriodEnd: boolean;
+  teamManaged: boolean;
+  teamContext: { ownerId: string; ownerName: string; companyName: string } | null;
+}
+
 const FEATURES: PlanFeature[] = [
   { name: "Secrets Scanner (20 patterns + entropy)", icon: Key, free: "Demo only", pro: true, enterprise: true },
   { name: "Dependency Scanner (OSV.dev real-time)", icon: Package, free: false, pro: true, enterprise: true },
   { name: "Cloud Security Audit (18 checks)", icon: Cloud, free: false, pro: true, enterprise: true },
-  { name: "API Scanner (OWASP Top 10 2023)", icon: Globe, free: false, pro: true, enterprise: true },
-  { name: "Log Threat Analyzer", icon: Brain, free: false, pro: true, enterprise: true },
-  { name: "CI/CD Integration (GitHub, GitLab, cURL)", icon: GitBranch, free: false, pro: true, enterprise: true },
-  { name: "Alerts & Notifications (Email, Slack, Webhook)", icon: Bell, free: false, pro: true, enterprise: true },
-  { name: "Security Score Dashboard", icon: BarChart3, free: "Basic", pro: true, enterprise: true },
+  { name: "API Scanner (OWASP API Top 10)", icon: Globe, free: false, pro: true, enterprise: true },
+  { name: "Threat Log Analyzer", icon: Brain, free: false, pro: true, enterprise: true },
+  { name: "CI/CD Pipeline Gate", icon: GitBranch, free: false, pro: true, enterprise: true },
+  { name: "Alerts (Email, Slack, Webhook)", icon: Bell, free: false, pro: true, enterprise: true },
+  { name: "Security Score Dashboard", icon: BarChart3, free: "Demo only", pro: true, enterprise: true },
   { name: "Run Full Demo", icon: Zap, free: true, pro: true, enterprise: true },
-  { name: "Dedicated Product Dashboard", icon: Shield, free: false, pro: true, enterprise: true },
-  { name: "Scan History & Reports", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "Saved Scan History & Report Export", icon: Shield, free: false, pro: true, enterprise: true },
   { name: "Unlimited Scans", icon: Shield, free: false, pro: true, enterprise: true },
-  { name: "Zero Code Storage (Privacy Guarantee)", icon: Shield, free: true, pro: true, enterprise: true },
-  { name: "Team Management (up to 25 seats)", icon: Star, free: false, pro: false, enterprise: true },
-  { name: "Priority Support (< 4hr response)", icon: Star, free: false, pro: false, enterprise: true },
-  { name: "Custom Integrations & Webhooks", icon: Crown, free: false, pro: false, enterprise: true },
-  { name: "Dedicated Account Manager", icon: Crown, free: false, pro: false, enterprise: true },
-  { name: "SLA & Uptime Guarantee (99.9%)", icon: Crown, free: false, pro: false, enterprise: true },
-  { name: "White-Label Reports & Branding", icon: Crown, free: false, pro: false, enterprise: true },
-  { name: "On-Premise Deployment Option", icon: Crown, free: false, pro: false, enterprise: true },
+  { name: "Team Management (25 seats)", icon: Star, free: false, pro: false, enterprise: true },
+  { name: "Priority Support and Onboarding", icon: Crown, free: false, pro: false, enterprise: true },
+  { name: "Custom Integrations and White-labeling", icon: Crown, free: false, pro: false, enterprise: true },
 ];
 
 const plans = [
@@ -53,9 +69,9 @@ const plans = [
     name: "Free",
     price: "$0",
     period: "forever",
-    description: "Explore ShieldX with the demo scanner. Perfect for evaluation.",
+    description: "Dedicated demo workspace with sample data and public tools.",
     badge: null,
-    cta: "Get Started Free",
+    cta: "Use Free Demo",
     highlight: false,
     icon: Shield,
   },
@@ -64,9 +80,9 @@ const plans = [
     name: "Pro",
     price: "$499",
     period: "/month",
-    description: "Full access to all 8 security modules for growing teams.",
+    description: "Real scans across all ShieldX modules for solo builders and small teams.",
     badge: "Most Popular",
-    cta: "Start Pro Plan",
+    cta: "Start Pro",
     highlight: true,
     icon: Zap,
   },
@@ -75,8 +91,8 @@ const plans = [
     name: "Enterprise",
     price: "$999",
     period: "/month",
-    description: "Unlimited everything with priority support, custom integrations, SLA, and dedicated account manager.",
-    badge: "Best Value for Scale",
+    description: "Team seats, onboarding, and enterprise workflow support for larger rollouts.",
+    badge: "Built for Teams",
     cta: "Start Enterprise",
     highlight: false,
     icon: Crown,
@@ -84,147 +100,364 @@ const plans = [
 ];
 
 function FeatureCell({ value }: { value: boolean | string }) {
-  if (value === true) return <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto" />;
-  if (value === false) return <XCircle className="h-5 w-5 text-muted-foreground/40 mx-auto" />;
-  return <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">{value}</span>;
+  if (value === true) {
+    return <CheckCircle2 className="mx-auto h-5 w-5 text-emerald-500" />;
+  }
+
+  if (value === false) {
+    return <XCircle className="mx-auto h-5 w-5 text-muted-foreground/40" />;
+  }
+
+  return (
+    <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+      {value}
+    </span>
+  );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PRICING PAGE
-   ═══════════════════════════════════════════════════════════ */
-
 export default function ShieldXPricingPage() {
-
+  const router = useRouter();
   const { data: session, update: updateSession } = useSession();
-  const currentPlan = (session?.user as { shieldxPlan?: string })?.shieldxPlan || "free";
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [successPlan, setSuccessPlan] = useState<string | null>(null);
+  const sessionPlan = (session?.user as { shieldxPlan?: string } | undefined)?.shieldxPlan || "free";
 
-  // Handles plan upgrade for logged-in users
-  const handleUpgrade = async (planKey: string) => {
-    setLoadingPlan(planKey);
-    setSuccessPlan(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [billingState, setBillingState] = useState<BillingState | null>(null);
+
+  const currentPlan = billingState?.plan || sessionPlan;
+  const hasDirectBilling =
+    billingState?.billingProvider === "razorpay" && !billingState.teamManaged;
+
+  const loadBillingState = useCallback(async () => {
+    if (!session) {
+      setBillingState(null);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/shieldx/upgrade-plan", {
+      const response = await fetch("/api/shieldx/billing/subscription");
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load billing state");
+      }
+
+      setBillingState(data.subscription || null);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    void loadBillingState();
+  }, [loadBillingState]);
+
+  const handlePlanAction = async (planKey: "free" | "pro" | "enterprise") => {
+    if (planKey === "free") {
+      router.push("/shieldx");
+      return;
+    }
+
+    setLoadingPlan(planKey);
+    setStatusMessage("");
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/shieldx/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: planKey }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setSuccessPlan(planKey);
-        await updateSession();
-      } else {
-        alert(data.error || "Upgrade failed");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to start Razorpay checkout");
       }
-    } catch {
-      alert("Upgrade failed");
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl as string;
+        return;
+      }
+
+      setStatusMessage(data.message || "Billing request saved.");
+      await updateSession();
+      await loadBillingState();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to start billing"
+      );
+    } finally {
+      setLoadingPlan(null);
     }
-    setLoadingPlan(null);
+  };
+
+  const handleCancelAtPeriodEnd = async () => {
+    setLoadingPlan("cancel");
+    setStatusMessage("");
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/shieldx/billing/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cancelAtCycleEnd: true }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to cancel subscription");
+      }
+
+      setStatusMessage(data.message || "Cancellation scheduled.");
+      await updateSession();
+      await loadBillingState();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to cancel subscription"
+      );
+    } finally {
+      setLoadingPlan(null);
+    }
   };
 
   return (
     <div className="py-8 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        {/* HEADER */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="mb-12 text-center"
         >
-          <Badge className="mb-4 gap-1.5 bg-primary/10 text-primary border-primary/20 px-3 py-1">
-            <Shield className="h-3.5 w-3.5" /> ShieldX Plans
+          <Badge className="mb-4 gap-1.5 border-primary/20 bg-primary/10 px-3 py-1 text-primary">
+            <Shield className="h-3.5 w-3.5" />
+            ShieldX Plans
           </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
             Choose Your{" "}
             <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-              Security Plan
+              ShieldX Subscription
             </span>
           </h1>
-          <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start with the free demo, upgrade to Pro for full access to all 8 modules,
-            or contact us for enterprise-grade security solutions.
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-muted-foreground">
+            Free stays demo-only. Pro unlocks real ShieldX scans. Enterprise adds team seats, billing-backed access control, and onboarding support.
           </p>
         </motion.div>
 
-        {/* PLAN CARDS */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          {plans.map((plan, i) => (
+        {session && (
+          <Card className="mb-10 border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Shield className="h-5 w-5 text-primary" />
+                Current Billing State
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {billingState?.teamManaged ? (
+                <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-sm">
+                  This account uses an Enterprise seat managed by{" "}
+                  <strong>
+                    {billingState.teamContext?.companyName ||
+                      billingState.teamContext?.ownerName ||
+                      "your team owner"}
+                  </strong>
+                  . Billing changes are handled outside the seat-level account.
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-4">
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Plan
+                    </div>
+                    <div className="mt-1 text-lg font-semibold capitalize">
+                      {currentPlan}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Provider
+                    </div>
+                    <div className="mt-1 text-lg font-semibold">
+                      {billingState?.billingProvider === "razorpay"
+                        ? "Razorpay"
+                        : "Not active"}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Billing Status
+                    </div>
+                    <div className="mt-1 text-lg font-semibold capitalize">
+                      {billingState?.billingStatus || "inactive"}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Access Until
+                    </div>
+                    <div className="mt-1 text-lg font-semibold">
+                      {billingState?.expiresAt
+                        ? new Date(billingState.expiresAt).toLocaleDateString()
+                        : currentPlan === "free"
+                        ? "Demo only"
+                        : "Active"}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {statusMessage && (
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
+                  {statusMessage}
+                </div>
+              )}
+
+              {errorMessage && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-3">
+                <Link href="/shieldx">
+                  <Button className="gap-2">
+                    <Shield className="h-4 w-4" />
+                    {currentPlan === "free" ? "Open Demo Workspace" : "Open ShieldX"}
+                  </Button>
+                </Link>
+                {hasDirectBilling &&
+                  currentPlan !== "free" &&
+                  !billingState?.cancelAtPeriodEnd && (
+                    <Button
+                      variant="outline"
+                      onClick={handleCancelAtPeriodEnd}
+                      disabled={loadingPlan === "cancel"}
+                      className="gap-2"
+                    >
+                      {loadingPlan === "cancel"
+                        ? "Scheduling..."
+                        : "Cancel At Period End"}
+                    </Button>
+                  )}
+              </div>
+
+              {billingState?.cancelAtPeriodEnd && (
+                <p className="text-sm text-muted-foreground">
+                  This subscription is already set to cancel at period end. ShieldX access remains available until the current cycle finishes.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="mb-16 grid gap-6 md:grid-cols-3">
+          {plans.map((plan, index) => (
             <motion.div
               key={plan.key}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: index * 0.08 }}
             >
-              <Card className={`relative h-full flex flex-col ${
-                plan.highlight
-                  ? "border-primary shadow-xl shadow-primary/10 scale-[1.02]"
-                  : "border-border"
-              }`}>
+              <Card
+                className={`relative flex h-full flex-col ${
+                  plan.highlight
+                    ? "scale-[1.02] border-primary shadow-xl shadow-primary/10"
+                    : "border-border"
+                }`}
+              >
                 {plan.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground px-3 py-1">
-                      <Star className="h-3 w-3 mr-1" /> {plan.badge}
+                    <Badge className="bg-primary px-3 py-1 text-primary-foreground">
+                      <Star className="mr-1 h-3 w-3" />
+                      {plan.badge}
                     </Badge>
                   </div>
                 )}
-                <CardHeader className="text-center pt-8">
+                <CardHeader className="pt-8 text-center">
                   <div className="mx-auto mb-3 inline-flex rounded-full bg-primary/10 p-3">
-                    <plan.icon className={`h-6 w-6 ${plan.highlight ? "text-primary" : "text-muted-foreground"}`} />
+                    <plan.icon
+                      className={`h-6 w-6 ${
+                        plan.highlight ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    />
                   </div>
                   <CardTitle className="text-xl">{plan.name}</CardTitle>
                   <div className="mt-2">
                     <span className="text-4xl font-extrabold">{plan.price}</span>
-                    {plan.period && <span className="text-muted-foreground ml-1">{plan.period}</span>}
+                    <span className="ml-1 text-muted-foreground">{plan.period}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {plan.description}
+                  </p>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col">
-                  <ul className="space-y-3 flex-1">
-                    {FEATURES.map((feat) => {
-                      const val = feat[plan.key];
-                      if (val === false) return null;
+                <CardContent className="flex flex-1 flex-col">
+                  <ul className="flex-1 space-y-3">
+                    {FEATURES.map((feature) => {
+                      const value = feature[plan.key];
+                      if (value === false) {
+                        return null;
+                      }
+
                       return (
-                        <li key={feat.name} className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                          <span>{feat.name}</span>
-                          {typeof val === "string" && (
-                            <Badge variant="outline" className="ml-auto text-xs shrink-0">{val}</Badge>
+                        <li key={feature.name} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                          <span>{feature.name}</span>
+                          {typeof value === "string" && (
+                            <Badge variant="outline" className="ml-auto text-xs">
+                              {value}
+                            </Badge>
                           )}
                         </li>
                       );
                     })}
                   </ul>
-                  <div className="mt-6">
+                  <div className="mt-6 space-y-2">
                     {currentPlan === plan.key ? (
-                      <Button className="w-full" variant="outline" disabled>
-                        Current Plan
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={
+                          plan.key === "free" ? () => router.push("/shieldx") : undefined
+                        }
+                        disabled={plan.key !== "free"}
+                      >
+                        {plan.key === "free" ? "Use Demo" : "Current Plan"}
                       </Button>
                     ) : session ? (
                       <Button
-                        className={`w-full gap-2 ${plan.highlight ? "" : ""}`}
+                        className="w-full gap-2"
                         variant={plan.highlight ? "default" : "outline"}
                         size="lg"
-                        onClick={() => handleUpgrade(plan.key)}
-                        disabled={loadingPlan === plan.key}
+                        onClick={() => handlePlanAction(plan.key)}
+                        disabled={loadingPlan === plan.key || billingState?.teamManaged === true}
                       >
                         {loadingPlan === plan.key ? (
-                          <span className="flex items-center gap-2"><Zap className="h-4 w-4 animate-spin" /> Upgrading...</span>
-                        ) : successPlan === plan.key ? (
-                          <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Upgraded!</span>
+                          <>
+                            <Zap className="h-4 w-4 animate-spin" />
+                            Opening...
+                          </>
                         ) : (
                           <>
-                            {plan.cta} <ArrowRight className="h-4 w-4" />
+                            {plan.cta}
+                            <ArrowRight className="h-4 w-4" />
                           </>
                         )}
                       </Button>
                     ) : (
                       <Link href="/auth/register">
-                        <Button className="w-full gap-2" variant={plan.highlight ? "default" : "outline"} size="lg">
-                          {plan.cta} <ArrowRight className="h-4 w-4" />
+                        <Button
+                          className="w-full gap-2"
+                          variant={plan.highlight ? "default" : "outline"}
+                          size="lg"
+                        >
+                          {plan.cta}
+                          <ArrowRight className="h-4 w-4" />
                         </Button>
                       </Link>
+                    )}
+                    {billingState?.teamManaged && plan.key !== currentPlan && (
+                      <p className="text-xs text-muted-foreground">
+                        Team-managed Enterprise seats cannot start separate self-serve billing from this screen.
+                      </p>
                     )}
                   </div>
                 </CardContent>
@@ -233,33 +466,49 @@ export default function ShieldXPricingPage() {
           ))}
         </div>
 
-        {/* FEATURE COMPARISON TABLE */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold text-center mb-8">Feature Comparison</h2>
+          <h2 className="mb-8 text-center text-2xl font-bold">Feature Comparison</h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-sm font-semibold">Feature</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold w-28">Free</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold w-28 text-primary">Pro</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold w-28">Enterprise</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">
+                    Feature
+                  </th>
+                  <th className="w-28 px-4 py-3 text-center text-sm font-semibold">
+                    Free
+                  </th>
+                  <th className="w-28 px-4 py-3 text-center text-sm font-semibold text-primary">
+                    Pro
+                  </th>
+                  <th className="w-28 px-4 py-3 text-center text-sm font-semibold">
+                    Enterprise
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {FEATURES.map((feat) => (
-                  <tr key={feat.name} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="py-3 px-4 text-sm flex items-center gap-2">
-                      <feat.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                      {feat.name}
+                {FEATURES.map((feature) => (
+                  <tr
+                    key={feature.name}
+                    className="border-b border-border/50 transition-colors hover:bg-muted/30"
+                  >
+                    <td className="flex items-center gap-2 px-4 py-3 text-sm">
+                      <feature.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      {feature.name}
                     </td>
-                    <td className="py-3 px-4 text-center"><FeatureCell value={feat.free} /></td>
-                    <td className="py-3 px-4 text-center bg-primary/5"><FeatureCell value={feat.pro} /></td>
-                    <td className="py-3 px-4 text-center"><FeatureCell value={feat.enterprise} /></td>
+                    <td className="px-4 py-3 text-center">
+                      <FeatureCell value={feature.free} />
+                    </td>
+                    <td className="bg-primary/5 px-4 py-3 text-center">
+                      <FeatureCell value={feature.pro} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <FeatureCell value={feature.enterprise} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -267,50 +516,51 @@ export default function ShieldXPricingPage() {
           </div>
         </motion.div>
 
-        {/* FAQ */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-16 max-w-3xl mx-auto"
+          transition={{ delay: 0.3 }}
+          className="mx-auto mt-16 max-w-3xl"
         >
-          <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+          <h2 className="mb-8 text-center text-2xl font-bold">
+            Frequently Asked Questions
+          </h2>
           <div className="space-y-4">
             {[
               {
                 q: "Can I try ShieldX before purchasing?",
-                a: "Absolutely! The Free plan gives you access to the demo mode and the basic Secrets Scanner. Run the full demo to see all 8 modules in action with sample data.",
+                a: "Yes. The Free plan is a dedicated demo workspace with sample data so you can explore the full product without unlocking real paid scans.",
+              },
+              {
+                q: "What happens after I pay?",
+                a: "Razorpay creates the subscription checkout, and your plan is unlocked only after the signed billing webhook updates your account. That keeps Pro and Enterprise access tied to real payment events.",
+              },
+              {
+                q: "Can a Pro user open Enterprise features without paying?",
+                a: "No. Enterprise entitlements are now enforced through billing-backed access control and team-seat ownership instead of a client-side plan switch.",
               },
               {
                 q: "Do you store my source code?",
-                a: "No — ShieldX has a strict Zero Code Storage policy. Your code is analyzed in real-time and immediately discarded after scanning. We never store, log, or retain any code you submit. This applies to all plans including Free.",
-              },
-              {
-                q: "What happens after I purchase the Pro plan?",
-                a: "After purchase, create an account (or sign in), and your Pro access is activated immediately. You get a dedicated ShieldX Dashboard with full access to all 8 security modules.",
-              },
-              {
-                q: "What's the difference between Pro ($499) and Enterprise ($999)?",
-                a: "Pro is ideal for individual developers and small teams. Enterprise adds team management (up to 25 seats), priority support with < 4hr response time, custom integrations, a dedicated account manager, SLA guarantees, white-label reports, and on-premise deployment options.",
+                a: "No. Paid workspaces keep summary scan records for history and exports, but not raw source code or full dependency manifests.",
               },
               {
                 q: "Can I cancel my subscription?",
-                a: "Yes, you can cancel anytime. Your access continues until the end of your billing period. No questions asked.",
+                a: "Yes. Directly billed subscriptions can be cancelled at the end of the billing cycle from this pricing page.",
+              },
+              {
+                q: "What is the difference between Pro and Enterprise?",
+                a: "Pro is for one paid workspace with all ShieldX modules. Enterprise adds team seat management, onboarding flows, and enterprise-only support paths.",
               },
               {
                 q: "Do you offer annual billing?",
-                a: "Yes — save 20% with annual billing. Pro becomes $399/month ($4,788/year) and Enterprise becomes $799/month ($9,588/year). Contact us for details.",
-              },
-              {
-                q: "Do I need a credit card for the Free plan?",
-                a: "No credit card required. Sign up and start scanning immediately.",
+                a: "The current self-serve billing flow is monthly. Annual billing can be added later once the live subscription flow is stable.",
               },
             ].map((faq) => (
               <Card key={faq.q}>
                 <CardHeader className="py-4">
                   <CardTitle className="text-base font-semibold">{faq.q}</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 pb-4">
+                <CardContent className="pb-4 pt-0">
                   <p className="text-sm text-muted-foreground">{faq.a}</p>
                 </CardContent>
               </Card>
@@ -318,20 +568,21 @@ export default function ShieldXPricingPage() {
           </div>
         </motion.div>
 
-        {/* BOTTOM CTA */}
         <div className="mt-16 text-center">
-          <p className="text-muted-foreground mb-4">
-            Need help choosing a plan? Our security team is here to help.
+          <p className="mb-4 text-muted-foreground">
+            Need help choosing a plan or rolling out Enterprise?
           </p>
-          <div className="flex justify-center gap-3 flex-wrap">
+          <div className="flex flex-wrap justify-center gap-3">
             <Link href="/shieldx">
               <Button size="lg" className="gap-2">
-                <Zap className="h-4 w-4" /> Try Free Demo
+                <Zap className="h-4 w-4" />
+                Try Free Demo
               </Button>
             </Link>
             <Link href="/contact?subject=ShieldX+Enterprise">
               <Button size="lg" variant="outline" className="gap-2">
-                Contact Sales <ArrowRight className="h-4 w-4" />
+                Contact Sales
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>

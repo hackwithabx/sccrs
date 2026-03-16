@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import crypto from "crypto";
+import {
+  detachUserFromEnterpriseTeam,
+  teardownEnterpriseWorkspace,
+} from "@/lib/shieldx-billing";
 
 function isAuthorized(request: NextRequest): boolean {
   const token = request.cookies.get("scr-admin-token")?.value;
@@ -111,7 +115,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    const updates: Record<string, string | null> = {};
+    const existingUser = await User.findById(id).select(
+      "email shieldxPlan shieldxPlanSource shieldxTeamOwnerId shieldxSeatRole"
+    );
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const updates: Record<string, string | boolean | null> = {};
 
     if (role !== undefined) {
       if (!["user", "admin"].includes(role)) {
@@ -129,9 +141,20 @@ export async function PATCH(request: NextRequest) {
       }
 
       updates.shieldxPlan = shieldxPlan;
+      updates.shieldxPlanSource = shieldxPlan === "free" ? "free" : "admin";
+      updates.shieldxBillingProvider = null;
+      updates.shieldxBillingStatus = shieldxPlan === "free" ? "inactive" : "manual";
+      updates.shieldxSubscriptionId = null;
+      updates.shieldxPlanId = null;
+      updates.shieldxCancelAtPeriodEnd = false;
 
       if (shieldxPlan === "free") {
         updates.shieldxExpiry = null;
+      }
+
+      if (shieldxPlan !== "enterprise") {
+        updates.shieldxTeamOwnerId = null;
+        updates.shieldxSeatRole = null;
       }
     }
 
@@ -142,11 +165,29 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updated = await User.findByIdAndUpdate(id, updates, { new: true });
-
-    if (!updated) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (
+      shieldxPlan !== undefined &&
+      existingUser.shieldxPlan === "enterprise" &&
+      shieldxPlan !== "enterprise" &&
+      existingUser.shieldxTeamOwnerId === existingUser._id.toString()
+    ) {
+      await teardownEnterpriseWorkspace(existingUser._id.toString());
     }
+
+    if (
+      shieldxPlan !== undefined &&
+      existingUser.shieldxTeamOwnerId &&
+      existingUser.shieldxTeamOwnerId !== existingUser._id.toString() &&
+      shieldxPlan !== "enterprise"
+    ) {
+      await detachUserFromEnterpriseTeam({
+        userId: existingUser._id.toString(),
+        email: existingUser.email,
+        teamOwnerId: existingUser.shieldxTeamOwnerId,
+      });
+    }
+
+    const updated = await User.findByIdAndUpdate(id, updates, { new: true });
 
     return NextResponse.json({ user: updated });
   } catch (error) {

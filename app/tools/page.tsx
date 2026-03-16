@@ -56,13 +56,13 @@ export default function ToolsPage() {
                       <Brain className="h-8 w-8 text-violet-600" />
                       <Badge className="bg-violet-600 gap-1">
                         <Sparkles className="h-3 w-3" />
-                        NEW - Enterprise Tool
+                        Free AI Tool
                       </Badge>
                     </div>
                     <h3 className="text-2xl font-bold mb-2">AI Security Auditor</h3>
                     <p className="text-muted-foreground mb-4">
-                      Professional security assessment tool for AI/LLM applications. Test for prompt injection, vulnerabilities,
-                      data leakage, and OWASP vulnerabilities. Generate professional reports and get actionable remediation guidance.
+                      Public AI and LLM security assessment tool for prompt injection, data leakage, and OWASP LLM risk reviews.
+                      It stays separate from paid ShieldX subscriptions and does not consume any paid workspace access.
                     </p>
                     <div className="flex flex-wrap gap-2 mb-4">
                       <Badge variant="outline">Prompt Injection Detection</Badge>
@@ -1099,15 +1099,6 @@ function SQLInjectionTester() {
     }));
 
     setResults(detected);
-  };
-
-  const riskColor = (risk: string) => {
-    switch (risk) {
-      case "Critical": return "text-destructive";
-      case "High": return "text-chart-5";
-      case "Medium": return "text-chart-4";
-      default: return "text-muted-foreground";
-    }
   };
 
   return (

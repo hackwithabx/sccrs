@@ -12,7 +12,7 @@ const footerLinks = {
   ],
   Tools: [
     { href: "/tools", label: "Free Security Tools" },
-    { href: "/tools/ai-security-auditor", label: "AI Security Auditor" },
+    { href: "/tools/ai-security-auditor", label: "Free AI Security Auditor" },
     { href: "/reports", label: "Security Reports" },
     { href: "/tools#headers", label: "Header Analyzer" },
     { href: "/tools#csp-generator", label: "CSP Generator" },
