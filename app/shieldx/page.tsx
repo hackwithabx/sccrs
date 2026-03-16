@@ -733,7 +733,7 @@ function exportSavedScan(scan: SavedScan) {
 export default function ShieldXPage() {
   const { data: session } = useSession();
   // Plan tier logic for RBAC and UI
-  function getUserPlanTier(session) {
+  function getUserPlanTier(session: any) {
     return session?.user?.planTier || session?.user?.shieldxPlan || "free";
   }
   const planTier = getUserPlanTier(session);
