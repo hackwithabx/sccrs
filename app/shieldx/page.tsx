@@ -404,6 +404,7 @@ jobs:
           CODE=$(find src -name '*.ts' -o -name '*.js' | head -50 | xargs cat)
           RESULT=$(curl -sf -X POST \\
             https://securecodereviews.com/api/shieldx/ci-scan \\
+            -H "Authorization: Bearer \${{ secrets.SHIELDX_API_KEY }}" \\
             -H "Content-Type: application/json" \\
             -d "{\\"scanType\\": \\"secrets\\", \\"code\\": $(echo "$CODE" | jq -Rs .), \\"projectName\\": \\"\${{ github.repository }}\\"}")
           echo "$RESULT" | jq .
@@ -413,6 +414,7 @@ jobs:
         run: |
           RESULT=$(curl -sf -X POST \\
             https://securecodereviews.com/api/shieldx/ci-scan \\
+            -H "Authorization: Bearer \${{ secrets.SHIELDX_API_KEY }}" \\
             -H "Content-Type: application/json" \\
             -d "{\\"scanType\\": \\"dependencies\\", \\"dependencies\\": $(cat package.json | jq -Rs .), \\"projectName\\": \\"\${{ github.repository }}\\"}")
           echo "$RESULT" | jq .
@@ -426,6 +428,7 @@ const GITLAB_CI_YAML = `shieldx-security-scan:
       CODE=$(find src -name '*.ts' -o -name '*.js' | head -50 | xargs cat)
       RESULT=$(curl -sf -X POST \\
         https://securecodereviews.com/api/shieldx/ci-scan \\
+        -H "Authorization: Bearer $SHIELDX_API_KEY" \\
         -H "Content-Type: application/json" \\
         -d "{\\"scanType\\": \\"secrets\\", \\"code\\": $(echo "$CODE" | jq -Rs .), \\"projectName\\": \\"$CI_PROJECT_NAME\\"}")
       echo "$RESULT" | jq .
@@ -436,6 +439,7 @@ const GITLAB_CI_YAML = `shieldx-security-scan:
 
 const CURL_EXAMPLE = `# Secrets scan
 curl -X POST https://securecodereviews.com/api/shieldx/ci-scan \\
+  -H "Authorization: Bearer $SHIELDX_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "scanType": "secrets",
@@ -445,6 +449,7 @@ curl -X POST https://securecodereviews.com/api/shieldx/ci-scan \\
 
 # Dependency scan
 curl -X POST https://securecodereviews.com/api/shieldx/ci-scan \\
+  -H "Authorization: Bearer $SHIELDX_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "scanType": "dependencies",
@@ -642,6 +647,12 @@ interface TeamPayload {
   pendingInvite: TeamInvite | null;
 }
 
+interface ApiKeyMetadata {
+  exists: boolean;
+  prefix: string | null;
+  lastCreatedAt: string | null;
+}
+
 function createEmptyCloudAnswers() {
   const init: Record<string, boolean | null> = {};
   CLOUD_CHECKS.forEach((check) => {
@@ -771,6 +782,11 @@ export default function ShieldXPage() {
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
   const [cicdTestResult, setCicdTestResult] = useState<{ verdict: string; exitCode: number; secrets?: { totalFindings: number }; dependencies?: { totalVulnerabilities: number } } | null>(null);
   const [cicdTesting, setCicdTesting] = useState(false);
+  const [apiKeyMetadata, setApiKeyMetadata] = useState<ApiKeyMetadata | null>(null);
+  const [plainApiKey, setPlainApiKey] = useState("");
+  const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const [apiKeyMessage, setApiKeyMessage] = useState("");
+  const [apiKeyError, setApiKeyError] = useState("");
 
   // Alerts state
   const [alertEmail, setAlertEmail] = useState("");
@@ -884,6 +900,28 @@ export default function ShieldXPage() {
       console.error(error);
     }
   }, [hasPro, userEmail, userId]);
+
+  const loadApiKeyMetadata = useCallback(async () => {
+    if (!userId || !hasPro) {
+      setApiKeyMetadata(null);
+      setPlainApiKey("");
+      return;
+    }
+
+    setApiKeyError("");
+    try {
+      const response = await fetch("/api/shieldx/api-key");
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load API key");
+      }
+      setApiKeyMetadata(data.apiKey || null);
+    } catch (error) {
+      setApiKeyError(
+        error instanceof Error ? error.message : "Failed to load API key"
+      );
+    }
+  }, [hasPro, userId]);
 
   const loadTeam = useCallback(async () => {
     if (!userId) {
@@ -1274,11 +1312,14 @@ export default function ShieldXPage() {
     if (hasPro) {
       loadScanHistory();
       loadAlertConfig();
+      loadApiKeyMetadata();
       return;
     }
 
     setScanHistory([]);
-  }, [hasPro, loadAlertConfig, loadScanHistory, loadTeam, userId]);
+    setApiKeyMetadata(null);
+    setPlainApiKey("");
+  }, [hasPro, loadAlertConfig, loadApiKeyMetadata, loadScanHistory, loadTeam, userId]);
 
   // RUN DEMO
   const runDemo = useCallback(async () => {
@@ -1297,7 +1338,7 @@ export default function ShieldXPage() {
       const resp = await fetch("/api/shieldx/scan-deps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: DEMO_PACKAGE_JSON }),
+        body: JSON.stringify({ demo: true }),
       });
       const data = await resp.json();
       if (data.error) setDepsError(data.error);
@@ -1316,7 +1357,7 @@ export default function ShieldXPage() {
       const resp = await fetch("/api/shieldx/scan-api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: DEMO_API_URL }),
+        body: JSON.stringify({ demo: true }),
       });
       const data = await resp.json();
       if (data.error) setApiError(data.error);
@@ -1684,6 +1725,58 @@ export default function ShieldXPage() {
     }
     setCicdTesting(false);
   };
+
+  const createApiKey = useCallback(async () => {
+    setApiKeyLoading(true);
+    setApiKeyError("");
+    setApiKeyMessage("");
+
+    try {
+      const response = await fetch("/api/shieldx/api-key", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create API key");
+      }
+
+      setPlainApiKey(data.apiKey || "");
+      setApiKeyMessage(
+        data.message ||
+          "New ShieldX API key created. Store it in your CI secret manager."
+      );
+      setApiKeyMetadata(data.metadata || null);
+      setCopiedSnippet(null);
+    } catch (error) {
+      setApiKeyError(
+        error instanceof Error ? error.message : "Failed to create API key"
+      );
+    } finally {
+      setApiKeyLoading(false);
+    }
+  }, []);
+
+  const revokeApiKey = useCallback(async () => {
+    setApiKeyLoading(true);
+    setApiKeyError("");
+    setApiKeyMessage("");
+
+    try {
+      const response = await fetch("/api/shieldx/api-key", { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to revoke API key");
+      }
+
+      setPlainApiKey("");
+      setApiKeyMetadata({ exists: false, prefix: null, lastCreatedAt: null });
+      setApiKeyMessage(data.message || "ShieldX API key revoked.");
+    } catch (error) {
+      setApiKeyError(
+        error instanceof Error ? error.message : "Failed to revoke API key"
+      );
+    } finally {
+      setApiKeyLoading(false);
+    }
+  }, []);
 
   const severityColor = (s: string) => {
     if (s === "critical") return "text-red-500";
@@ -2437,6 +2530,112 @@ export default function ShieldXPage() {
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-4">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-semibold">
+                            <Lock className="h-4 w-4 text-primary" />
+                            Paid CI/CD Access Key
+                          </div>
+                          <p className="text-sm text-muted-foreground max-w-2xl">
+                            Generate a ShieldX API key for GitHub Actions, GitLab CI, Jenkins, or any other pipeline.
+                            Free/demo accounts cannot use the CI endpoint, so this key is the safe paid-user path for automated scans.
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            <span>
+                              Status:{" "}
+                              <strong className="text-foreground">
+                                {apiKeyMetadata?.exists ? "Active" : "Not created"}
+                              </strong>
+                            </span>
+                            {apiKeyMetadata?.prefix && (
+                              <span>
+                                Prefix:{" "}
+                                <strong className="text-foreground">
+                                  {apiKeyMetadata.prefix}
+                                </strong>
+                              </span>
+                            )}
+                            {apiKeyMetadata?.lastCreatedAt && (
+                              <span>
+                                Created:{" "}
+                                <strong className="text-foreground">
+                                  {new Date(apiKeyMetadata.lastCreatedAt).toLocaleDateString()}
+                                </strong>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant={apiKeyMetadata?.exists ? "outline" : "default"}
+                            className="gap-2"
+                            onClick={createApiKey}
+                            disabled={apiKeyLoading}
+                          >
+                            {apiKeyLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Key className="h-4 w-4" />
+                            )}
+                            {apiKeyMetadata?.exists ? "Rotate API Key" : "Generate API Key"}
+                          </Button>
+                          {apiKeyMetadata?.exists && (
+                            <Button
+                              variant="ghost"
+                              className="gap-2 text-muted-foreground"
+                              onClick={revokeApiKey}
+                              disabled={apiKeyLoading}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Revoke
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {apiKeyMessage && (
+                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400">
+                          {apiKeyMessage}
+                        </div>
+                      )}
+
+                      {apiKeyError && (
+                        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                          {apiKeyError}
+                        </div>
+                      )}
+
+                      {plainApiKey && (
+                        <div className="rounded-xl border bg-background/70 p-4 space-y-3">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                              <div className="text-sm font-medium">Store this key now</div>
+                              <p className="text-xs text-muted-foreground">
+                                It is shown only once. Save it as `SHIELDX_API_KEY` in your CI secret manager.
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => copyToClipboard(plainApiKey, "api-key")}
+                            >
+                              {copiedSnippet === "api-key" ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                              {copiedSnippet === "api-key" ? "Copied!" : "Copy Key"}
+                            </Button>
+                          </div>
+                          <pre className="overflow-x-auto rounded-lg bg-muted/40 p-4 text-xs font-mono">
+                            {plainApiKey}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+
                     {/* GitHub Actions */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -2548,6 +2747,7 @@ export default function ShieldXPage() {
                     <div className="rounded-lg border border-border p-4 bg-muted/30">
                       <h5 className="text-sm font-medium mb-2">How it works:</h5>
                       <ul className="text-sm text-muted-foreground space-y-1">
+                        <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> Authenticate your pipeline with a paid ShieldX API key stored as `SHIELDX_API_KEY`</li>
                         <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> Accepts POST with code or dependency manifest</li>
                         <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> Runs entropy-based secrets scan or OSV dependency check</li>
                         <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /> Returns PASS/FAIL verdict with exit code 0 or 1</li>

@@ -72,9 +72,9 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* ─── Logo ─── */}
-          <Link href="/" className="flex items-center gap-2 shrink-0 group">
+          <Link href="/" className="flex min-w-0 items-center gap-2 shrink-0 group">
             <Shield className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
-            <span className="text-xl font-bold tracking-tight select-none">
+            <span className="truncate text-lg font-bold tracking-tight select-none sm:text-xl">
               Secure<span className="text-primary">Code</span>Reviews
             </span>
           </Link>
@@ -191,10 +191,10 @@ export function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed top-0 right-0 z-[140] h-dvh w-[280px] bg-background shadow-2xl lg:hidden flex flex-col border-l border-border/50"
+              className="fixed inset-y-0 right-0 z-[140] flex h-[100svh] w-[min(86vw,320px)] flex-col overflow-hidden border-l border-border/50 bg-background/95 shadow-2xl backdrop-blur-lg lg:hidden"
             >
               {/* Mobile header */}
-              <div className="flex items-center justify-between px-5 h-16 border-b border-border">
+              <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4 pt-[env(safe-area-inset-top)]">
                 <span className="text-lg font-bold tracking-tight">
                   <span className="text-primary">Menu</span>
                 </span>
@@ -208,7 +208,7 @@ export function Navbar() {
               </div>
 
               {/* Mobile nav links */}
-              <nav className="flex-1 overflow-y-auto py-4 px-3">
+              <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4 pb-6">
                 <ul className="space-y-0.5">
                   {navLinks.map(({ href, label, icon: Icon, highlight, matchAlso }) => {
                     const active = isActive(href, matchAlso);
@@ -241,9 +241,9 @@ export function Navbar() {
               </nav>
 
               {/* Mobile auth */}
-              <div className="border-t border-border p-4 space-y-2">
+              <div className="shrink-0 border-t border-border bg-background/95 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur">
                 {session ? (
-                  <>
+                  <div className="space-y-2">
                     <Link
                       href="/dashboard"
                       onClick={() => setMobileOpen(false)}
@@ -262,9 +262,9 @@ export function Navbar() {
                       <LogOut className="h-4 w-4" />
                       Sign Out
                     </button>
-                  </>
+                  </div>
                 ) : (
-                  <>
+                  <div className="space-y-2">
                     <Link
                       href="/auth/login"
                       onClick={() => setMobileOpen(false)}
@@ -280,7 +280,7 @@ export function Navbar() {
                       Get Started
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
-                  </>
+                  </div>
                 )}
               </div>
             </motion.div>

@@ -55,6 +55,7 @@ export const authOptions: NextAuthOptions = {
           email: credentials.email.toLowerCase(),
         }).select(
           "+password role shieldxPlan shieldxPlanSource shieldxExpiry shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId"
+          + " passwordResetRequired"
         );
 
         if (!user || !user.password) {
@@ -83,6 +84,7 @@ export const authOptions: NextAuthOptions = {
           shieldxCancelAtPeriodEnd: Boolean(user.shieldxCancelAtPeriodEnd),
           shieldxSeatRole: user.shieldxSeatRole || null,
           shieldxTeamOwnerId: user.shieldxTeamOwnerId || null,
+          passwordResetRequired: Boolean(user.passwordResetRequired),
         };
       },
     }),
@@ -117,6 +119,9 @@ export const authOptions: NextAuthOptions = {
           (user as { shieldxSeatRole?: string | null }).shieldxSeatRole || null;
         token.shieldxTeamOwnerId =
           (user as { shieldxTeamOwnerId?: string | null }).shieldxTeamOwnerId || null;
+        token.passwordResetRequired = Boolean(
+          (user as { passwordResetRequired?: boolean }).passwordResetRequired
+        );
         return token;
       }
 
@@ -126,6 +131,7 @@ export const authOptions: NextAuthOptions = {
           const latestUser = (await User.findById(token.id)
             .select(
               "role shieldxPlan shieldxPlanSource shieldxExpiry shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId"
+              + " passwordResetRequired"
             )
             .lean()) as {
             role?: string;
@@ -137,6 +143,7 @@ export const authOptions: NextAuthOptions = {
             shieldxCancelAtPeriodEnd?: boolean;
             shieldxSeatRole?: string | null;
             shieldxTeamOwnerId?: string | null;
+            passwordResetRequired?: boolean;
           } | null;
 
           if (latestUser) {
@@ -152,6 +159,9 @@ export const authOptions: NextAuthOptions = {
             );
             token.shieldxSeatRole = latestUser.shieldxSeatRole || null;
             token.shieldxTeamOwnerId = latestUser.shieldxTeamOwnerId || null;
+            token.passwordResetRequired = Boolean(
+              latestUser.passwordResetRequired
+            );
           }
         } catch (error) {
           console.error("Failed to refresh session claims:", error);
@@ -182,6 +192,8 @@ export const authOptions: NextAuthOptions = {
           (token.shieldxSeatRole as string | null) || null;
         (session.user as { shieldxTeamOwnerId?: string | null }).shieldxTeamOwnerId =
           (token.shieldxTeamOwnerId as string | null) || null;
+        (session.user as { passwordResetRequired?: boolean }).passwordResetRequired =
+          Boolean(token.passwordResetRequired);
       }
       return session;
     },

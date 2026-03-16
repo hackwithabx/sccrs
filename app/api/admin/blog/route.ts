@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
+import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
 // GET /api/admin/blog — list all blog posts with any status (admin only)
 export async function GET(request: NextRequest) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await dbConnect();
 
@@ -45,6 +50,10 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/admin/blog — approve, reject, or feature a blog post
 export async function PATCH(request: NextRequest) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await dbConnect();
     const body = await request.json();
@@ -102,6 +111,10 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE /api/admin/blog — delete a blog post
 export async function DELETE(request: NextRequest) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);

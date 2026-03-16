@@ -82,7 +82,7 @@ const plans = [
     period: "/month",
     description: "Real scans across all ShieldX modules for solo builders and small teams.",
     badge: "Most Popular",
-    cta: "Start Pro",
+    cta: "Request Pro Access",
     highlight: true,
     icon: Zap,
   },
@@ -93,7 +93,7 @@ const plans = [
     period: "/month",
     description: "Team seats, onboarding, and enterprise workflow support for larger rollouts.",
     badge: "Built for Teams",
-    cta: "Start Enterprise",
+    cta: "Request Enterprise Plan",
     highlight: false,
     icon: Crown,
   },
@@ -129,6 +129,15 @@ export default function ShieldXPricingPage() {
   const hasDirectBilling =
     billingState?.billingProvider === "razorpay" && !billingState.teamManaged;
 
+  const getSubscriptionRequestHref = (planKey: "pro" | "enterprise") => {
+    const params = new URLSearchParams({
+      type: "subscription",
+      plan: planKey,
+    });
+
+    return `/contact?${params.toString()}`;
+  };
+
   const loadBillingState = useCallback(async () => {
     if (!session) {
       setBillingState(null);
@@ -152,43 +161,13 @@ export default function ShieldXPricingPage() {
     void loadBillingState();
   }, [loadBillingState]);
 
-  const handlePlanAction = async (planKey: "free" | "pro" | "enterprise") => {
+  const handlePlanAction = (planKey: "free" | "pro" | "enterprise") => {
     if (planKey === "free") {
       router.push("/shieldx");
       return;
     }
 
-    setLoadingPlan(planKey);
-    setStatusMessage("");
-    setErrorMessage("");
-
-    try {
-      const response = await fetch("/api/shieldx/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planKey }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to start Razorpay checkout");
-      }
-
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl as string;
-        return;
-      }
-
-      setStatusMessage(data.message || "Billing request saved.");
-      await updateSession();
-      await loadBillingState();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to start billing"
-      );
-    } finally {
-      setLoadingPlan(null);
-    }
+    router.push(getSubscriptionRequestHref(planKey));
   };
 
   const handleCancelAtPeriodEnd = async () => {
@@ -239,7 +218,7 @@ export default function ShieldXPricingPage() {
             </span>
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-muted-foreground">
-            Free stays demo-only. Pro unlocks real ShieldX scans. Enterprise adds team seats, billing-backed access control, and onboarding support.
+            Free stays demo-only. Pro and Enterprise start with a tagged subscription request so we can confirm the right plan, team setup, and onboarding path before activation.
           </p>
         </motion.div>
 
@@ -422,41 +401,23 @@ export default function ShieldXPricingPage() {
                       >
                         {plan.key === "free" ? "Use Demo" : "Current Plan"}
                       </Button>
-                    ) : session ? (
+                    ) : (
                       <Button
                         className="w-full gap-2"
                         variant={plan.highlight ? "default" : "outline"}
                         size="lg"
                         onClick={() => handlePlanAction(plan.key)}
-                        disabled={loadingPlan === plan.key || billingState?.teamManaged === true}
+                        disabled={billingState?.teamManaged === true}
                       >
-                        {loadingPlan === plan.key ? (
-                          <>
-                            <Zap className="h-4 w-4 animate-spin" />
-                            Opening...
-                          </>
-                        ) : (
-                          <>
-                            {plan.cta}
-                            <ArrowRight className="h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
-                    ) : (
-                      <Link href="/auth/register">
-                        <Button
-                          className="w-full gap-2"
-                          variant={plan.highlight ? "default" : "outline"}
-                          size="lg"
-                        >
+                        <>
                           {plan.cta}
                           <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                        </>
+                      </Button>
                     )}
                     {billingState?.teamManaged && plan.key !== currentPlan && (
                       <p className="text-xs text-muted-foreground">
-                        Team-managed Enterprise seats cannot start separate self-serve billing from this screen.
+                        Team-managed Enterprise seats cannot start a separate plan request from this screen.
                       </p>
                     )}
                   </div>
@@ -532,8 +493,8 @@ export default function ShieldXPricingPage() {
                 a: "Yes. The Free plan is a dedicated demo workspace with sample data so you can explore the full product without unlocking real paid scans.",
               },
               {
-                q: "What happens after I pay?",
-                a: "Razorpay creates the subscription checkout, and your plan is unlocked only after the signed billing webhook updates your account. That keeps Pro and Enterprise access tied to real payment events.",
+                q: "What happens after I submit a subscription request?",
+                a: "Your request is routed through our contact flow with the requested ShieldX plan attached. We review the team details, confirm fit, and then follow up with activation and billing steps.",
               },
               {
                 q: "Can a Pro user open Enterprise features without paying?",
@@ -553,7 +514,7 @@ export default function ShieldXPricingPage() {
               },
               {
                 q: "Do you offer annual billing?",
-                a: "The current self-serve billing flow is monthly. Annual billing can be added later once the live subscription flow is stable.",
+                a: "The standard flow is monthly. If you need annual billing or a larger rollout, send a subscription request and we can scope it with you.",
               },
             ].map((faq) => (
               <Card key={faq.q}>
@@ -579,7 +540,7 @@ export default function ShieldXPricingPage() {
                 Try Free Demo
               </Button>
             </Link>
-            <Link href="/contact?subject=ShieldX+Enterprise">
+            <Link href={getSubscriptionRequestHref("enterprise")}>
               <Button size="lg" variant="outline" className="gap-2">
                 Contact Sales
                 <ArrowRight className="h-4 w-4" />

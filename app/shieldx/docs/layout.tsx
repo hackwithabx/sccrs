@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "ShieldX Documentation — Product Manual & User Guide",
+  title: "ShieldX Documentation - Product Manual & User Guide",
   description:
-    "Complete documentation for ShieldX security platform. Learn how to use all 8 security modules — secrets scanner, dependency auditor, cloud security, API scanner, log analyzer, CI/CD integration, alerts, and security scoring.",
+    "Complete documentation for ShieldX security platform. Learn how to use all 8 security modules - secrets scanner, dependency auditor, cloud security, API scanner, log analyzer, CI/CD integration, alerts, and security scoring.",
   keywords: [
     "ShieldX documentation",
     "ShieldX manual",
@@ -14,8 +14,29 @@ export const metadata: Metadata = {
     "cloud security checklist",
     "API security testing",
   ],
+  alternates: {
+    canonical: "/shieldx/docs",
+  },
+  openGraph: {
+    title: "ShieldX Documentation | SecureCodeReviews",
+    description:
+      "Step-by-step docs for ShieldX modules, onboarding, CI/CD setup, paid workspace guidance, and product walkthroughs.",
+    url: "https://securecodereviews.com/shieldx/docs",
+    images: ["/og-image.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ShieldX Documentation | SecureCodeReviews",
+    description:
+      "Learn how to use ShieldX secrets, dependency, API, cloud, alerting, and CI/CD features.",
+    images: ["/og-image.png"],
+  },
 };
 
-export default function ShieldXDocsLayout({ children }: { children: React.ReactNode }) {
+export default function ShieldXDocsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return children;
 }

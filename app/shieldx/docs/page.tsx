@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Shield, Key, Package, Cloud, Globe, Brain, GitBranch, Bell, BarChart3,
-  ArrowRight, CheckCircle2, AlertTriangle, Lock, Eye, Zap, BookOpen,
-  Code, Search, FileText, ExternalLink, Crown, ChevronRight,
+  ArrowRight, CheckCircle2, Lock, Eye, Zap, BookOpen,
+  Search, FileText, Crown, ChevronRight,
 } from "lucide-react";
 
 const modules = [
@@ -233,9 +231,85 @@ const privacyPolicy = [
   { title: "SOC 2 Ready Architecture", desc: "Our infrastructure follows SOC 2 Type II controls including access management, change management, and monitoring." },
 ];
 
-export default function ShieldXDocsPage() {
-  const [activeSection, setActiveSection] = useState("overview");
+const quickStarts = [
+  {
+    name: "Free Demo",
+    icon: Shield,
+    badge: "Demo only",
+    description:
+      "Use the guided demo workspace with sample code, sample dependencies, and example results. This keeps free visitors out of the paid workspace while still showing the full product flow.",
+    steps: [
+      "Open ShieldX and click Run Full Demo.",
+      "Review the sample findings across secrets, dependencies, cloud, API, and logs.",
+      "Use the separate free AI and public tools for non-paid exploration.",
+    ],
+  },
+  {
+    name: "Pro Workspace",
+    icon: Zap,
+    badge: "Paid scans",
+    description:
+      "Run real scans on your own code, dependency manifests, API targets, and security workflows. Save score snapshots, export reports, and configure notifications.",
+    steps: [
+      "Paste your source code, package manifest, or endpoint into the relevant module.",
+      "Run a live scan and review the score, findings, and remediation guidance.",
+      "Save scan history, export the PDF report, and set up alerts or CI/CD automation.",
+    ],
+  },
+  {
+    name: "Enterprise Rollout",
+    icon: Crown,
+    badge: "Team seats",
+    description:
+      "Create the Enterprise workspace, invite team members, assign seat roles, and keep billing, onboarding, and support aligned to the organization owner account.",
+    steps: [
+      "Set the workspace name and generate the CI/CD API key.",
+      "Invite team members and assign owner, admin, member, or viewer access.",
+      "Run the first baseline scan, export a report, and contact onboarding for rollout help.",
+    ],
+  },
+];
 
+const workspacePreviews = [
+  {
+    title: "Pro Results Overview",
+    badge: "Live score view",
+    score: "8.2 / 10",
+    summary:
+      "A paid workspace combines module results into one security score with saved snapshots and export-ready summaries.",
+    highlights: [
+      "Secrets: 0 critical, 1 high",
+      "Dependencies: 2 CVEs flagged from OSV.dev",
+      "API score: 7.4 with missing CSP and weak rate-limit indicators",
+    ],
+  },
+  {
+    title: "Saved Reports & History",
+    badge: "Paid workflow",
+    score: "PDF export",
+    summary:
+      "Pro and Enterprise accounts can save scan history and create reports that look ready to share with engineering or leadership.",
+    highlights: [
+      "Snapshot stored with target, score, and findings counts",
+      "Export PDF for remediation reviews or customer updates",
+      "Repeat scans over time to show posture improvement",
+    ],
+  },
+  {
+    title: "Enterprise Team Console",
+    badge: "Enterprise only",
+    score: "25 seats",
+    summary:
+      "Enterprise accounts get the team panel with workspace naming, seat tracking, invite management, and owner/admin controls.",
+    highlights: [
+      "Workspace name and seat usage visible in one place",
+      "Invite admins, members, and viewers by email",
+      "Keep Enterprise access separate from demo and Free users",
+    ],
+  },
+];
+
+export default function ShieldXDocsPage() {
   return (
     <div className="py-8 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -276,6 +350,12 @@ export default function ShieldXDocsPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <a href="#overview" className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors text-sm font-medium">
                   <Shield className="h-4 w-4 text-primary" /> Overview
+                </a>
+                <a href="#quickstart" className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors text-sm font-medium">
+                  <Zap className="h-4 w-4 text-primary" /> Quickstart
+                </a>
+                <a href="#previews" className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors text-sm font-medium">
+                  <Eye className="h-4 w-4 text-primary" /> Product Preview
                 </a>
                 {modules.map((mod) => (
                   <a key={mod.id} href={`#${mod.id}`} className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors text-sm font-medium">
@@ -348,6 +428,83 @@ export default function ShieldXDocsPage() {
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+        </section>
+
+        <section id="quickstart" className="scroll-mt-20 mb-16">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <Zap className="h-6 w-6 text-primary" /> Getting Started by Plan
+            </h2>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {quickStarts.map((item) => (
+                <Card key={item.name} className="h-full">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="inline-flex rounded-xl bg-primary/10 p-3">
+                        <item.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <Badge variant="outline">{item.badge}</Badge>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">{item.name}</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
+                    </div>
+                    <div className="space-y-3">
+                      {item.steps.map((step, index) => (
+                        <div key={step} className="flex items-start gap-3">
+                          <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                            {index + 1}
+                          </div>
+                          <span className="text-sm text-muted-foreground">{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        <section id="previews" className="scroll-mt-20 mb-16">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <Eye className="h-6 w-6 text-primary" /> What the Paid Workspace Looks Like
+            </h2>
+            <p className="mb-6 max-w-3xl text-muted-foreground">
+              These preview cards mirror the kind of result summaries, saved reports, and team controls customers see in the paid ShieldX workspace.
+            </p>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {workspacePreviews.map((preview) => (
+                <Card key={preview.title} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="border-b bg-muted/30 px-5 py-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-semibold">{preview.title}</div>
+                          <div className="text-xs text-muted-foreground">{preview.badge}</div>
+                        </div>
+                        <Badge className="bg-primary/10 text-primary border-primary/20">
+                          {preview.score}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-4 p-5">
+                      <p className="text-sm text-muted-foreground">{preview.summary}</p>
+                      <div className="space-y-2 rounded-xl border bg-background/80 p-4">
+                        {preview.highlights.map((highlight) => (
+                          <div key={highlight} className="flex items-start gap-2 text-sm">
+                            <ChevronRight className="mt-0.5 h-4 w-4 text-primary shrink-0" />
+                            <span className="text-muted-foreground">{highlight}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </motion.div>
         </section>
 

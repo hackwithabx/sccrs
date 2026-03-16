@@ -1,21 +1,52 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function verifyAdminToken(token: string): { authenticated: boolean; expiresAt: number } | null {
+function decodeBase64Url(value: string): Uint8Array {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = "=".repeat((4 - (normalized.length % 4 || 4)) % 4);
+  const binary = atob(normalized + padding);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+async function verifyAdminToken(
+  token: string
+): Promise<{ authenticated: boolean; expiresAt: number } | null> {
   try {
-    // Use Web Crypto compatible approach for Edge runtime
+    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
+    if (!secret) return null;
+
     const [data, signature] = token.split(".");
     if (!data || !signature) return null;
-    // In Edge runtime, we decode and verify structure only
-    // Full HMAC verification happens in the API routes
-    const decoded = JSON.parse(atob(data.replace(/-/g, "+").replace(/_/g, "/")));
+
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      decodeBase64Url(signature) as BufferSource,
+      new TextEncoder().encode(data) as BufferSource
+    );
+
+    if (!valid) return null;
+
+    const decoded = JSON.parse(new TextDecoder().decode(decodeBase64Url(data)));
     return decoded;
   } catch {
     return null;
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect admin routes — check httpOnly cookie
@@ -37,7 +68,7 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      const decoded = verifyAdminToken(token);
+      const decoded = await verifyAdminToken(token);
       if (!decoded || !decoded.authenticated || Date.now() > decoded.expiresAt) {
         // Token expired
         if (pathname.startsWith("/api/")) {
@@ -86,6 +117,10 @@ export function middleware(request: NextRequest) {
   response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   // Permissions Policy — restrict sensitive browser features
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  response.headers.set("Origin-Agent-Cluster", "?1");
+  response.headers.set("X-DNS-Prefetch-Control", "off");
   // Content Security Policy
   response.headers.set(
     "Content-Security-Policy",

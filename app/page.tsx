@@ -1,18 +1,15 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "@/components/section-heading";
 import {
   Shield,
   Code,
   BarChart3,
-  Wrench,
   FileText,
   BookOpen,
   ArrowRight,
@@ -23,9 +20,7 @@ import {
   Users,
   Cloud,
   Brain,
-  Search,
   AlertTriangle,
-  XCircle,
   FileSearch,
   Star,
   Building2,
@@ -37,14 +32,11 @@ import {
   Bell,
   Rocket,
   ShieldCheck,
-  Activity,
 } from "lucide-react";
 import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -52,13 +44,12 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  Legend,
 } from "recharts";
 
 const shieldxModules = [
   { icon: Key, title: "Secrets Scanner", desc: "Detect 20+ secret patterns with entropy analysis and confidence scoring" },
-  { icon: Package, title: "Dependency Audit", desc: "Live OSV.dev integration — find CVEs in your npm, pip, go dependencies" },
-  { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
+  { icon: Package, title: "Dependency Audit", desc: "Live OSV.dev integration â€” find CVEs in your npm, pip, go dependencies" },
+  { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure â€” IAM, storage, network, logging" },
   { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing for any HTTP endpoint" },
   { icon: Brain, title: "Log Analyzer", desc: "AI-powered pattern detection for brute force, injection, exfiltration" },
   { icon: GitBranch, title: "CI/CD Integration", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates" },
@@ -84,12 +75,6 @@ const features = [
     title: "Vulnerability Dashboard",
     description: "Interactive visualizations showing real-time vulnerability trends and severity data.",
     href: "/vulnerabilities",
-  },
-  {
-    icon: Wrench,
-    title: "Free Security Tools",
-    description: "Header analyzers, CSP generators, JWT decoders, hash tools — 7+ tools, all free.",
-    href: "/tools",
   },
   {
     icon: FileText,
@@ -161,7 +146,7 @@ const itemVariants = {
 export default function HomePage() {
   return (
     <div className="relative">
-      {/* ═══ HERO — ShieldX Showcase ═══ */}
+      {/* â•â•â• HERO â€” ShieldX Showcase â•â•â• */}
       <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
         {/* Background effects */}
         <div className="absolute inset-0 -z-10">
@@ -179,33 +164,32 @@ export default function HomePage() {
           >
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-8">
               <ShieldCheck className="h-4 w-4" />
-              Announcing ShieldX — Enterprise Security Platform
+              ShieldX for Startups
               <ArrowRight className="h-3.5 w-3.5" />
             </div>
 
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-              Security Your Startup
-              <br />
               <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                Can Actually Afford
+                Security That Developers
               </span>
+              <br />
+              Actually Want to Use
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-              ShieldX gives you 8 enterprise-grade security modules in one platform — secrets scanning, dependency auditing,
-              cloud security, API testing, and more. Built for startups and growing teams who need real security, not just compliance checkboxes.
+              Security scanning that developers can run in 60 seconds. ShieldX gives startups DevSecOps security without a dedicated security team, with one workspace for secrets, dependencies, APIs, cloud reviews, logs, alerts, and CI/CD gates.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/shieldx">
+              <Link href="/shieldx/pricing">
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
                   <Rocket className="h-5 w-5" />
-                  Launch ShieldX — Free
+                  View ShieldX Plans
                 </Button>
               </Link>
-              <Link href="/shieldx/pricing">
+              <Link href="/shieldx">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl">
-                  View Pricing
+                  Open ShieldX Demo
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
@@ -214,9 +198,9 @@ export default function HomePage() {
             {/* Trust badges */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> No code stored</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> SOC 2 ready</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> OWASP compliant</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Free tier available</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> 60-second first run</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> OWASP-aligned checks</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Built for lean teams</span>
             </div>
           </motion.div>
 
@@ -254,11 +238,11 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.5 }}
             className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8"
           >
-            {[
+            {[ 
               { value: "8", label: "Security Modules" },
-              { value: "20+", label: "Secret Patterns" },
-              { value: "50+", label: "Free Tools" },
-              { value: "99.9%", label: "Client Satisfaction" },
+              { value: "60s", label: "To First Demo Run" },
+              { value: "$5,988", label: "Pro Per Year" },
+              { value: "88%", label: "Lower Than $50K Stacks" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-bold text-primary">{stat.value}</div>
@@ -269,34 +253,40 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ WHY SHIELDX FOR STARTUPS ═══ */}
+      {/* â•â•â• WHY SHIELDX FOR STARTUPS â•â•â• */}
       <section className="py-20 bg-muted/30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             badge="For Startups"
-            title="Enterprise Security Without the Enterprise Price"
-            description="Most startups skip security because enterprise tools cost $50K+/year. ShieldX gives you the same capabilities at a fraction of the cost."
+            title="Security Scanning Developers Can Run in 60 Seconds"
+            description="ShieldX is built for startups that need real security fast: faster rollout, lower cost, and less process than traditional enterprise AppSec stacks."
           />
 
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
             {[
               {
-                icon: Lock,
-                title: "Zero Code Storage",
-                desc: "Your code is analyzed in real-time and never stored on our servers. We process, report, and discard — your IP stays yours.",
-                highlight: "Privacy First",
-              },
-              {
                 icon: Zap,
-                title: "Instant Results",
-                desc: "No lengthy onboarding. Paste your code, upload your package.json, or point us at your API — get results in seconds.",
-                highlight: "No Setup",
+                title: "Fast To Value",
+                desc: "Open the demo in seconds and move into real scans without weeks of onboarding, procurement, or training overhead.",
+                highlight: "60 Seconds",
               },
               {
-                icon: Activity,
-                title: "Unified Dashboard",
-                desc: "One security score across all 8 modules. Track your security posture over time with radar charts and trend analytics.",
-                highlight: "All-in-One",
+                icon: Users,
+                title: "Developer-First",
+                desc: "Security that developers actually want to use, with one product instead of scattered point tools and handoffs.",
+                highlight: "Built For Builders",
+              },
+              {
+                icon: Shield,
+                title: "No Security Team Required",
+                desc: "Run secrets, dependency, API, cloud, log, and CI/CD checks from one ShieldX workspace even if your team is small.",
+                highlight: "Startup Friendly",
+              },
+              {
+                icon: Lock,
+                title: "Lower Annual Cost",
+                desc: "ShieldX Pro starts at $5,988 per year and Enterprise at $11,988 per year, compared with traditional security suites that often start above $50K.",
+                highlight: "Cheaper Than Legacy",
               },
             ].map((item, i) => (
               <motion.div
@@ -319,6 +309,46 @@ export default function HomePage() {
               </motion.div>
             ))}
           </div>
+
+          <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {[
+              {
+                label: "Time to first run",
+                shieldx: "About 60 seconds",
+                traditional: "Often weeks of setup and handoff",
+              },
+              {
+                label: "Starting annual cost",
+                shieldx: "From $5,988 per year",
+                traditional: "Often $50,000+ per year",
+              },
+              {
+                label: "Who can run it",
+                shieldx: "Developers and startup teams",
+                traditional: "Dedicated AppSec or platform owners",
+              },
+            ].map((item) => (
+              <Card key={item.label} className="border border-border/60 shadow-sm">
+                <CardContent className="p-6">
+                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                      <div className="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                        ShieldX
+                      </div>
+                      <p className="mt-1 font-medium text-foreground">{item.shieldx}</p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-muted/20 p-3">
+                      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Traditional Tools
+                      </div>
+                      <p className="mt-1 font-medium text-foreground">{item.traditional}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -328,7 +358,7 @@ export default function HomePage() {
           <SectionHeading
             badge="Features"
             title="Everything You Need for Application Security"
-            description="A comprehensive suite of tools, resources, and services to help you build and maintain secure applications."
+            description="A comprehensive suite of products, security resources, and expert services to help you build and maintain secure applications."
           />
 
           <motion.div
@@ -357,9 +387,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Free Tool — Inline Security Header Scanner */}
-      <FreeHeaderScanner />
-
       {/* Case Studies / Sample Reports */}
       <section className="py-20 bg-muted/30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -373,7 +400,7 @@ export default function HomePage() {
             {[
               {
                 icon: Building2,
-                title: "Fintech Startup — API Security Review",
+                title: "Fintech Startup â€” API Security Review",
                 severity: "Critical",
                 badge: "IDOR + Broken Auth",
                 findings: [
@@ -387,7 +414,7 @@ export default function HomePage() {
               },
               {
                 icon: Cloud,
-                title: "SaaS Platform — Cloud Security Audit",
+                title: "SaaS Platform â€” Cloud Security Audit",
                 severity: "High",
                 badge: "AWS Misconfig",
                 findings: [
@@ -401,17 +428,17 @@ export default function HomePage() {
               },
               {
                 icon: Brain,
-                title: "AI Product — LLM Security Assessment",
+                title: "AI Product â€” LLM Security Assessment",
                 severity: "Critical",
                 badge: "Prompt Injection",
                 findings: [
                   "System prompt extractable via indirect injection",
-                  "No output filtering — PII leakage in responses",
+                  "No output filtering â€” PII leakage in responses",
                   "RAG pipeline allowed document exfiltration",
                   "API keys embedded in LLM context window",
                 ],
                 outcome: "Implemented guardrails, output filtering, and secure RAG architecture. Reduced prompt injection success rate from 67% to under 3%.",
-                stat: "67% → 3% injection rate",
+                stat: "67% â†’ 3% injection rate",
               },
             ].map((study, i) => (
               <motion.div
@@ -487,7 +514,7 @@ export default function HomePage() {
                   </Badge>
                   <h2 className="text-3xl font-bold">Request a Free Sample Code Review</h2>
                   <p className="text-lg opacity-90 max-w-xl">
-                    Send us 20–30 lines of your code — we&apos;ll review it for security vulnerabilities and
+                    Send us 20â€“30 lines of your code â€” we&apos;ll review it for security vulnerabilities and
                     send you a mini-report with findings and fixes. <strong>Completely free, no strings attached.</strong>
                   </p>
                   <ul className="space-y-2">
@@ -523,10 +550,10 @@ export default function HomePage() {
                       <FileSearch className="h-4 w-4" />
                       <span>sample-review.txt</span>
                     </div>
-                    <div className="text-red-300">// ⚠ SQL Injection — Critical</div>
+                    <div className="text-red-300">SQL Injection - Critical</div>
                     <div className="text-white/80">db.query(`SELECT * FROM users</div>
                     <div className="text-white/80">  WHERE id = $&#123;req.params.id&#125;`);</div>
-                    <div className="mt-3 text-emerald-300">// ✓ Fix — Parameterized Query</div>
+                    <div className="mt-3 text-emerald-300">Fix - Parameterized Query</div>
                     <div className="text-white/80">db.query(&apos;SELECT * FROM users</div>
                     <div className="text-white/80">  WHERE id = $1&apos;, [req.params.id]);</div>
                   </div>
@@ -550,12 +577,12 @@ export default function HomePage() {
               />
 
               <div className="mt-8 space-y-4">
-                {[
-                  { icon: Eye, text: "Expert-curated vulnerability database with real-world examples" },
-                  { icon: Zap, text: "Instant security analysis with our free online tools" },
-                  { icon: CheckCircle2, text: "Battle-tested secure code patterns for modern frameworks" },
-                  { icon: Users, text: "Community-driven security knowledge base" },
-                ].map((item) => (
+                  {[
+                    { icon: Eye, text: "Expert-curated vulnerability database with real-world examples" },
+                    { icon: Zap, text: "ShieldX workflows designed for fast startup delivery cycles" },
+                    { icon: CheckCircle2, text: "Battle-tested secure code patterns for modern frameworks" },
+                    { icon: Users, text: "Community-driven security knowledge base" },
+                  ].map((item) => (
                   <motion.div
                     key={item.text}
                     initial={{ opacity: 0, x: -20 }}
@@ -655,7 +682,7 @@ export default function HomePage() {
                       </div>
                       CVE Vulnerability Trends
                     </CardTitle>
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2019–2024</span>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2019â€“2024</span>
                   </div>
                   {/* Mini legend */}
                   <div className="flex flex-wrap gap-3 mt-3">
@@ -731,13 +758,13 @@ export default function HomePage() {
                   {/* Trend insight */}
                   <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
                     <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                    <span>Critical CVEs increased <strong className="text-red-500">197%</strong> from 2019 to 2024 — nearly tripling in 5 years.</span>
+                    <span>Critical CVEs increased <strong className="text-red-500">197%</strong> from 2019 to 2024 â€” nearly tripling in 5 years.</span>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Attack Vectors — Donut with Custom Legend */}
+            {/* Attack Vectors â€” Donut with Custom Legend */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -836,13 +863,13 @@ export default function HomePage() {
                   {/* Insight */}
                   <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-emerald-500/5 border border-emerald-500/10 rounded-lg px-3 py-2">
                     <Shield className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    <span><strong className="text-emerald-500">Injection attacks</strong> remain the top vector — affecting over 1 in 4 applications.</span>
+                    <span><strong className="text-emerald-500">Injection attacks</strong> remain the top vector â€” affecting over 1 in 4 applications.</span>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Breach Cost by Industry — Horizontal Bar with gradient bars */}
+            {/* Breach Cost by Industry â€” Horizontal Bar with gradient bars */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -859,7 +886,7 @@ export default function HomePage() {
                       </div>
                       Average Data Breach Cost by Industry
                     </CardTitle>
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024 — IBM Cost of a Data Breach Report</span>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024 â€” IBM Cost of a Data Breach Report</span>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4 pb-6">
@@ -918,7 +945,7 @@ export default function HomePage() {
                   {/* Insight */}
                   <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
                     <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                    <span>Healthcare breaches cost <strong className="text-red-500">$9.77M on average</strong> — nearly double the cross-industry mean of $4.88M.</span>
+                    <span>Healthcare breaches cost <strong className="text-red-500">$9.77M on average</strong> â€” nearly double the cross-industry mean of $4.88M.</span>
                   </div>
                 </CardContent>
               </Card>
@@ -949,13 +976,13 @@ export default function HomePage() {
               Ready to Secure Your Application?
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Start with ShieldX for free, explore our tools, or get a professional security assessment from our expert team.
+              Open the ShieldX demo, request the right subscription plan for your team, or get a professional security assessment from our experts.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/shieldx">
+              <Link href="/shieldx/pricing">
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
                   <Shield className="h-5 w-5" />
-                  Try ShieldX Free
+                  View ShieldX Plans
                 </Button>
               </Link>
               <Link href="/contact?subject=Free+Sample+Code+Review">
@@ -968,165 +995,5 @@ export default function HomePage() {
         </div>
       </section>
     </div>
-  );
-}
-
-/* ────────────────────────────────────────────── */
-/*  Inline Free Header Scanner (homepage widget)  */
-/* ────────────────────────────────────────────── */
-interface ScanResult {
-  header: string;
-  value: string | null;
-  status: "good" | "warning" | "bad";
-  message: string;
-}
-
-function FreeHeaderScanner() {
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<ScanResult[] | null>(null);
-  const [error, setError] = useState("");
-  const [scannedUrl, setScannedUrl] = useState("");
-
-  const scan = async () => {
-    if (!url.trim()) return;
-    setLoading(true);
-    setError("");
-    setResults(null);
-    try {
-      const res = await fetch("/api/analyze-headers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Scan failed");
-      setResults(data.results);
-      setScannedUrl(data.url);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const goodCount = results?.filter((r) => r.status === "good").length ?? 0;
-  const warnCount = results?.filter((r) => r.status === "warning").length ?? 0;
-  const badCount = results?.filter((r) => r.status === "bad").length ?? 0;
-  const grade = results
-    ? goodCount >= 8 ? "A" : goodCount >= 6 ? "B" : goodCount >= 4 ? "C" : goodCount >= 2 ? "D" : "F"
-    : null;
-  const gradeColor = grade === "A" ? "text-emerald-500" : grade === "B" ? "text-blue-500" : grade === "C" ? "text-yellow-500" : "text-red-500";
-
-  return (
-    <section className="py-20" id="free-scanner">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          badge="Free Tool"
-          title="Instant Security Header Scanner"
-          description="Enter any URL — get an instant security grade. Check HTTP security headers, HSTS, CSP, and more."
-        />
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-12 max-w-3xl mx-auto"
-        >
-          <Card className="border-2 border-primary/20">
-            <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Enter website URL (e.g., google.com)"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && scan()}
-                    className="pl-10"
-                  />
-                </div>
-                <Button onClick={scan} disabled={loading} className="gap-2 px-6">
-                  {loading ? (
-                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  ) : (
-                    <Shield className="h-4 w-4" />
-                  )}
-                  {loading ? "Scanning..." : "Scan Now"}
-                </Button>
-              </div>
-
-              {error && (
-                <div className="mt-4 flex items-center gap-2 text-sm text-destructive">
-                  <XCircle className="h-4 w-4" /> {error}
-                </div>
-              )}
-
-              {results && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-6 space-y-4"
-                >
-                  {/* Grade summary */}
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Results for <strong>{scannedUrl}</strong></p>
-                      <div className="flex gap-3 mt-1">
-                        <Badge className="bg-emerald-600 text-white">{goodCount} Passed</Badge>
-                        <Badge variant="secondary">{warnCount} Warnings</Badge>
-                        <Badge variant="destructive">{badCount} Missing</Badge>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className={`text-5xl font-black ${gradeColor}`}>{grade}</div>
-                      <div className="text-xs text-muted-foreground">Security Grade</div>
-                    </div>
-                  </div>
-
-                  {/* Results list */}
-                  <div className="space-y-2">
-                    {results.map((r) => (
-                      <div key={r.header} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                        {r.status === "good" ? (
-                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
-                        ) : r.status === "warning" ? (
-                          <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
-                        ) : (
-                          <XCircle className="h-4 w-4 mt-0.5 text-red-500 shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">{r.header}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5 break-all">{r.message}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
-                    <Link href="/tools">
-                      <Button variant="outline" className="gap-2 w-full sm:w-auto">
-                        <Wrench className="h-4 w-4" /> Explore All Free Tools
-                      </Button>
-                    </Link>
-                    <Link href="/contact?subject=Security+Assessment+Request">
-                      <Button className="gap-2 w-full sm:w-auto">
-                        Get Professional Assessment <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
-
-              {!results && !error && (
-                <p className="mt-4 text-xs text-center text-muted-foreground">
-                  100% free — no sign-up required. Checks 10 security headers instantly.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    </section>
   );
 }

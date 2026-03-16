@@ -76,6 +76,28 @@ const UserSchema = new mongoose.Schema(
       enum: ["owner", "admin", "member", "viewer", null],
       default: null,
     },
+    shieldxApiKeyHash: {
+      type: String,
+      default: null,
+      index: true,
+      sparse: true,
+    },
+    shieldxApiKeyPrefix: {
+      type: String,
+      default: null,
+    },
+    shieldxApiKeyLastCreatedAt: {
+      type: Date,
+      default: null,
+    },
+    passwordResetRequired: {
+      type: Boolean,
+      default: false,
+    },
+    passwordResetIssuedAt: {
+      type: Date,
+      default: null,
+    },
     avatar: {
       type: String,
       default: "",

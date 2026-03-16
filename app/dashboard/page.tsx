@@ -8,6 +8,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SectionHeading } from "@/components/section-heading";
 import {
   Shield,
@@ -146,12 +148,18 @@ interface BillingState {
 }
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const [randomTip] = useState(
     () => securityTips[Math.floor(Math.random() * securityTips.length)]
   );
   const [billingState, setBillingState] = useState<BillingState | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -184,6 +192,10 @@ export default function DashboardPage() {
   const shieldxPlan =
     (session?.user as { shieldxPlan?: "free" | "pro" | "enterprise" } | undefined)
       ?.shieldxPlan || "free";
+  const passwordResetRequired = Boolean(
+    (session?.user as { passwordResetRequired?: boolean } | undefined)
+      ?.passwordResetRequired
+  );
   const hasShieldXAccess =
     shieldxPlan === "pro" || shieldxPlan === "enterprise";
   const isEnterprise = shieldxPlan === "enterprise";
@@ -283,6 +295,49 @@ export default function DashboardPage() {
       ];
 
   const dashboardLinks = [...primaryQuickLinks, ...quickLinks];
+
+  const handleChangePassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Fill in all password fields.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password confirmation does not match.");
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update password");
+      }
+
+      setPasswordMessage(data.message || "Password updated.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      await update();
+    } catch (error) {
+      setPasswordError(
+        error instanceof Error ? error.message : "Failed to update password"
+      );
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -551,6 +606,91 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14 }}
+          className="mb-10"
+        >
+          <Card className={passwordResetRequired ? "border-amber-500/30" : ""}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                Account Security
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-6 lg:grid-cols-[0.9fr,1.1fr]">
+              <div className="space-y-3 text-sm">
+                {passwordResetRequired ? (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-700 dark:text-amber-400">
+                    Your account is using a temporary password from the admin panel. Change it now to keep the account secure.
+                  </div>
+                ) : (
+                  <div className="rounded-xl border bg-muted/20 p-4 text-muted-foreground">
+                    Keep your login secure with a strong password and rotate it after any shared-access or admin reset event.
+                  </div>
+                )}
+                <ul className="space-y-2 text-muted-foreground">
+                  <li>Use at least 10 characters and avoid reusing old passwords.</li>
+                  <li>Admin-issued temporary passwords should be changed immediately after sign-in.</li>
+                  <li>ShieldX billing and access stay tied to your account after the password update.</li>
+                </ul>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter current password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimum 10 characters"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repeat new password"
+                    />
+                  </div>
+                </div>
+
+                {passwordMessage && (
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400">
+                    {passwordMessage}
+                  </div>
+                )}
+
+                {passwordError && (
+                  <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                    {passwordError}
+                  </div>
+                )}
+
+                <Button type="submit" className="gap-2" disabled={passwordSaving}>
+                  {passwordSaving ? "Updating..." : "Change Password"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Security Tip Banner */}
         <motion.div

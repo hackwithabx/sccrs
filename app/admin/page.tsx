@@ -33,6 +33,10 @@ import {
   Activity,
   Zap,
   Crown,
+  Search,
+  KeyRound,
+  Copy,
+  Check,
 } from "lucide-react";
 import { blogPosts } from "@/lib/blog-data";
 
@@ -56,6 +60,13 @@ interface UserRecord {
   email: string;
   role: "user" | "admin";
   shieldxPlan: "free" | "pro" | "enterprise";
+  shieldxPlanSource?: "free" | "admin" | "billing" | "team";
+  shieldxBillingProvider?: string | null;
+  shieldxBillingStatus?: string;
+  shieldxSubscriptionId?: string | null;
+  shieldxTeamOwnerId?: string | null;
+  shieldxSeatRole?: "owner" | "admin" | "member" | "viewer" | null;
+  passwordResetRequired?: boolean;
   shieldxExpiry?: string | null;
   avatar: string;
   createdAt: string;
@@ -81,7 +92,6 @@ export default function AdminPage() {
   /* Auth state */
   const [authenticated, setAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -111,6 +121,16 @@ export default function AdminPage() {
   const [usersTotal, setUsersTotal] = useState(0);
   const [usersPage, setUsersPage] = useState(1);
   const [usersTotalPages, setUsersTotalPages] = useState(1);
+  const [userSearch, setUserSearch] = useState("");
+  const [userPlanFilter, setUserPlanFilter] = useState<"" | "free" | "pro" | "enterprise">("");
+  const [userActionMessage, setUserActionMessage] = useState("");
+  const [userActionError, setUserActionError] = useState("");
+  const [copiedValue, setCopiedValue] = useState("");
+  const [temporaryPasswordCard, setTemporaryPasswordCard] = useState<{
+    email: string;
+    name: string;
+    password: string;
+  } | null>(null);
 
   /* Reports */
   const [reports, setReports] = useState<ReportRecord[]>([]);
@@ -154,6 +174,8 @@ export default function AdminPage() {
     setUsersError("");
     try {
       const params = new URLSearchParams({ page: usersPage.toString(), limit: "20" });
+      if (userPlanFilter) params.set("plan", userPlanFilter);
+      if (userSearch.trim()) params.set("search", userSearch.trim());
       const res = await fetch(`/api/admin/users?${params}`, { credentials: "include" });
       if (!res.ok) {
         const d = await res.json();
@@ -168,7 +190,7 @@ export default function AdminPage() {
     } finally {
       setUsersLoading(false);
     }
-  }, [authenticated, usersPage]);
+  }, [authenticated, userPlanFilter, userSearch, usersPage]);
 
   const fetchReports = useCallback(async () => {
     if (!authenticated) return;
@@ -242,6 +264,8 @@ export default function AdminPage() {
       if (res.ok) {
         setUsers((prev) => prev.filter((u) => u._id !== id));
         setUsersTotal((p) => p - 1);
+        setUserActionError("");
+        setUserActionMessage(`Deleted ${userName}.`);
       }
     } catch (err) {
       console.error("Failed to delete user:", err);
@@ -264,6 +288,8 @@ export default function AdminPage() {
             u._id === id ? { ...u, role: newRole as "user" | "admin" } : u
           )
         );
+        setUserActionError("");
+        setUserActionMessage(`Role updated to ${newRole}.`);
       }
     } catch (err) {
       console.error("Failed to update role:", err);
@@ -286,15 +312,76 @@ export default function AdminPage() {
       });
 
       if (res.ok) {
+        setUserActionError("");
+        setUserActionMessage("ShieldX plan updated.");
         setUsers((prev) =>
           prev.map((user) =>
-            user._id === id ? { ...user, shieldxPlan: nextPlan } : user
+            user._id === id
+              ? {
+                  ...user,
+                  shieldxPlan: nextPlan,
+                  shieldxPlanSource: nextPlan === "free" ? "free" : "admin",
+                  shieldxBillingStatus:
+                    nextPlan === "free" ? "inactive" : "manual",
+                }
+              : user
           )
         );
       }
     } catch (err) {
       console.error("Failed to update plan:", err);
     }
+  };
+
+  const resetUserPassword = async (user: UserRecord) => {
+    if (
+      !confirm(
+        `Generate a temporary password for ${user.email}? They will need to change it after signing in.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id: user._id, resetPassword: true }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      setUserActionError("");
+      setUserActionMessage(
+        data.message || `Temporary password created for ${user.email}.`
+      );
+      setTemporaryPasswordCard({
+        email: user.email,
+        name: user.name,
+        password: data.temporaryPassword,
+      });
+      setUsers((prev) =>
+        prev.map((entry) =>
+          entry._id === user._id
+            ? { ...entry, passwordResetRequired: true }
+            : entry
+        )
+      );
+    } catch (err) {
+      setUserActionError(
+        err instanceof Error ? err.message : "Failed to reset password"
+      );
+    }
+  };
+
+  const copyValue = async (value: string, id: string) => {
+    await navigator.clipboard.writeText(value);
+    setCopiedValue(id);
+    setTimeout(() => setCopiedValue(""), 2000);
   };
 
   const deleteReport = async (id: string, appName: string) => {
@@ -361,6 +448,10 @@ export default function AdminPage() {
     }
   }, [authenticated, fetchContacts, fetchUsers, fetchReports]);
 
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userPlanFilter, userSearch]);
+
   const handleLogout = async () => {
     try {
       await fetch("/api/admin/auth", { method: "DELETE", credentials: "include" });
@@ -394,6 +485,14 @@ export default function AdminPage() {
     );
   };
 
+  const paidUsersCount = users.filter((user) => user.shieldxPlan !== "free").length;
+  const enterpriseUsersCount = users.filter(
+    (user) => user.shieldxPlan === "enterprise"
+  ).length;
+  const passwordResetUsersCount = users.filter(
+    (user) => user.passwordResetRequired
+  ).length;
+
   /* ========== RENDER ========== */
 
   if (checkingAuth) {
@@ -422,17 +521,6 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email">Email</Label>
-                  <Input
-                    id="admin-email"
-                    type="email"
-                    placeholder="admin@securecodereviews.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="admin-password">Password</Label>
                   <Input
@@ -711,7 +799,7 @@ export default function AdminPage() {
           <TabsContent value="users">
             <div className="space-y-6">
               {/* Controls */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" /> Registered Users
@@ -720,19 +808,135 @@ export default function AdminPage() {
                     {usersTotal} total registered users
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchUsers}
-                  disabled={usersLoading}
-                  className="gap-2"
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${usersLoading ? "animate-spin" : ""}`}
-                  />{" "}
-                  Refresh
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <div className="relative min-w-[220px]">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="Search name or email"
+                      className="pl-9"
+                    />
+                  </div>
+                  <select
+                    value={userPlanFilter}
+                    onChange={(e) =>
+                      setUserPlanFilter(
+                        e.target.value as "" | "free" | "pro" | "enterprise"
+                      )
+                    }
+                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    aria-label="Filter users by ShieldX plan"
+                  >
+                    <option value="">All plans</option>
+                    <option value="free">Free</option>
+                    <option value="pro">Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchUsers}
+                    disabled={usersLoading}
+                    className="gap-2"
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 ${usersLoading ? "animate-spin" : ""}`}
+                    />{" "}
+                    Refresh
+                  </Button>
+                </div>
               </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Paid Subscribers
+                    </div>
+                    <div className="mt-2 text-2xl font-bold">{paidUsersCount}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pro and Enterprise customers currently visible in this page.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Enterprise Accounts
+                    </div>
+                    <div className="mt-2 text-2xl font-bold">{enterpriseUsersCount}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Includes direct Enterprise owners and team-managed seats.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Password Resets Pending
+                    </div>
+                    <div className="mt-2 text-2xl font-bold">{passwordResetUsersCount}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Accounts currently marked to change a temporary password.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {userActionMessage && (
+                <Card className="border-emerald-500/20 bg-emerald-500/5">
+                  <CardContent className="p-4 text-sm text-emerald-600 dark:text-emerald-400">
+                    {userActionMessage}
+                  </CardContent>
+                </Card>
+              )}
+
+              {userActionError && (
+                <Card className="border-destructive">
+                  <CardContent className="p-4 text-sm text-destructive">
+                    {userActionError}
+                  </CardContent>
+                </Card>
+              )}
+
+              {temporaryPasswordCard && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="text-sm font-semibold">
+                          Temporary password ready for {temporaryPasswordCard.name}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Share this password securely with {temporaryPasswordCard.email}. They will be asked to change it after sign-in.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() =>
+                          copyValue(
+                            temporaryPasswordCard.password,
+                            "temporary-password"
+                          )
+                        }
+                      >
+                        {copiedValue === "temporary-password" ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                        {copiedValue === "temporary-password" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                    <div className="rounded-lg border bg-background/80 px-4 py-3 font-mono text-sm">
+                      {temporaryPasswordCard.password}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Error */}
               {usersError && (
@@ -788,7 +992,7 @@ export default function AdminPage() {
                             <th className="text-left p-3 font-medium">Name</th>
                             <th className="text-left p-3 font-medium">Email</th>
                             <th className="text-left p-3 font-medium">Role</th>
-                            <th className="text-left p-3 font-medium">ShieldX Plan</th>
+                            <th className="text-left p-3 font-medium">ShieldX Access</th>
                             <th className="text-left p-3 font-medium">Joined</th>
                             <th className="text-right p-3 font-medium">
                               Actions
@@ -810,7 +1014,17 @@ export default function AdminPage() {
                                 </div>
                               </td>
                               <td className="p-3 text-muted-foreground">
-                                {user.email}
+                                <div className="space-y-1">
+                                  <div>{user.email}</div>
+                                  {user.passwordResetRequired && (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-amber-500/20 bg-amber-500/10 text-[10px] text-amber-600 dark:text-amber-400"
+                                    >
+                                      Temp password pending
+                                    </Badge>
+                                  )}
+                                </div>
                               </td>
                               <td className="p-3">
                                 <Badge
@@ -825,6 +1039,28 @@ export default function AdminPage() {
                               <td className="p-3">
                                 <div className="space-y-2">
                                   {renderPlanBadge(user.shieldxPlan)}
+                                  <div className="space-y-1 text-xs text-muted-foreground">
+                                    <div>
+                                      Source:{" "}
+                                      <span className="capitalize text-foreground">
+                                        {user.shieldxPlanSource || "free"}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Status:{" "}
+                                      <span className="capitalize text-foreground">
+                                        {user.shieldxBillingStatus || "inactive"}
+                                      </span>
+                                    </div>
+                                    {user.shieldxSeatRole && (
+                                      <div>
+                                        Seat role:{" "}
+                                        <span className="capitalize text-foreground">
+                                          {user.shieldxSeatRole}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
                                   <select
                                     aria-label={`ShieldX plan for ${user.name}`}
                                     className="h-8 rounded-md border border-input bg-background px-2 text-xs"
@@ -861,6 +1097,14 @@ export default function AdminPage() {
                                     }
                                   >
                                     <ShieldCheck className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    title="Generate temporary password"
+                                    onClick={() => resetUserPassword(user)}
+                                  >
+                                    <KeyRound className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     size="sm"

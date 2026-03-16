@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
+
+const DEMO_DEPENDENCIES = `{
+  "name": "fintech-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "4.17.1",
+    "lodash": "4.17.20",
+    "axios": "0.21.4",
+    "jsonwebtoken": "8.5.1",
+    "moment": "2.29.1",
+    "node-fetch": "2.6.1",
+    "shell-quote": "1.7.2"
+  }
+}`;
 
 /**
  * Real dependency vulnerability scanner using:
@@ -126,7 +141,25 @@ function parseDeps(input: string): Record<string, string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { input } = await request.json();
+    const body = await request.json();
+    const demoMode = body?.demo === true;
+    const authorizedUser = await getShieldXAuthorizedUser(request, "pro", {
+      allowApiKey: true,
+    });
+
+    if (!authorizedUser && !demoMode) {
+      return NextResponse.json(
+        { error: "ShieldX Pro or Enterprise is required for live dependency scans" },
+        { status: 403 }
+      );
+    }
+
+    const input = demoMode
+      ? DEMO_DEPENDENCIES
+      : typeof body?.input === "string"
+      ? body.input
+      : "";
+
     if (!input || typeof input !== "string") {
       return NextResponse.json({ error: "Dependency file content is required" }, { status: 400 });
     }
@@ -236,6 +269,7 @@ export async function POST(request: NextRequest) {
     };
 
     return NextResponse.json({
+      mode: demoMode ? "demo" : "paid",
       ecosystem,
       totalDeps: depCount,
       scannedPackages,
@@ -245,7 +279,7 @@ export async function POST(request: NextRequest) {
       scannedAt: new Date().toISOString(),
       source: "OSV.dev (Google Open Source Vulnerabilities)",
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

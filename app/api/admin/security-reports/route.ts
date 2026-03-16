@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import SecurityReport from "@/models/SecurityReport";
+import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
 // GET /api/admin/security-reports — list all reports
 export async function GET(request: NextRequest) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
@@ -25,10 +30,29 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/security-reports — create a new weekly report
 export async function POST(request: NextRequest) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await dbConnect();
     const body = await request.json();
-    const report = await SecurityReport.create(body);
+    const report = await SecurityReport.create({
+      weekNumber: body?.weekNumber,
+      year: body?.year,
+      title: body?.title,
+      summary: body?.summary,
+      dateRange: body?.dateRange,
+      highlights: Array.isArray(body?.highlights) ? body.highlights : [],
+      stats: body?.stats || {},
+      majorBreaches: Array.isArray(body?.majorBreaches) ? body.majorBreaches : [],
+      trendingThreats: Array.isArray(body?.trendingThreats) ? body.trendingThreats : [],
+      recommendations: Array.isArray(body?.recommendations)
+        ? body.recommendations
+        : [],
+      sources: Array.isArray(body?.sources) ? body.sources : [],
+      published: Boolean(body?.published),
+    });
     return NextResponse.json({ message: "Report created", report }, { status: 201 });
   } catch (error) {
     console.error("Security reports POST error:", error);
@@ -38,6 +62,10 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/admin/security-reports — delete a report
 export async function DELETE(request: NextRequest) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);

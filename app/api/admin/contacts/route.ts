@@ -1,30 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Contact from "@/models/Contact";
-import crypto from "crypto";
-
-// Server-side admin auth check via HMAC-signed httpOnly cookie
-function isAuthorized(request: NextRequest): boolean {
-  const token = request.cookies.get("scr-admin-token")?.value;
-  if (!token) return false;
-
-  try {
-    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
-    if (!secret) return false;
-    const [data, signature] = token.split(".");
-    if (!data || !signature) return false;
-    const expected = crypto.createHmac("sha256", secret).update(data).digest("base64url");
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return false;
-    const decoded = JSON.parse(Buffer.from(data, "base64url").toString());
-    return decoded.authenticated === true && Date.now() < decoded.expiresAt;
-  } catch {
-    return false;
-  }
-}
+import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
 // GET - Fetch all contact submissions
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -69,7 +50,7 @@ export async function GET(request: NextRequest) {
 
 // PATCH - Update contact status
 export async function PATCH(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -117,7 +98,7 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE - Delete a contact submission
 export async function DELETE(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

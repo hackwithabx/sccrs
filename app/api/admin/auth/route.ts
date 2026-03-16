@@ -1,28 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 import crypto from "crypto";
-
-function signToken(payload: object): string {
-  const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
-  if (!secret) throw new Error("Server misconfiguration: missing NEXTAUTH_SECRET or ADMIN_PASSWORD");
-  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = crypto.createHmac("sha256", secret).update(data).digest("base64url");
-  return `${data}.${signature}`;
-}
-
-function verifyToken(token: string): { authenticated: boolean; expiresAt: number } | null {
-  try {
-    const secret = process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD;
-    if (!secret) return null;
-    const [data, signature] = token.split(".");
-    if (!data || !signature) return null;
-    const expected = crypto.createHmac("sha256", secret).update(data).digest("base64url");
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
-    return JSON.parse(Buffer.from(data, "base64url").toString());
-  } catch {
-    return null;
-  }
-}
+import { signAdminToken, verifyAdminToken } from "@/lib/admin-auth";
 
 // Server-side admin authentication
 // Uses ADMIN_PASSWORD env var
@@ -78,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a cryptographically signed session token
-    const token = signToken({
+    const token = signAdminToken({
       authenticated: true,
       timestamp: Date.now(),
       expiresAt: Date.now() + 4 * 60 * 60 * 1000,
@@ -114,7 +93,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const decoded = verifyToken(token);
+    const decoded = verifyAdminToken(token);
 
     if (!decoded || !decoded.authenticated || Date.now() > decoded.expiresAt) {
       // Token expired

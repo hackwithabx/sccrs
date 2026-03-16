@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
+
+const SHIELDX_DEMO_API_URL = "https://securecodereviews.com";
 
 interface HeaderCheck {
   name: string;
@@ -320,9 +323,53 @@ const API_CHECKS: {
   },
 ];
 
+function isPrivateOrLocalHost(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  const blocked = [
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "[::1]",
+    "169.254.",
+    "10.",
+    "192.168.",
+    "172.16.",
+    "172.17.",
+    "172.18.",
+    "172.19.",
+    "172.20.",
+    "172.21.",
+    "172.22.",
+    "172.23.",
+    "172.24.",
+    "172.25.",
+    "172.26.",
+    "172.27.",
+    "172.28.",
+    "172.29.",
+    "172.30.",
+    "172.31.",
+  ];
+
+  return blocked.some((item) => normalized === item || normalized.startsWith(item));
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { url } = await request.json();
+    const body = await request.json();
+    const demoMode = body?.demo === true;
+    const authorizedUser = await getShieldXAuthorizedUser(request, "pro", {
+      allowApiKey: true,
+    });
+
+    if (!authorizedUser && !demoMode) {
+      return NextResponse.json(
+        { error: "ShieldX Pro or Enterprise is required for live API scans" },
+        { status: 403 }
+      );
+    }
+
+    const url = demoMode ? SHIELDX_DEMO_API_URL : body?.url;
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
@@ -331,8 +378,25 @@ export async function POST(request: NextRequest) {
     if (!targetUrl.match(/^https?:\/\//)) targetUrl = `https://${targetUrl}`;
 
     // Validate URL
-    try { new URL(targetUrl); } catch {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch {
       return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
+    }
+
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      return NextResponse.json(
+        { error: "Only HTTP and HTTPS URLs are supported" },
+        { status: 400 }
+      );
+    }
+
+    if (isPrivateOrLocalHost(parsedUrl.hostname)) {
+      return NextResponse.json(
+        { error: "Private and internal URLs cannot be scanned" },
+        { status: 400 }
+      );
     }
 
     const controller = new AbortController();
@@ -422,6 +486,7 @@ export async function POST(request: NextRequest) {
     const owaspCoverage = API_CHECKS.filter((c) => c.owasp).map((c) => c.owasp);
 
     return NextResponse.json({
+      mode: demoMode ? "demo" : "paid",
       url: targetUrl,
       status: response.status,
       headers: headerResults,
@@ -431,7 +496,7 @@ export async function POST(request: NextRequest) {
       totalChecks: allChecks.length,
       scannedAt: new Date().toISOString(),
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

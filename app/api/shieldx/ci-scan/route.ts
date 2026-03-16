@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -81,6 +82,20 @@ interface CiRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const authorizedUser = await getShieldXAuthorizedUser(request, "pro", {
+      allowApiKey: true,
+    });
+
+    if (!authorizedUser) {
+      return NextResponse.json(
+        {
+          error:
+            "ShieldX Pro or Enterprise is required to use the CI/CD integration. Authenticate with a paid session or a ShieldX API key.",
+        },
+        { status: 403 }
+      );
+    }
+
     const body: CiRequest = await request.json();
     const { scanType, code, dependencies, projectName } = body;
 
@@ -111,9 +126,20 @@ export async function POST(request: NextRequest) {
     if ((scanType === "dependencies" || scanType === "full") && dependencies) {
       try {
         const origin = request.nextUrl.origin;
+        const authHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        const cookieHeader = request.headers.get("cookie");
+        const authHeader = request.headers.get("authorization");
+        const apiKeyHeader = request.headers.get("x-shieldx-api-key");
+
+        if (cookieHeader) authHeaders.cookie = cookieHeader;
+        if (authHeader) authHeaders.authorization = authHeader;
+        if (apiKeyHeader) authHeaders["x-shieldx-api-key"] = apiKeyHeader;
+
         const depResp = await fetch(`${origin}/api/shieldx/scan-deps`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders,
           body: JSON.stringify({ input: dependencies }),
         });
         if (depResp.ok) {
@@ -135,9 +161,13 @@ export async function POST(request: NextRequest) {
     const depsPassed = !results.dependencies || (results.dependencies as { passed: boolean }).passed;
     results.verdict = secretsPassed && depsPassed ? "PASS" : "FAIL";
     results.exitCode = results.verdict === "PASS" ? 0 : 1;
+    results.access = {
+      plan: authorizedUser.shieldxPlan,
+      userId: authorizedUser.id,
+    };
 
     return NextResponse.json(results);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }
