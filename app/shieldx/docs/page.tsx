@@ -325,14 +325,14 @@ export default function ShieldXDocsPage() {
             </span>
           </h1>
           <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Complete guide to using all 8 security modules. From setup to advanced configuration.
+            Security scanning that developers can run in 60 seconds. From setup to advanced configuration.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href="/shieldx">
               <Button className="gap-2"><Shield className="h-4 w-4" /> Open ShieldX</Button>
             </Link>
-            <Link href="/shieldx/pricing">
-              <Button variant="outline" className="gap-2"><Crown className="h-4 w-4" /> View Pricing</Button>
+            <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
+              <Button variant="outline" className="gap-2"><Crown className="h-4 w-4" /> Upgrade to Pro</Button>
             </Link>
           </div>
         </motion.div>
@@ -382,9 +382,8 @@ export default function ShieldXDocsPage() {
             <Card className="border-primary/10">
               <CardContent className="p-8 space-y-6">
                 <p className="text-lg leading-relaxed text-muted-foreground">
-                  <strong className="text-foreground">ShieldX</strong> is a comprehensive security platform built for modern engineering teams, especially startups.
-                  It provides 8 integrated security modules that cover the full spectrum of application security — from detecting hardcoded secrets
-                  in your source code to auditing cloud infrastructure, testing APIs against OWASP standards, and analyzing logs for threat patterns.
+                <strong className="text-foreground">ShieldX</strong> is security that developers actually want to use. Built for startups, it provides 8 integrated modules—from detecting hardcoded secrets
+                to auditing cloud infrastructure. It's drastically cheaper and faster than legacy enterprise platforms, requiring zero dedicated security headcount to get started.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -643,8 +642,8 @@ export default function ShieldXDocsPage() {
                 <Link href="/shieldx">
                   <Button size="lg" className="gap-2"><Shield className="h-5 w-5" /> Open ShieldX</Button>
                 </Link>
-                <Link href="/shieldx/pricing">
-                  <Button size="lg" variant="outline" className="gap-2"><Crown className="h-5 w-5" /> View Pricing</Button>
+            <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
+              <Button size="lg" variant="outline" className="gap-2"><Crown className="h-5 w-5" /> Upgrade to Pro</Button>
                 </Link>
                 <Link href="/contact?subject=ShieldX+Enterprise">
                   <Button size="lg" variant="outline" className="gap-2">Contact Sales <ArrowRight className="h-4 w-4" /></Button>

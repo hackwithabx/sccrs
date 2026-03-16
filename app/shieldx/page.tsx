@@ -755,7 +755,7 @@ export default function ShieldXPage() {
     if (!isFeatureEnabled(planTier, feature)) {
       return (
         <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-          <span className="font-semibold text-yellow-700">Upgrade required:</span> This module is only available on Pro or Enterprise plans. <Link href="/shieldx/pricing" className="underline text-yellow-700">Upgrade now</Link>.
+          <span className="font-semibold text-yellow-700">Upgrade required:</span> This module is only available on Pro or Enterprise plans. <Link href="/contact?subject=ShieldX+Pro+Subscription+Request" className="underline text-yellow-700">Upgrade now</Link>.
         </div>
       );
     }
@@ -1954,18 +1954,18 @@ export default function ShieldXPage() {
 
             {/* Main Title */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight leading-[1.05]">
-              <span className="block mb-1">SCR</span>
-              <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                ShieldX
+              <span className="block mb-1">DevSecOps for Startups</span>
+              <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent text-4xl sm:text-5xl lg:text-6xl xl:text-7xl">
+                No Security Team Required
               </span>
             </h1>
 
             <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              ShieldX keeps the paid workspace and free demo separate by design.{" "}
+              Security that developers actually want to use. Run comprehensive scans in under 60 seconds.{" "}
               <span className="hidden sm:inline">
-                Paid plans unlock real scans, saved history, alerts, and team workflows, while the free experience stays demo-only.
+                Stop overpaying for bloated, fragmented tools. ShieldX gives you everything you need—faster and infinitely more affordable.
               </span>
-              <span className="sm:hidden">Free is demo-only. Paid unlocks real scans.</span>
+              <span className="sm:hidden"> Faster, cheaper, and developer-friendly.</span>
             </p>
 
             {/* Stats Row */}
@@ -2007,9 +2007,9 @@ export default function ShieldXPage() {
                 Run Full Demo
               </Button>
               )}
-              <Link href="/shieldx/pricing">
+              <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
                 <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl hover:bg-primary/5 transition-all duration-300">
-                  <Crown className="h-5 w-5" /> {hasPro ? "Manage Plan" : "View Pricing"}
+                  <Crown className="h-5 w-5" /> {hasPro ? "Manage Plan" : "Upgrade to Pro"}
                 </Button>
               </Link>
               {hasAnyResults && (
@@ -2135,9 +2135,9 @@ export default function ShieldXPage() {
                       ))}
                     </div>
                      <div className="flex flex-wrap justify-center gap-3">
-                        <Link href="/shieldx/pricing">
+                    <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
                         <Button size="lg" className="gap-2 px-8 h-12 rounded-xl shadow-lg shadow-primary/25">
-                          <Crown className="h-4 w-4" /> View Plans & Pricing
+                      <Crown className="h-4 w-4" /> Upgrade to Pro
                         </Button>
                       </Link>
                         {!session && (
@@ -3626,17 +3626,12 @@ export default function ShieldXPage() {
                           <Button size="lg" variant="outline" className="gap-2 rounded-xl">View Services</Button>
                         </Link>
                         {!hasPro && (
-                          <Link href="/shieldx/pricing">
+                      <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
                             <Button size="lg" variant="outline" className="gap-2 rounded-xl text-primary border-primary/30 hover:bg-primary/5">
                               <Crown className="h-4 w-4" /> Upgrade to Pro
                             </Button>
                           </Link>
                         )}
-                        <Link href="/tools/ai-security-auditor">
-                          <Button size="lg" variant="ghost" className="gap-2 px-8 h-12 rounded-xl">
-                            Free AI Tool
-                          </Button>
-                        </Link>
                       </div>
                     </div>
                   </div>
