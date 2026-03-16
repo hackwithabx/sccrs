@@ -405,7 +405,7 @@ export async function POST(request: NextRequest) {
     // Demo mode: enforce demo scan limits and restrict modules
     if (demoMode) {
       // Only allow demo users
-      if (authorizedUser && ["pro", "enterprise"].includes(authorizedUser.planTier || authorizedUser.shieldxPlan)) {
+      if (authorizedUser && ["pro", "enterprise"].includes(authorizedUser.shieldxPlan)) {
         return NextResponse.redirect("/dashboard");
       }
       // Limit demo scans (example: max 3 per user)
