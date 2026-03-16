@@ -103,9 +103,9 @@ export default function ToolsPage() {
     <div className="py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          badge="Free Tools"
+          badge="Security Tools"
           title="Security Tools"
-          description="Free online tools for security testing, encoding, hashing, and analysis. No sign-up required."
+          description="Online tools for security testing, encoding, hashing, and analysis. No sign-up required."
         />
 
         {/* Featured AI Security Auditor */}
