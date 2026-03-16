@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import dbConnect from "@/lib/mongodb";
+import DemoLead from "@/models/DemoLead";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,14 +10,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    await prisma.demoLead.create({
-      data: {
-        fullName,
-        email,
-        mobile,
-        city,
-        usageType,
-      },
+    await dbConnect();
+
+    await DemoLead.create({
+      fullName,
+      email,
+      mobile,
+      city,
+      usageType,
     });
 
     return NextResponse.json({ success: true, message: "Lead captured successfully" });
