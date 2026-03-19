@@ -11,7 +11,7 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const sessionUser = await getShieldXSessionUser();
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

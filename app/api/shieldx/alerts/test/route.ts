@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import ShieldXAlertConfig from "@/models/ShieldXAlertConfig";
 import {
@@ -9,8 +9,8 @@ import { sendShieldXTestAlert } from "@/lib/shieldx-alerts";
 
 export const runtime = "nodejs";
 
-export async function POST() {
-  const sessionUser = await getShieldXSessionUser();
+export async function POST(request: NextRequest) {
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -12,7 +12,7 @@ const PLAN_DURATION_DAYS: Record<"pro" | "enterprise", number> = {
 };
 
 export async function POST(request: NextRequest) {
-  const sessionUser = await getShieldXSessionUser();
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

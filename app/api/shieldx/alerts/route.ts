@@ -87,8 +87,8 @@ function normalizeRules(input: unknown) {
   return rules.length > 0 ? rules : DEFAULT_ALERT_RULES;
 }
 
-export async function GET() {
-  const sessionUser = await getShieldXSessionUser();
+export async function GET(request: NextRequest) {
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -127,7 +127,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const sessionUser = await getShieldXSessionUser();
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

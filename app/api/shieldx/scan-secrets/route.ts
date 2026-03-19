@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     if (!sessionUser) {
       // Fall back to session-based auth for free users
       const { getShieldXSessionUser } = await import("@/lib/shieldx-access");
-      const freeUser = await getShieldXSessionUser();
+      const freeUser = await getShieldXSessionUser(request);
       if (!freeUser) {
         return NextResponse.json({ error: "Authentication required" }, { status: 401 });
       }

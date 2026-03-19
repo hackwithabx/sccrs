@@ -1,4 +1,6 @@
 import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt";
+import type { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth";
 
 export type ShieldXPlan = "free" | "pro" | "enterprise";
@@ -26,45 +28,68 @@ const PLAN_LEVEL: Record<ShieldXPlan, number> = {
   enterprise: 2,
 };
 
-export async function getShieldXSessionUser(): Promise<ShieldXSessionUser | null> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return null;
-  }
-
-  const user = session.user as {
-    id?: string;
-    email?: string | null;
-    name?: string | null;
-    role?: string;
-    shieldxPlan?: ShieldXPlan;
-    shieldxPlanSource?: ShieldXPlanSource;
-    shieldxBillingProvider?: string | null;
-    shieldxBillingStatus?: string;
-    shieldxExpiry?: string | null;
-    shieldxCancelAtPeriodEnd?: boolean;
-    shieldxSeatRole?: ShieldXSeatRole | null;
-    shieldxTeamOwnerId?: string | null;
-  };
-
-  if (!user.id || !user.email) {
-    return null;
-  }
+/**
+ * Build a ShieldXSessionUser from a raw token/user-like object.
+ */
+function buildSessionUser(raw: Record<string, unknown>): ShieldXSessionUser | null {
+  const id = (raw.id || raw.sub) as string | undefined;
+  const email = raw.email as string | undefined;
+  if (!id || !email) return null;
 
   return {
-    id: user.id,
-    email: user.email,
-    name: user.name || "ShieldX User",
-    role: user.role || "user",
-    shieldxPlan: user.shieldxPlan || "free",
-    shieldxPlanSource: user.shieldxPlanSource || "free",
-    shieldxBillingProvider: user.shieldxBillingProvider || null,
-    shieldxBillingStatus: user.shieldxBillingStatus || "inactive",
-    shieldxExpiry: user.shieldxExpiry || null,
-    shieldxCancelAtPeriodEnd: Boolean(user.shieldxCancelAtPeriodEnd),
-    shieldxSeatRole: user.shieldxSeatRole || null,
-    shieldxTeamOwnerId: user.shieldxTeamOwnerId || null,
+    id,
+    email,
+    name: (raw.name as string) || "ShieldX User",
+    role: (raw.role as string) || "user",
+    shieldxPlan: (raw.shieldxPlan as ShieldXPlan) || "free",
+    shieldxPlanSource: (raw.shieldxPlanSource as ShieldXPlanSource) || "free",
+    shieldxBillingProvider: (raw.shieldxBillingProvider as string | null) || null,
+    shieldxBillingStatus: (raw.shieldxBillingStatus as string) || "inactive",
+    shieldxExpiry: (raw.shieldxExpiry as string | null) || null,
+    shieldxCancelAtPeriodEnd: Boolean(raw.shieldxCancelAtPeriodEnd),
+    shieldxSeatRole: (raw.shieldxSeatRole as ShieldXSeatRole | null) || null,
+    shieldxTeamOwnerId: (raw.shieldxTeamOwnerId as string | null) || null,
   };
+}
+
+/**
+ * Get the current ShieldX session user.
+ *
+ * Pass the incoming NextRequest so we can read the JWT cookie directly
+ * via `getToken` — this is the reliable path in Next.js 15+/16+ Route
+ * Handlers where `getServerSession` may fail because `headers()` became
+ * async.  Falls back to `getServerSession` when no request is provided
+ * (e.g. Server Components).
+ */
+export async function getShieldXSessionUser(
+  request?: NextRequest
+): Promise<ShieldXSessionUser | null> {
+  // Primary path: read JWT directly from request cookie (works in all Route Handlers)
+  if (request) {
+    try {
+      const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      if (token) {
+        return buildSessionUser(token as unknown as Record<string, unknown>);
+      }
+    } catch {
+      // fall through to getServerSession
+    }
+  }
+
+  // Fallback: getServerSession (works in Server Components / Pages Router)
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      return buildSessionUser(session.user as Record<string, unknown>);
+    }
+  } catch {
+    // session retrieval failed
+  }
+
+  return null;
 }
 
 export function isShieldXAdmin(user: Pick<ShieldXSessionUser, "role"> | null): boolean {

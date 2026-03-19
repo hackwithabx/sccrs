@@ -176,8 +176,8 @@ function serializeTeam(
   };
 }
 
-export async function GET() {
-  const sessionUser = await getShieldXSessionUser();
+export async function GET(request: NextRequest) {
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -211,7 +211,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const sessionUser = await getShieldXSessionUser();
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -413,7 +413,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const sessionUser = await getShieldXSessionUser();
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

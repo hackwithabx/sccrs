@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import ShieldXTeam from "@/models/ShieldXTeam";
 import { getShieldXSessionUser } from "@/lib/shieldx-access";
 
-export async function GET() {
-  const sessionUser = await getShieldXSessionUser();
+export async function GET(request: NextRequest) {
+  const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

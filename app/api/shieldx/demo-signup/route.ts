@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const lead = await DemoLead.create(leadData);
 
     // Associate with authenticated user only (never trust client-supplied userId)
-    const sessionUser = await getShieldXSessionUser();
+    const sessionUser = await getShieldXSessionUser(request);
     if (sessionUser?.id) {
       await User.findByIdAndUpdate(sessionUser.id, { demoSignupInfo: leadData });
     }

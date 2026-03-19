@@ -57,7 +57,7 @@ export async function getShieldXAuthorizedUser(
   requiredPlan: Exclude<ShieldXPlan, "free">,
   options?: { allowApiKey?: boolean }
 ): Promise<ShieldXSessionUser | null> {
-  const sessionUser = await getShieldXSessionUser();
+  const sessionUser = await getShieldXSessionUser(request);
   if (hasShieldXAccess(sessionUser, requiredPlan)) {
     return sessionUser as ShieldXSessionUser;
   }
