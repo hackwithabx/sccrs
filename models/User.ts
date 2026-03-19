@@ -90,6 +90,10 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    shieldxScanCount: {
+      type: Number,
+      default: 0,
+    },
     passwordResetRequired: {
       type: Boolean,
       default: false,

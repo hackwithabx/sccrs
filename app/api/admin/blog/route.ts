@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = {};
-    if (status !== "all") query.status = status;
+    const validStatuses = ["draft", "published", "pending", "rejected", "featured", "unpublished"];
+    if (status !== "all" && validStatuses.includes(status)) query.status = status;
 
     const [posts, total, pending] = await Promise.all([
       BlogPost.find(query)

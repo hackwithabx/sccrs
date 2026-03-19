@@ -210,6 +210,28 @@ async function sendJsonWebhook(input: {
   url: string;
   payload: Record<string, unknown>;
 }): Promise<AlertDeliveryResult> {
+  // Validate webhook URL to prevent SSRF
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(input.url);
+  } catch {
+    return { channel: input.channel, ok: false, message: `Invalid ${input.channel} URL.` };
+  }
+
+  if (!["https:"].includes(parsedUrl.protocol)) {
+    return { channel: input.channel, ok: false, message: `${input.channel} URL must use HTTPS.` };
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const blockedHosts = [
+    "localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1",
+    "169.254.169.254", "metadata.google.internal", "metadata.goog",
+  ];
+  const blockedPrefixes = ["10.", "192.168.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.", "169.254."];
+  if (blockedHosts.includes(hostname) || blockedPrefixes.some((p) => hostname.startsWith(p))) {
+    return { channel: input.channel, ok: false, message: `${input.channel} URL points to a blocked host.` };
+  }
+
   const response = await fetch(input.url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -231,6 +253,15 @@ async function sendJsonWebhook(input: {
   };
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildEmailHtml(input: {
   title: string;
   summary: string;
@@ -246,21 +277,21 @@ function buildEmailHtml(input: {
           .slice(0, 5)
           .map(
             (finding) =>
-              `<li><strong>${finding.severity}:</strong> ${finding.finding}</li>`
+              `<li><strong>${escapeHtml(finding.severity)}:</strong> ${escapeHtml(finding.finding)}</li>`
           )
           .join("")}</ul>`
       : "<p>No detailed findings were stored with this alert.</p>";
 
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-      <h2 style="margin-bottom: 8px;">ShieldX Alert: ${input.title}</h2>
-      <p style="margin: 0 0 12px;"><strong>Severity:</strong> ${input.highestSeverity}</p>
+      <h2 style="margin-bottom: 8px;">ShieldX Alert: ${escapeHtml(input.title)}</h2>
+      <p style="margin: 0 0 12px;"><strong>Severity:</strong> ${escapeHtml(input.highestSeverity)}</p>
       <p style="margin: 0 0 12px;"><strong>Score:</strong> ${input.overallScore}/10</p>
-      <p style="margin: 0 0 12px;"><strong>Target:</strong> ${input.target || "ShieldX workspace"}</p>
-      <p style="margin: 0 0 16px;">${input.summary}</p>
+      <p style="margin: 0 0 12px;"><strong>Target:</strong> ${escapeHtml(input.target || "ShieldX workspace")}</p>
+      <p style="margin: 0 0 16px;">${escapeHtml(input.summary)}</p>
       <p style="margin: 0 0 8px;"><strong>Triggered rules:</strong> ${
         input.triggeredRules.length > 0
-          ? input.triggeredRules.map((rule) => rule.name).join(", ")
+          ? input.triggeredRules.map((rule) => escapeHtml(rule.name)).join(", ")
           : "Threshold alert"
       }</p>
       ${findingsHtml}

@@ -163,7 +163,6 @@ export async function POST(request: NextRequest) {
     results.exitCode = results.verdict === "PASS" ? 0 : 1;
     results.access = {
       plan: authorizedUser.shieldxPlan,
-      userId: authorizedUser.id,
     };
 
     return NextResponse.json(results);

@@ -29,22 +29,28 @@ function getEffectiveShieldXPlan(user: {
   return "free";
 }
 
-  // RBAC: Enforce feature access and scan limits
-  export function enforceShieldXFeatureAccess(user: any, feature: string) {
-    const plan = user.planTier || user.shieldxPlan || "free";
-    if (!isFeatureEnabled(plan, feature)) {
-      throw new Error(`Access denied: Feature '${feature}' not enabled for your ${plan} plan.`);
-    }
-  }
+interface ShieldXUserLike {
+  planTier?: string;
+  shieldxPlan?: string;
+  shieldxScanCount?: number;
+}
 
-  export function enforceShieldXScanLimit(user: any, requestedScans = 1) {
-    const plan = user.planTier || user.shieldxPlan || "free";
-    const limit = getScanLimit(plan);
-    const used = user.scanCount ?? 0; // Usage tracked in DB
-    if (used + requestedScans > limit) {
-      throw new Error(`Scan limit exceeded for your ${plan} plan. Limit is ${limit} scans.`);
-    }
+// RBAC: Enforce feature access and scan limits
+export function enforceShieldXFeatureAccess(user: ShieldXUserLike | null, feature: string) {
+  const plan = user?.planTier || user?.shieldxPlan || "free";
+  if (!isFeatureEnabled(plan as import("@/lib/feature-flags").PlanTier, feature)) {
+    throw new Error(`Access denied: Feature '${feature}' not enabled for your ${plan} plan.`);
   }
+}
+
+export function enforceShieldXScanLimit(user: ShieldXUserLike | null, requestedScans = 1) {
+  const plan = user?.planTier || user?.shieldxPlan || "free";
+  const limit = getScanLimit(plan as import("@/lib/feature-flags").PlanTier);
+  const used = user?.shieldxScanCount ?? 0;
+  if (used + requestedScans > limit) {
+    throw new Error(`Scan limit exceeded for your ${plan} plan. Limit is ${limit} scans.`);
+  }
+}
 
 export async function getShieldXAuthorizedUser(
   request: NextRequest,

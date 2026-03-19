@@ -153,6 +153,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate webhook URLs (SSRF prevention)
+    for (const [label, url] of [["Slack webhook", slackWebhook], ["Custom webhook", customWebhook]] as const) {
+      if (!url) continue;
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "https:") {
+          return NextResponse.json({ error: `${label} must use HTTPS` }, { status: 400 });
+        }
+        const hostname = parsed.hostname.toLowerCase();
+        const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1", "169.254.169.254", "metadata.google.internal"];
+        const blockedPrefixes = ["10.", "192.168.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.", "169.254."];
+        if (blocked.includes(hostname) || blockedPrefixes.some((p) => hostname.startsWith(p))) {
+          return NextResponse.json({ error: `${label} URL points to a blocked address` }, { status: 400 });
+        }
+      } catch {
+        return NextResponse.json({ error: `${label} URL is invalid` }, { status: 400 });
+      }
+    }
+
     await dbConnect();
 
     const config = await ShieldXAlertConfig.findOneAndUpdate(

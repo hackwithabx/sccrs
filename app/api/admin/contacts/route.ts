@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { id, status } = body;
 
-    if (!id || !status || !["new", "read", "replied"].includes(status)) {
+    if (!id || typeof id !== "string" || !/^[a-f0-9]{24}$/i.test(id) || !status || !["new", "read", "replied"].includes(status)) {
       return NextResponse.json(
         { error: "Invalid id or status" },
         { status: 400 }
@@ -114,8 +114,8 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
-    if (!id) {
-      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    if (!id || !/^[a-f0-9]{24}$/i.test(id)) {
+      return NextResponse.json({ error: "Invalid or missing id" }, { status: 400 });
     }
 
     const deleted = await Contact.findByIdAndDelete(id);

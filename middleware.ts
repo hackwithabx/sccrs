@@ -70,7 +70,6 @@ export async function middleware(request: NextRequest) {
     try {
       const decoded = await verifyAdminToken(token);
       if (!decoded || !decoded.authenticated || Date.now() > decoded.expiresAt) {
-        // Token expired
         if (pathname.startsWith("/api/")) {
           const response = NextResponse.json(
             { error: "Session expired" },
@@ -79,9 +78,12 @@ export async function middleware(request: NextRequest) {
           response.cookies.delete("scr-admin-token");
           return response;
         }
+        // Page routes: clear expired cookie so the page can show login UI
+        const response = NextResponse.next();
+        response.cookies.delete("scr-admin-token");
+        return response;
       }
     } catch {
-      // Invalid token
       if (pathname.startsWith("/api/")) {
         const response = NextResponse.json(
           { error: "Invalid session" },
@@ -90,6 +92,10 @@ export async function middleware(request: NextRequest) {
         response.cookies.delete("scr-admin-token");
         return response;
       }
+      // Page routes: clear invalid cookie
+      const response = NextResponse.next();
+      response.cookies.delete("scr-admin-token");
+      return response;
     }
   }
 

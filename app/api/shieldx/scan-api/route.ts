@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
+import { enforceShieldXFeatureAccess, enforceShieldXScanLimit } from "@/lib/shieldx-route-auth";
+import { isFeatureEnabled } from "@/lib/feature-flags";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -351,6 +355,17 @@ function isPrivateOrLocalHost(hostname: string): boolean {
     "172.31.",
   ];
 
+  // Block cloud metadata endpoints (AWS, GCP, Azure)
+  const metadataHosts = [
+    "metadata.google.internal",
+    "metadata.goog",
+    "169.254.169.254",
+  ];
+  if (metadataHosts.some((h) => normalized === h)) return true;
+
+  // Block IPv6 shorthand for localhost
+  if (normalized === "::1" || normalized === "[::1]") return true;
+
   return blocked.some((item) => normalized === item || normalized.startsWith(item));
 }
 
@@ -384,11 +399,8 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
     }
-        // Secure SaaS: enforce plan tier, scan limits, and feature access
-        const { enforceShieldXFeatureAccess, enforceShieldXScanLimit } = await import("@/lib/shieldx-route-auth");
-        const { isFeatureEnabled } = await import("@/lib/feature-flags");
 
-    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
       return NextResponse.json(
         { error: "Only HTTP and HTTPS URLs are supported" },
         { status: 400 }
@@ -406,7 +418,10 @@ export async function POST(request: NextRequest) {
     if (demoMode) {
       // Only allow demo users
       if (authorizedUser && ["pro", "enterprise"].includes(authorizedUser.shieldxPlan)) {
-        return NextResponse.redirect("/dashboard");
+        return NextResponse.json(
+          { error: "Pro/Enterprise users should use the full scan endpoint" },
+          { status: 400 }
+        );
       }
       // Limit demo scans (example: max 3 per user)
       try {
@@ -424,8 +439,9 @@ export async function POST(request: NextRequest) {
       try {
         enforceShieldXFeatureAccess(authorizedUser, "api-security");
         enforceShieldXScanLimit(authorizedUser, 1);
-      } catch (err: any) {
-        return NextResponse.json({ error: err?.message || "Access denied" }, { status: 403 });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Access denied";
+        return NextResponse.json({ error: message }, { status: 403 });
       }
     }
 
@@ -514,6 +530,19 @@ export async function POST(request: NextRequest) {
     const score = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 10 * 10) / 10 : 0;
 
     const owaspCoverage = API_CHECKS.filter((c) => c.owasp).map((c) => c.owasp);
+
+    // Increment scan count for authenticated users
+    if (authorizedUser) {
+      try {
+        await dbConnect();
+        await User.updateOne(
+          { _id: authorizedUser.id },
+          { $inc: { shieldxScanCount: 1 } }
+        );
+      } catch {
+        // Non-blocking — scan result still returned
+      }
+    }
 
     return NextResponse.json({
       mode: demoMode ? "demo" : "paid",

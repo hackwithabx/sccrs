@@ -136,13 +136,9 @@ export async function POST(request: NextRequest) {
                 : "Razorpay scheduled this plan change for the end of the current billing cycle.",
           });
         } catch (error) {
+          console.error("Razorpay subscription update error:", error);
           return NextResponse.json(
-            {
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Razorpay could not update this subscription automatically.",
-            },
+            { error: "Could not update subscription. Please try again or contact support." },
             { status: 409 }
           );
         }
@@ -180,12 +176,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Failed to create ShieldX Razorpay checkout:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to start ShieldX billing checkout",
-      },
+      { error: "Failed to start billing checkout. Please try again or contact support." },
       { status: 500 }
     );
   }

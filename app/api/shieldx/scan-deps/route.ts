@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -152,6 +153,14 @@ export async function POST(request: NextRequest) {
         { error: "ShieldX Pro or Enterprise is required for live dependency scans" },
         { status: 403 }
       );
+    }
+
+    if (demoMode && !authorizedUser) {
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const { allowed } = rateLimit(`scan-deps-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+      if (!allowed) {
+        return NextResponse.json({ error: "Demo rate limit exceeded. Try again later." }, { status: 429 });
+      }
     }
 
     const input = demoMode

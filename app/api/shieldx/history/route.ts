@@ -237,6 +237,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    await dbConnect();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

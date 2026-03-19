@@ -33,14 +33,16 @@ export const planFeatures: Record<PlanTier, string[]> = {
 };
 
 export const planScanLimits: Record<PlanTier, number> = {
-  demo: 3,
-  free: 10,
+  demo: 2,
+  free: 5,
   pro: 1000,
   enterprise: 9999999, // unlimited
 };
 
 export function isFeatureEnabled(plan: PlanTier, feature: string): boolean {
-  return planFeatures[plan]?.includes(feature) || planFeatures[plan]?.includes("all-modules") || plan === "enterprise";
+  const features = planFeatures[plan];
+  if (!features) return false;
+  return features.includes(feature) || features.includes("all-modules");
 }
 
 export function getScanLimit(plan: PlanTier): number {

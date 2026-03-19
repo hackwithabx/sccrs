@@ -252,7 +252,191 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* â•â•â• WHY SHIELDX FOR STARTUPS â•â•â• */}
+      {/* ═══ SHIELDX PRODUCT PREVIEW ═══ */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[900px] rounded-full bg-primary/3 blur-3xl" />
+        </div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            badge="Product Preview"
+            title="See ShieldX in Action"
+            description="A glimpse of the unified security workspace — scan secrets, dependencies, APIs, cloud configs, and logs from one dashboard."
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="mt-12"
+          >
+            {/* Browser Frame */}
+            <div className="mx-auto max-w-5xl rounded-2xl border border-border/60 shadow-2xl overflow-hidden bg-background">
+              {/* Title bar */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-muted/60 border-b border-border/40">
+                <div className="flex gap-1.5">
+                  <div className="h-3 w-3 rounded-full bg-red-400" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-400" />
+                  <div className="h-3 w-3 rounded-full bg-green-400" />
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <div className="flex items-center gap-2 rounded-lg bg-background/80 border border-border/40 px-4 py-1 text-xs text-muted-foreground font-mono">
+                    <Lock className="h-3 w-3 text-green-500" />
+                    securecodereviews.com/shieldx
+                  </div>
+                </div>
+              </div>
+
+              {/* Dashboard Content */}
+              <div className="p-6 space-y-5">
+                {/* Top bar */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-primary/10 p-2.5">
+                      <Shield className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold">ShieldX Workspace</h3>
+                      <p className="text-xs text-muted-foreground">Security posture overview</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-emerald-600 text-white">Pro Plan</Badge>
+                </div>
+
+                {/* Score + Stats row */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="col-span-2 md:col-span-1 rounded-xl border border-border/50 bg-gradient-to-br from-emerald-500/10 to-transparent p-4 text-center">
+                    <div className="text-3xl font-bold text-emerald-500">8.4</div>
+                    <div className="text-xs text-muted-foreground mt-1">Security Score</div>
+                  </div>
+                  {[
+                    { label: "Secrets Found", value: "0", color: "text-emerald-500" },
+                    { label: "Vuln Dependencies", value: "3", color: "text-amber-500" },
+                    { label: "API Issues", value: "1", color: "text-blue-500" },
+                    { label: "Cloud Risks", value: "2", color: "text-red-500" },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-xl border border-border/50 p-3 text-center">
+                      <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Simulated scan results */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Secrets Scanner Result */}
+                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Key className="h-4 w-4 text-emerald-500" />
+                      <span className="text-sm font-semibold">Secrets Scanner</span>
+                      <Badge variant="outline" className="ml-auto text-[10px] border-emerald-500/40 text-emerald-600">PASS</Badge>
+                    </div>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> No API keys detected
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> No hardcoded passwords
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Entropy analysis clean
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dependency Scan Result */}
+                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm font-semibold">Dependency Audit</span>
+                      <Badge variant="outline" className="ml-auto text-[10px] border-amber-500/40 text-amber-600">3 CVEs</Badge>
+                    </div>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> <span><strong className="text-foreground">lodash 4.17.20</strong> — CVE-2021-23337 (High)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span><strong className="text-foreground">axios 0.21.4</strong> — CVE-2023-45857 (Med)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span><strong className="text-foreground">node-fetch 2.6.1</strong> — CVE-2022-0235 (Med)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* API Scanner Result */}
+                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-semibold">API Scanner</span>
+                      <Badge variant="outline" className="ml-auto text-[10px] border-blue-500/40 text-blue-600">1 Issue</Badge>
+                    </div>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> CORS policies configured
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span>Rate limiting not detected</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Auth headers validated
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cloud Security Result */}
+                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Cloud className="h-4 w-4 text-red-500" />
+                      <span className="text-sm font-semibold">Cloud Security</span>
+                      <Badge variant="outline" className="ml-auto text-[10px] border-red-500/40 text-red-600">2 Risks</Badge>
+                    </div>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> <span>S3 bucket public read enabled</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span>IAM wildcard policy detected</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> CloudTrail logging active
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom bar */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/30 text-[11px] text-muted-foreground">
+                  <span>Last scan: 2 minutes ago</span>
+                  <span className="flex items-center gap-1"><FileSearch className="h-3 w-3" /> 4 modules scanned in 12s</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA below preview */}
+            <div className="mt-8 text-center">
+              <p className="text-muted-foreground mb-4">Try the free demo — no sign-up required</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link href="/shieldx">
+                  <Button size="lg" className="gap-2 rounded-xl shadow-lg shadow-primary/20">
+                    <Rocket className="h-5 w-5" />
+                    Open ShieldX
+                  </Button>
+                </Link>
+                <Link href="/shieldx/pricing">
+                  <Button size="lg" variant="outline" className="gap-2 rounded-xl">
+                    View Pricing
+                    <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══ WHY SHIELDX FOR STARTUPS ═══ */}
       <section className="py-20 bg-muted/30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading

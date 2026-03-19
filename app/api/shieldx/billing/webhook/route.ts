@@ -51,13 +51,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
     }
   } catch (error) {
+    console.error("Webhook signature validation error:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unable to validate Razorpay webhook signature",
-      },
+      { error: "Unable to validate webhook signature" },
       { status: 500 }
     );
   }
@@ -206,12 +202,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Failed to process ShieldX Razorpay webhook:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to process Razorpay webhook",
-      },
+      { error: "Failed to process webhook" },
       { status: 500 }
     );
   }
