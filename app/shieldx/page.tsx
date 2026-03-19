@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,9 @@ import {
   TrendingUp,
   XCircle,
   Loader2,
+  ChevronDown,
+  Search,
+  X,
 } from "lucide-react";
 
 /* ── Types ── */
@@ -87,6 +90,19 @@ export default function ShieldXWorkspacePage() {
   const [loadingBilling, setLoadingBilling] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  /* ── Scan UI state ── */
+  const [activeModule, setActiveModule] = useState<string | null>(null);
+  const [scanInput, setScanInput] = useState("");
+  const [scanning, setScanning] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [scanResults, setScanResults] = useState<any>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  /* ── Admin plan upgrade ── */
+  const [upgradingPlan, setUpgradingPlan] = useState(false);
+  const [planMessage, setPlanMessage] = useState<string | null>(null);
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
+
   const userPlan: PlanTier =
     (billingState?.plan as PlanTier) ||
     ((session?.user as { shieldxPlan?: PlanTier } | undefined)?.shieldxPlan) ||
@@ -115,6 +131,110 @@ export default function ShieldXWorkspacePage() {
 
   useEffect(() => { void loadBillingState(); }, [loadBillingState]);
   useEffect(() => { void loadScanHistory(); }, [loadScanHistory]);
+
+  /* ── Admin plan upgrade ── */
+  const adminUpgradePlan = async (plan: PlanTier) => {
+    setUpgradingPlan(true);
+    setPlanMessage(null);
+    try {
+      const res = await fetch("/api/shieldx/upgrade-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upgrade failed");
+      setPlanMessage(`Plan updated to ${plan}. Reload the page to see changes.`);
+      // Refresh billing state
+      void loadBillingState();
+    } catch (err) {
+      setPlanMessage(err instanceof Error ? err.message : "Upgrade failed");
+    } finally {
+      setUpgradingPlan(false);
+    }
+  };
+
+  /* ── Scan execution ── */
+  const openModule = (moduleId: string) => {
+    if (activeModule === moduleId) { setActiveModule(null); return; }
+    setActiveModule(moduleId);
+    setScanInput("");
+    setScanResults(null);
+    setScanError(null);
+  };
+
+  const runScan = async () => {
+    if (!activeModule) return;
+    setScanning(true);
+    setScanResults(null);
+    setScanError(null);
+
+    const isDemo = !isPaid;
+    const mod = MODULES.find((m) => m.id === activeModule);
+    if (!mod) return;
+
+    try {
+      let endpoint = "";
+      let payload: Record<string, unknown> = {};
+
+      switch (activeModule) {
+        case "secrets":
+          endpoint = "/api/shieldx/scan-secrets";
+          payload = isDemo ? { demo: true } : { code: scanInput };
+          break;
+        case "deps":
+          endpoint = "/api/shieldx/scan-deps";
+          payload = isDemo ? { demo: true } : { input: scanInput };
+          break;
+        case "api":
+          endpoint = "/api/shieldx/scan-api";
+          payload = isDemo ? { demo: true } : { url: scanInput };
+          break;
+        case "cloud":
+          endpoint = "/api/shieldx/scan-cloud";
+          payload = isDemo ? { demo: true } : { config: scanInput };
+          break;
+        default:
+          setScanError(`The ${mod.name} module is coming soon.`);
+          setScanning(false);
+          return;
+      }
+
+      if (!isDemo && !scanInput.trim()) {
+        setScanError("Please enter input to scan.");
+        setScanning(false);
+        return;
+      }
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Scan failed");
+      setScanResults(data);
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const getInputConfig = (moduleId: string) => {
+    switch (moduleId) {
+      case "secrets":
+        return { placeholder: "Paste your source code, config files, .env content, or any text here...", label: "Source Code / Config", type: "textarea" as const };
+      case "deps":
+        return { placeholder: "Paste your package.json, requirements.txt, build.gradle, or go.mod content...", label: "Dependency File Content", type: "textarea" as const };
+      case "api":
+        return { placeholder: "https://api.example.com/v1/health", label: "Target URL", type: "url" as const };
+      case "cloud":
+        return { placeholder: "Paste your Terraform, CloudFormation, or cloud config (JSON/YAML/HCL)...", label: "Cloud Configuration", type: "textarea" as const };
+      default:
+        return { placeholder: "", label: "Input", type: "textarea" as const };
+    }
+  };
 
   /* ── Unauthenticated landing ── */
   if (status === "unauthenticated") {
@@ -265,16 +385,19 @@ export default function ShieldXWorkspacePage() {
           </TabsList>
 
           <TabsContent value="modules">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {MODULES.map((mod, i) => {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
+                const isActive = activeModule === mod.id;
+                const hasScanUI = ["secrets", "deps", "api", "cloud"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
-                    <Card className={`h-full flex flex-col ${!isAvailable ? "opacity-60" : "hover:border-primary/30"} transition-colors`}>
+                    <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
+                      onClick={() => { if (isAvailable && hasScanUI) openModule(mod.id); }}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                          <mod.icon className={`h-6 w-6 ${isAvailable ? "text-primary" : "text-muted-foreground"}`} />
+                          <mod.icon className={`h-6 w-6 ${isActive ? "text-primary" : isAvailable ? "text-primary" : "text-muted-foreground"}`} />
                           {!isAvailable ? (
                             <Lock className="h-4 w-4 text-muted-foreground" />
                           ) : isDemoOnly ? (
@@ -288,12 +411,15 @@ export default function ShieldXWorkspacePage() {
                       <CardContent className="pt-0 flex-1 flex flex-col">
                         <p className="text-sm text-muted-foreground flex-1">{mod.description}</p>
                         <div className="mt-4">
-                          {isAvailable ? (
-                            <Link href="/dashboard">
-                              <Button size="sm" className="w-full gap-1.5">
-                                {isDemoOnly ? "Run Demo Scan" : "Run Scan"} <ArrowRight className="h-3.5 w-3.5" />
-                              </Button>
-                            </Link>
+                          {isAvailable && hasScanUI ? (
+                            <Button size="sm" variant={isActive ? "default" : "outline"} className="w-full gap-1.5"
+                              onClick={(e) => { e.stopPropagation(); openModule(mod.id); }}>
+                              {isActive ? <>Close Scanner <X className="h-3.5 w-3.5" /></> : <>{isDemoOnly ? "Open Demo Scanner" : "Open Scanner"} <ChevronDown className="h-3.5 w-3.5" /></>}
+                            </Button>
+                          ) : isAvailable ? (
+                            <Button size="sm" variant="outline" className="w-full gap-1.5" disabled>
+                              Coming Soon
+                            </Button>
                           ) : (
                             <Link href="/shieldx/pricing">
                               <Button size="sm" variant="outline" className="w-full gap-1.5">
@@ -308,6 +434,303 @@ export default function ShieldXWorkspacePage() {
                 );
               })}
             </div>
+
+            {/* ── Scan Panel ── */}
+            <AnimatePresence>
+              {activeModule && ["secrets", "deps", "api", "cloud"].includes(activeModule) && (() => {
+                const mod = MODULES.find((m) => m.id === activeModule)!;
+                const isDemoOnly = mod.plans.includes("free") && !isPaid;
+                const inputCfg = getInputConfig(activeModule);
+                return (
+                  <motion.div key={activeModule} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-6">
+                    <Card className="border-primary/20">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <mod.icon className="h-5 w-5 text-primary" /> {mod.name}
+                          </CardTitle>
+                          <Button variant="ghost" size="sm" onClick={() => setActiveModule(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {isDemoOnly && (
+                          <p className="text-sm text-amber-600 mt-1">Demo mode — click &quot;Run Demo Scan&quot; to see sample results, or <Link href="/shieldx/pricing" className="underline font-medium">upgrade to Pro</Link> to scan your own code.</p>
+                        )}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Input area */}
+                        {!isDemoOnly && (
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">{inputCfg.label}</label>
+                            {inputCfg.type === "textarea" ? (
+                              <textarea
+                                className="w-full min-h-[200px] rounded-lg border bg-muted/30 p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
+                                placeholder={inputCfg.placeholder}
+                                value={scanInput}
+                                onChange={(e) => setScanInput(e.target.value)}
+                              />
+                            ) : (
+                              <input
+                                type="url"
+                                className="w-full rounded-lg border bg-muted/30 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                placeholder={inputCfg.placeholder}
+                                value={scanInput}
+                                onChange={(e) => setScanInput(e.target.value)}
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex gap-3">
+                          <Button onClick={runScan} disabled={scanning || (!isDemoOnly && !scanInput.trim())} className="gap-2">
+                            {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : "Run Scan"}</>}
+                          </Button>
+                          {scanResults && (
+                            <Button variant="outline" onClick={() => { setScanResults(null); setScanError(null); }} className="gap-1.5">
+                              Clear Results
+                            </Button>
+                          )}
+                        </div>
+
+                        {scanError && (
+                          <Card className="border-red-500/30 bg-red-500/5">
+                            <CardContent className="p-4 flex items-start gap-3">
+                              <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                              <p className="text-sm text-red-600">{scanError}</p>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Results */}
+                        {scanResults && (
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                            {/* Secrets results */}
+                            {activeModule === "secrets" && (
+                              <>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Total Findings</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.high || 0}</div>
+                                    <div className="text-xs text-muted-foreground">High</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Medium</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Low</div>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{scanResults.patternsChecked} patterns checked across {scanResults.totalLines} lines • {scanResults.mode} mode</p>
+                                {scanResults.findings?.length > 0 ? (
+                                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.findings.map((f: any, idx: number) => (
+                                      <Card key={idx} className={`${f.confidence === "high" ? "border-red-500/30" : f.confidence === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`}>
+                                        <CardContent className="p-4">
+                                          <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={f.confidence === "high" ? "destructive" : "secondary"} className="text-[10px] capitalize">{f.confidence}</Badge>
+                                              <span className="font-medium text-sm">{f.name}</span>
+                                            </div>
+                                            <span className="text-xs text-muted-foreground shrink-0">Line {f.line}, Col {f.column}</span>
+                                          </div>
+                                          <code className="block text-xs bg-muted/50 rounded p-2 font-mono break-all">{f.matchPreview}</code>
+                                          <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card className="border-emerald-500/30 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700">No secrets detected — your code looks clean!</p>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </>
+                            )}
+
+                            {/* Dependency results */}
+                            {activeModule === "deps" && (
+                              <>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold">{scanResults.totalDependencies || scanResults.stats?.total || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Dependencies</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Critical</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                    <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                    <div className="text-xs text-muted-foreground">High</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Medium</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Low</div>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Ecosystem: {scanResults.ecosystem || "npm"} • {scanResults.mode} mode</p>
+                                {scanResults.vulnerabilities?.length > 0 ? (
+                                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.vulnerabilities.map((v: any, idx: number) => (
+                                      <Card key={idx} className={`${v.severity === "critical" ? "border-red-500/30" : v.severity === "high" ? "border-orange-500/30" : "border-amber-500/30"}`}>
+                                        <CardContent className="p-4">
+                                          <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div>
+                                              <Badge variant={v.severity === "critical" ? "destructive" : "secondary"} className="text-[10px] capitalize">{v.severity}</Badge>
+                                              <span className="font-medium text-sm ml-2">{v.package}@{v.version}</span>
+                                            </div>
+                                            <span className="text-xs font-mono text-muted-foreground">{v.id}</span>
+                                          </div>
+                                          <p className="text-sm text-muted-foreground">{v.summary}</p>
+                                          {v.fixedIn && <p className="text-xs text-emerald-600 mt-2">Fix: Upgrade to {v.fixedIn}</p>}
+                                          {v.references?.length > 0 && (
+                                            <div className="flex gap-2 mt-2 flex-wrap">
+                                              {v.references.slice(0, 2).map((ref: string, ri: number) => (
+                                                <a key={ri} href={ref} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Reference →</a>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card className="border-emerald-500/30 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700">No known vulnerabilities found in your dependencies!</p>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </>
+                            )}
+
+                            {/* API Security results */}
+                            {activeModule === "api" && (
+                              <>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className={`text-2xl font-bold ${(scanResults.securityScore || 0) >= 7 ? "text-emerald-500" : (scanResults.securityScore || 0) >= 4 ? "text-amber-500" : "text-red-500"}`}>
+                                      {scanResults.securityScore?.toFixed(1) || "—"}/10
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">Security Score</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold">{scanResults.statusCode || "—"}</div>
+                                    <div className="text-xs text-muted-foreground">HTTP Status</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold">{scanResults.owaspCoverage?.length || 0}</div>
+                                    <div className="text-xs text-muted-foreground">OWASP Checks</div>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">URL: {scanResults.url} • {scanResults.mode} mode</p>
+                                {scanResults.headerResults?.length > 0 && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold mb-2">Security Headers</h4>
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                      {scanResults.headerResults.map((h: any, idx: number) => (
+                                        <div key={idx} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2">
+                                          <div className="flex items-center gap-2">
+                                            {h.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : h.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                                            <span className="font-mono text-xs">{h.name}</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground max-w-[50%] truncate">{h.message}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {scanResults.apiChecks?.length > 0 && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold mb-2">OWASP API Top 10 Checks</h4>
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                      {scanResults.apiChecks.map((c: any, idx: number) => (
+                                        <div key={idx} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2">
+                                          <div className="flex items-center gap-2">
+                                            {c.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : c.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                                            <span className="text-xs">{c.name}</span>
+                                            {c.owasp && <Badge variant="secondary" className="text-[8px]">{c.owasp}</Badge>}
+                                          </div>
+                                          <span className="text-xs text-muted-foreground max-w-[40%] truncate">{c.detail}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* Cloud Security results */}
+                            {activeModule === "cloud" && (
+                              <>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className={`text-2xl font-bold ${(scanResults.score || 0) >= 7 ? "text-emerald-500" : (scanResults.score || 0) >= 4 ? "text-amber-500" : "text-red-500"}`}>
+                                      {scanResults.score?.toFixed(1) || "—"}/10
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">Security Score</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-emerald-500/20">
+                                    <div className="text-2xl font-bold text-emerald-500">{scanResults.stats?.passed || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Passed</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.failed || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Failed</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.warnings || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Warnings</div>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{scanResults.checksPerformed} checks performed • {scanResults.mode} mode</p>
+                                {scanResults.checks?.length > 0 && (
+                                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.checks.map((c: any, idx: number) => (
+                                      <div key={idx} className={`flex items-center justify-between text-sm border rounded-lg px-3 py-2 ${c.status === "fail" ? "border-red-500/20 bg-red-500/5" : c.status === "warn" ? "border-amber-500/20 bg-amber-500/5" : ""}`}>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          {c.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> : c.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" /> : <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
+                                          <div className="min-w-0">
+                                            <span className="text-xs font-medium block">{c.name}</span>
+                                            <span className="text-xs text-muted-foreground block truncate">{c.detail}</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          <Badge variant="secondary" className="text-[8px]">{c.category}</Badge>
+                                          <Badge variant={c.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize">{c.severity}</Badge>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </motion.div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })()}
+            </AnimatePresence>
           </TabsContent>
 
           <TabsContent value="history">
@@ -399,6 +822,20 @@ export default function ShieldXWorkspacePage() {
                       <Button size="sm" variant="ghost" className="gap-1.5">Documentation <ArrowRight className="h-3.5 w-3.5" /></Button>
                     </Link>
                   </div>
+                  {isAdmin && (
+                    <div className="pt-4 border-t mt-4">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Admin: Change Plan</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {(["free", "pro", "enterprise"] as PlanTier[]).map((p) => (
+                          <Button key={p} size="sm" variant={userPlan === p ? "default" : "outline"} disabled={upgradingPlan || userPlan === p}
+                            onClick={() => adminUpgradePlan(p)} className="capitalize text-xs">
+                            {upgradingPlan ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}{p}
+                          </Button>
+                        ))}
+                      </div>
+                      {planMessage && <p className="text-xs mt-2 text-emerald-600">{planMessage}</p>}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
