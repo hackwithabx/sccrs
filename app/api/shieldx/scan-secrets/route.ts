@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
+import { getShieldXSessionUser } from "@/lib/shieldx-access";
 import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
@@ -183,7 +184,6 @@ export async function POST(request: NextRequest) {
     const sessionUser = user;
     if (!sessionUser) {
       // Fall back to session-based auth for free users
-      const { getShieldXSessionUser } = await import("@/lib/shieldx-access");
       const freeUser = await getShieldXSessionUser(request);
       if (!freeUser) {
         return NextResponse.json({ error: "Authentication required" }, { status: 401 });
