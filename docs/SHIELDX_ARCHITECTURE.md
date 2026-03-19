@@ -30,6 +30,7 @@
 11. [Deployment Architecture](#11-deployment-architecture)
 12. [CI/CD Integration Guide](#12-cicd-integration-guide)
 13. [Security Hardening](#13-security-hardening)
+14. [Known Limitations & Technical Boundaries](#14-known-limitations--technical-boundaries)
 
 ---
 
@@ -349,17 +350,55 @@ const BLOCKED_PATTERNS = [
 
 ### 4.5 Threat Log Analyzer
 
-**Status:** UI module available, scanning logic in workspace  
-**Plan Access:** Pro, Enterprise
+**API Endpoint:** `POST /api/shieldx/scan-logs`  
+**File:** `app/api/shieldx/scan-logs/route.ts`  
+**Plan Access:** Pro, Enterprise  
+**Input Limit:** 1 MB  
+**Demo:** Available (pre-loaded security-incident log sample)
 
-Analyzes pasted application/server logs for security threat patterns:
-- Brute force attacks (multiple failed logins from same source)
-- SQL injection patterns in request logs
-- XSS payload detection
-- Off-hours suspicious activity (00:00-05:59)
-- Privilege escalation indicators
-- Data exfiltration patterns (curl, wget to external IPs)
-- Error rate spikes
+#### How It Works
+
+Analyzes pasted server/application/access logs against 11 threat detection patterns:
+
+| # | Pattern | Severity | Detection Method |
+|---|---------|----------|-----------------|
+| 1 | Brute Force Attack | Critical | 5+ failed logins, IP clustering |
+| 2 | SQL Injection Attempt | Critical | UNION SELECT, OR 1=1, SLEEP() |
+| 3 | Command Injection | Critical | Shell metacharacters (;cat, \|whoami, backtick) |
+| 4 | Privilege Escalation | Critical | sudo, role changes, setuid |
+| 5 | XSS Attempt | High | `<script>`, javascript:, onerror= |
+| 6 | Path Traversal | High | ../../etc/passwd, directory sequences |
+| 7 | Data Exfiltration | High | mysqldump, curl\|sh, cloud uploads |
+| 8 | Sensitive Data in Logs | High | Passwords, credit cards, bearer tokens |
+| 9 | High-Frequency IP | Medium | IPs with >30% of total requests |
+| 10 | Error Rate Spike | Medium | 500/502/503/504 errors >20% rate |
+| 11 | Off-Hours Activity | Low | Activity between 00:00–05:59 |
+
+#### Request / Response
+```json
+// Request
+{ "logs": "2026-03-20 02:14:33 [INFO] ... POST /api/login - 401 Unauthorized ..." }
+
+// Response
+{
+  "mode": "paid",
+  "findings": [
+    {
+      "patternId": "brute-force",
+      "name": "Brute Force Attack",
+      "category": "Authentication",
+      "severity": "critical",
+      "evidence": ["192.168.1.105 - POST /api/login - 401 Unauthorized ..."],
+      "count": 6,
+      "detail": "6 failed login attempts from IP 192.168.1.105",
+      "remediation": "Implement account lockout after 5 failed attempts..."
+    }
+  ],
+  "stats": { "critical": 2, "high": 3, "medium": 1, "low": 0, "total": 6 },
+  "totalLines": 35,
+  "patternsChecked": 11
+}
+```
 
 ---
 
@@ -945,6 +984,7 @@ app/api/shieldx/
 ├── scan-deps/route.ts        # Dependency scanner API
 ├── scan-api/route.ts         # API security scanner API
 ├── scan-cloud/route.ts       # Cloud security audit API
+├── scan-logs/route.ts        # Threat log analyzer API
 ├── ci-scan/route.ts          # CI/CD pipeline scan API
 ├── history/route.ts          # Scan history API
 ├── api-key/route.ts          # API key management
@@ -978,6 +1018,41 @@ models/
 ├── ShieldXAlertConfig.ts     # Alert configuration
 └── ShieldXBillingEvent.ts    # Billing audit log
 ```
+
+---
+
+## 14. Known Limitations & Technical Boundaries
+
+ShieldX is a real, production-grade scanning platform. Below are honest technical boundaries that clients should be aware of.
+
+### Scanning Methodology
+
+| Module | Method | What This Means |
+|--------|--------|----------------|
+| Secrets Scanner | Regex matching + Shannon entropy | Detects patterns from a curated list of 20+ secret formats. May miss novel or custom credential formats not in the pattern set. Not AST/semantic analysis. |
+| Dependency Scanner | Live API calls to OSV.dev | Real CVE database queries. Only detects vulnerabilities that exist in the OSV.dev database. Does not perform reachability analysis (cannot tell if a vulnerable function is actually called in your code). |
+| API Security Scanner | Real HTTP GET + OPTIONS requests | Tests publicly accessible endpoints only. Cannot test authenticated endpoints requiring login. Cannot detect business logic flaws. |
+| Cloud Security Audit | Pattern matching on config text | Analyzes Terraform/CloudFormation syntax. Does not connect to actual AWS/Azure/GCP APIs — cannot detect runtime misconfigurations not reflected in code. |
+| Threat Log Analyzer | Regex pattern detection (11 patterns) | Detects common attack signatures in log text. Not a SIEM or ML-based anomaly detection system. May miss zero-day or novel attack patterns. |
+| CI/CD Pipeline Gate | Runs secrets + deps scans on submitted code | Same limitations as individual scanners apply. |
+
+### Infrastructure Boundaries
+
+| Limitation | Details | Mitigation |
+|-----------|---------|------------|
+| **In-memory rate limiter** | Resets on serverless cold starts (Vercel) | Sufficient for current scale. Redis migration planned for higher volume. |
+| **No distributed caching** | Scan results are not cached between requests | Each scan is fresh — ensures current results but adds latency. |
+| **Alert delivery — no retry** | If email/Slack/webhook delivery fails, it is not retried | Configure multiple alert channels for redundancy. |
+| **API key — no scopes** | API keys grant full access to all scan endpoints | Planned: per-endpoint scopes and read-only keys. |
+| **Single API key per user** | Users can only have one active API key | Regenerate key to rotate. Multiple keys planned. |
+
+### What ShieldX Is NOT
+
+- **Not a SAST tool** — Does not perform static analysis on compiled code or parse abstract syntax trees
+- **Not a DAST tool** — Does not crawl web applications or test for runtime vulnerabilities
+- **Not a SIEM** — Log analyzer is pattern-based, not behavioral/ML-based
+- **Not a compliance certifier** — Helps with OWASP/CIS alignment but does not issue compliance certificates
+- **Not a WAF** — Detects issues but does not block traffic
 
 ---
 

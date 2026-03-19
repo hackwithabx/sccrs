@@ -103,12 +103,13 @@ export default function ShieldXWorkspacePage() {
   const [planMessage, setPlanMessage] = useState<string | null>(null);
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
 
-  const userPlan: PlanTier =
-    (billingState?.plan as PlanTier) ||
-    ((session?.user as { shieldxPlan?: PlanTier } | undefined)?.shieldxPlan) ||
-    "free";
+  const userPlan: PlanTier = isAdmin
+    ? "enterprise"
+    : (billingState?.plan as PlanTier) ||
+      ((session?.user as { shieldxPlan?: PlanTier } | undefined)?.shieldxPlan) ||
+      "free";
 
-  const isPaid = userPlan === "pro" || userPlan === "enterprise";
+  const isPaid = isAdmin || userPlan === "pro" || userPlan === "enterprise";
 
   const loadBillingState = useCallback(async () => {
     if (!session) { setLoadingBilling(false); return; }
@@ -194,6 +195,10 @@ export default function ShieldXWorkspacePage() {
           endpoint = "/api/shieldx/scan-cloud";
           payload = isDemo ? { demo: true } : { config: scanInput };
           break;
+        case "logs":
+          endpoint = "/api/shieldx/scan-logs";
+          payload = isDemo ? { demo: true } : { logs: scanInput };
+          break;
         default:
           setScanError(`The ${mod.name} module is coming soon.`);
           setScanning(false);
@@ -214,10 +219,105 @@ export default function ShieldXWorkspacePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Scan failed");
       setScanResults(data);
+
+      // Auto-save to history for paid plans
+      if (isPaid && data && !isDemo) {
+        try {
+          const historyPayload = buildHistoryPayload(activeModule, data, scanInput);
+          if (historyPayload) {
+            await fetch("/api/shieldx/history", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(historyPayload),
+            });
+            void loadScanHistory();
+          }
+        } catch { /* silent — don't block UI */ }
+      }
     } catch (err) {
       setScanError(err instanceof Error ? err.message : "Scan failed");
     } finally {
       setScanning(false);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const buildHistoryPayload = (scanType: string, data: any, input: string) => {
+    const target = scanType === "api" ? input : `${scanType} scan`;
+    const title = `${MODULES.find(m => m.id === scanType)?.name || scanType} — ${new Date().toLocaleString()}`;
+
+    switch (scanType) {
+      case "secrets": {
+        const findings = (data.findings || []).map((f: any) => ({
+          category: "Secrets", status: f.confidence === "high" ? "fail" : "warn",
+          finding: `${f.name} at line ${f.line}`, recommendation: f.remediation, severity: f.confidence === "high" ? "high" : "medium",
+        }));
+        return {
+          scanType: "secrets", title, source: "manual", status: "completed", target,
+          overallScore: Math.max(0, 10 - (data.stats?.high || 0) * 2 - (data.stats?.medium || 0)),
+          summary: `Found ${data.stats?.total || 0} secrets across ${data.totalLines || 0} lines`,
+          counts: { critical: 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.stats?.total || 0 },
+          findings,
+        };
+      }
+      case "deps": {
+        const findings = (data.vulnerabilities || []).map((v: any) => ({
+          category: "Dependencies", status: v.severity === "critical" || v.severity === "high" ? "fail" : "warn",
+          finding: `${v.package}@${v.version}: ${v.summary}`, recommendation: v.fixedIn ? `Upgrade to ${v.fixedIn}` : "Check advisory", severity: v.severity,
+        }));
+        return {
+          scanType: "deps", title, source: "manual", status: "completed", target,
+          overallScore: Math.max(0, 10 - (data.stats?.critical || 0) * 3 - (data.stats?.high || 0) * 2 - (data.stats?.medium || 0)),
+          summary: `Scanned ${data.totalDependencies || 0} dependencies, found ${data.vulnerabilities?.length || 0} vulnerabilities`,
+          counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.vulnerabilities?.length || 0 },
+          findings,
+        };
+      }
+      case "api": {
+        const allChecks = [...(data.headerResults || []), ...(data.apiChecks || [])];
+        const findings = allChecks.filter((c: any) => c.status !== "pass").map((c: any) => ({
+          category: "API Security", status: c.status === "fail" ? "fail" : "warn",
+          finding: `${c.name}: ${c.message || c.detail}`, recommendation: c.recommendation || "Review security configuration",
+          severity: c.status === "fail" ? "high" : "medium",
+        }));
+        const failCount = findings.filter((f: any) => f.status === "fail").length;
+        return {
+          scanType: "api", title, source: "manual", status: "completed", target: input,
+          overallScore: data.securityScore || 0,
+          summary: `API security score: ${data.securityScore?.toFixed(1)}/10. ${allChecks.length} checks performed.`,
+          counts: { critical: 0, high: failCount, medium: findings.length - failCount, low: 0, findingsTotal: findings.length },
+          findings,
+        };
+      }
+      case "cloud": {
+        const findings = (data.checks || []).filter((c: any) => c.status !== "pass").map((c: any) => ({
+          category: c.category || "Cloud", status: c.status,
+          finding: `${c.name}: ${c.detail}`, recommendation: c.recommendation || "Review cloud configuration",
+          severity: c.severity || "medium",
+        }));
+        return {
+          scanType: "cloud", title, source: "manual", status: "completed", target,
+          overallScore: data.score || 0,
+          summary: `Cloud security score: ${data.score?.toFixed(1)}/10. ${data.checksPerformed || 0} checks.`,
+          counts: { critical: (data.checks||[]).filter((c:any)=>c.severity==="critical"&&c.status==="fail").length, high: (data.checks||[]).filter((c:any)=>c.severity==="high"&&c.status==="fail").length, medium: (data.checks||[]).filter((c:any)=>c.severity==="medium"&&c.status!=="pass").length, low: 0, findingsTotal: findings.length },
+          findings,
+        };
+      }
+      case "logs": {
+        const findings = (data.findings || []).map((f: any) => ({
+          category: f.category || "Logs", status: f.severity === "critical" || f.severity === "high" ? "fail" : "warn",
+          finding: `${f.name}: ${f.detail}`, recommendation: f.remediation,
+          severity: f.severity,
+        }));
+        return {
+          scanType: "logs", title, source: "manual", status: "completed", target,
+          overallScore: Math.max(0, 10 - (data.stats?.critical || 0) * 3 - (data.stats?.high || 0) * 2 - (data.stats?.medium || 0)),
+          summary: `Analyzed ${data.totalLines || 0} log lines. ${data.stats?.total || 0} threats detected.`,
+          counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.stats?.total || 0 },
+          findings,
+        };
+      }
+      default: return null;
     }
   };
 
@@ -231,6 +331,8 @@ export default function ShieldXWorkspacePage() {
         return { placeholder: "https://api.example.com/v1/health", label: "Target URL", type: "url" as const };
       case "cloud":
         return { placeholder: "Paste your Terraform, CloudFormation, or cloud config (JSON/YAML/HCL)...", label: "Cloud Configuration", type: "textarea" as const };
+      case "logs":
+        return { placeholder: "Paste your server logs, access logs, application logs, or audit logs here...\n\nExample:\n2026-03-20 02:14:33 [INFO] 192.168.1.105 - POST /api/login - 401 Unauthorized - Invalid credentials", label: "Log Data", type: "textarea" as const };
       default:
         return { placeholder: "", label: "Input", type: "textarea" as const };
     }
@@ -390,7 +492,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
@@ -437,7 +539,7 @@ export default function ShieldXWorkspacePage() {
 
             {/* ── Scan Panel ── */}
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -673,6 +775,70 @@ export default function ShieldXWorkspacePage() {
                                       ))}
                                     </div>
                                   </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* Logs Analyzer results */}
+                            {activeModule === "logs" && (
+                              <>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Threats Found</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Critical</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                    <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                    <div className="text-xs text-muted-foreground">High</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Medium</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Low</div>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{scanResults.patternsChecked} threat patterns checked across {scanResults.totalLines} log lines • {scanResults.mode} mode</p>
+                                {scanResults.findings?.length > 0 ? (
+                                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.findings.map((f: any, idx: number) => (
+                                      <Card key={idx} className={`${f.severity === "critical" ? "border-red-500/30" : f.severity === "high" ? "border-orange-500/30" : f.severity === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`}>
+                                        <CardContent className="p-4">
+                                          <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={f.severity === "critical" ? "destructive" : "secondary"} className="text-[10px] capitalize">{f.severity}</Badge>
+                                              <span className="font-medium text-sm">{f.name}</span>
+                                            </div>
+                                            <Badge variant="secondary" className="text-[10px] shrink-0">{f.category}</Badge>
+                                          </div>
+                                          <p className="text-sm text-muted-foreground mb-2">{f.detail}</p>
+                                          <div className="text-xs text-muted-foreground mb-2">{f.count} occurrence(s)</div>
+                                          {f.evidence?.length > 0 && (
+                                            <div className="bg-muted/50 rounded p-2 space-y-1 max-h-[120px] overflow-y-auto">
+                                              {f.evidence.slice(0, 3).map((e: string, ei: number) => (
+                                                <code key={ei} className="block text-[11px] font-mono break-all">{e}</code>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card className="border-emerald-500/30 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700">No threats detected — your logs look clean!</p>
+                                    </CardContent>
+                                  </Card>
                                 )}
                               </>
                             )}

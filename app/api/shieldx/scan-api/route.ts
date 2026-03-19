@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 import { enforceShieldXFeatureAccess, enforceShieldXScanLimit } from "@/lib/shieldx-route-auth";
-import { isFeatureEnabled } from "@/lib/feature-flags";
+import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 
@@ -415,26 +415,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Demo mode: enforce demo scan limits and restrict modules
-    if (demoMode) {
-      // Only allow demo users
-      if (authorizedUser && ["pro", "enterprise"].includes(authorizedUser.shieldxPlan)) {
-        return NextResponse.json(
-          { error: "Pro/Enterprise users should use the full scan endpoint" },
-          { status: 400 }
-        );
+    if (demoMode && !authorizedUser) {
+      // Limit demo scans
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const { allowed } = rateLimit(`scan-api-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+      if (!allowed) {
+        return NextResponse.json({ error: "Demo rate limit exceeded. Try again later." }, { status: 429 });
       }
-      // Limit demo scans (example: max 3 per user)
-      try {
-        enforceShieldXScanLimit(authorizedUser || {}, 1);
-      } catch (err) {
-        return NextResponse.json({ error: "Demo scan limit exceeded" }, { status: 403 });
-      }
-      // Restrict modules/features for demo
-      // Use feature flag check
-      if (!isFeatureEnabled("demo", "basic-modules")) {
-        return NextResponse.json({ error: "Demo access restricted to basic modules" }, { status: 403 });
-      }
-    } else {
+    } else if (authorizedUser) {
       // Paid users: enforce scan limits and feature access
       try {
         enforceShieldXFeatureAccess(authorizedUser, "api-security");

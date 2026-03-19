@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShieldX Security Platform — Client Presentation | SecureCodeReviews</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1e293b; background: #f8fafc; line-height: 1.6; }
+
+  /* ── Variables ── */
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #3b82f6;
+    --accent: #7c3aed;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --slide-width: 1024px;
+    --slide-height: 640px;
+  }
+
+  /* ── Print / PDF ── */
+  @media print {
+    body { background: white; }
+    .slide { page-break-after: always; box-shadow: none !important; border: none !important; margin: 0 auto !important; }
+    .slide:last-child { page-break-after: avoid; }
+    .nav-dots, .controls { display: none !important; }
+  }
+
+  /* ── Slide Container ── */
+  .deck { max-width: var(--slide-width); margin: 0 auto; padding: 20px; }
+
+  .slide {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    border: 1px solid var(--border);
+    padding: 48px 56px;
+    margin-bottom: 32px;
+    min-height: var(--slide-height);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Logo Header used on every slide ── */
+  .slide-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+  }
+  .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .logo-text .hl { color: var(--primary); }
+
+  .slide-number {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ── Footer on every slide ── */
+  .slide-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .slide-footer .copyright { font-weight: 500; }
+
+  /* ── Title Slide ── */
+  .slide.title-slide {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #7c3aed 100%);
+    color: white;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    padding: 64px;
+  }
+  .slide.title-slide .slide-header { border-bottom-color: rgba(255,255,255,0.2); }
+  .slide.title-slide .logo-text { color: white; }
+  .slide.title-slide .logo-text .hl { color: #93c5fd; }
+  .slide.title-slide .slide-number { color: rgba(255,255,255,0.6); }
+  .slide.title-slide .slide-footer { border-top-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); }
+
+  .title-slide h1 { font-size: 42px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; letter-spacing: -1px; }
+  .title-slide .subtitle { font-size: 20px; opacity: 0.9; margin-bottom: 32px; font-weight: 400; }
+  .title-slide .badge { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 500; backdrop-filter: blur(4px); }
+
+  /* ── Section Title Slide ── */
+  .slide.section-slide {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8edff 100%);
+    justify-content: center;
+  }
+  .section-slide h2 { font-size: 36px; font-weight: 700; color: var(--primary-dark); margin-bottom: 12px; }
+  .section-slide p { font-size: 18px; color: var(--text-muted); max-width: 600px; }
+
+  /* ── Content typography ── */
+  h2 { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 20px; }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  p { font-size: 15px; color: var(--text-muted); margin-bottom: 12px; }
+  .slide-content { flex: 1; }
+
+  /* ── Grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card.highlight { border-color: var(--primary); background: #eff6ff; }
+  .card-icon {
+    width: 40px; height: 40px;
+    background: #eff6ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    color: var(--primary);
+    font-size: 20px;
+  }
+  .card h4 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .card p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+  /* ── Lists ── */
+  ul { list-style: none; padding: 0; }
+  ul li { position: relative; padding-left: 24px; margin-bottom: 10px; font-size: 15px; color: #334155; }
+  ul li::before { content: '✓'; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+  .numbered li::before { content: none; }
+  .numbered li { counter-increment: step; }
+  .numbered { counter-reset: step; }
+  .numbered li::before { content: counter(step); position: absolute; left: 0; background: var(--primary); color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  /* ── Tags & Badges ── */
+  .tag { display: inline-block; background: #eff6ff; color: var(--primary); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; margin-right: 6px; margin-bottom: 4px; }
+  .tag.pro { background: #f5f3ff; color: var(--accent); }
+  .tag.ent { background: #fef3c7; color: #92400e; }
+  .tag.free { background: #ecfdf5; color: var(--success); }
+  .tag.severity-critical { background: #fef2f2; color: var(--danger); }
+  .tag.severity-high { background: #fff7ed; color: #c2410c; }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f1f5f9; color: var(--text); font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: #334155; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── Stats ── */
+  .stat-box {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .stat-box .num { font-size: 36px; font-weight: 800; color: var(--primary); line-height: 1; }
+  .stat-box .label { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+
+  /* ── Step flow ── */
+  .step-flow { display: flex; align-items: center; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+  .step-item {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 14px 18px;
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+  }
+  .step-item .step-num { font-size: 11px; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .step-item .step-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .step-arrow { font-size: 20px; color: var(--primary); font-weight: 700; }
+
+  /* ── Confidential watermark ── */
+  .confidential {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── SVG Icons ── */
+  .icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .icon-lg { width: 48px; height: 48px; }
+  .icon-sm { width: 16px; height: 16px; }
+
+  /* ── Highlight box ── */
+  .highlight-box { background: #eff6ff; border-left: 4px solid var(--primary); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .highlight-box p { margin: 0; font-size: 14px; color: #1e40af; }
+
+  .warning-box { background: #fffbeb; border-left: 4px solid var(--warning); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .warning-box p { margin: 0; font-size: 14px; color: #92400e; }
+
+  /* ── Screenshot placeholder ── */
+  .screenshot {
+    background: linear-gradient(135deg, #f0f4ff, #e8edff);
+    border: 2px dashed #bfdbfe;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    color: var(--primary);
+    font-size: 14px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 1 — Title
+     ════════════════════════════════════════════════════ -->
+<div class="slide title-slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">CONFIDENTIAL</span>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+    <div class="badge" style="margin-bottom: 24px;">🛡️ Product Overview — March 2026</div>
+    <h1>ShieldX<br>Security Platform</h1>
+    <p class="subtitle">All-in-one application security for development teams.<br>Find secrets, vulnerabilities, and misconfigurations in 60 seconds.</p>
+    <p style="font-size:14px;opacity:0.7;">securecodereviews.com/shieldx</p>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>Proprietary & Confidential</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 2 — The Problem
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">02 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>The Problem: Security Is Broken for Dev Teams</h2>
+    <div class="grid-2" style="margin-top: 16px;">
+      <div>
+        <h3 style="color:var(--danger);">❌ Today's Reality</h3>
+        <ul style="list-style:none;padding:0;">
+          <li style="padding-left:24px;">
+            <span style="position:absolute;left:0;color:var(--danger);">✗</span>
+            5+ separate security tools (Snyk, SonarQube, Checkov, etc.)
+          </li>
+          <li style="padding-left:24px;">
+            <span style="position:absolute;left:0;color:var(--danger);">✗</span>
+            $50K–$200K/year enterprise security budgets
+          </li>
+          <li style="padding-left:24px;">
+            <span style="position:absolute;left:0;color:var(--danger);">✗</span>
+            Weeks to set up, train, and integrate
+          </li>
+          <li style="padding-left:24px;">
+            <span style="position:absolute;left:0;color:var(--danger);">✗</span>
+            Developers avoid security — too complex
+          </li>
+          <li style="padding-left:24px;">
+            <span style="position:absolute;left:0;color:var(--danger);">✗</span>
+            90% of breaches from known vulnerabilities
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--success);">✓ With ShieldX</h3>
+        <ul>
+          <li>One platform, 8 security modules</li>
+          <li>Affordable plans for startups & enterprises</li>
+          <li>60-second scan workflow — no setup required</li>
+          <li>Built for developers, not security PhDs</li>
+          <li>Real vulnerability data from OSV.dev + OWASP</li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight-box" style="margin-top:20px;">
+      <p><strong>Key Insight:</strong> 68% of startups have zero application security tooling. ShieldX fills this gap at a fraction of enterprise pricing.</p>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 3 — Platform Overview
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">03 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>ShieldX Platform Overview</h2>
+    <p>8 integrated security modules in a single dashboard — no context switching, no tool sprawl.</p>
+    <div class="grid-4" style="margin-top: 20px;">
+      <div class="card">
+        <div class="card-icon">🔑</div>
+        <h4>Secrets Scanner</h4>
+        <p>20+ patterns with Shannon entropy analysis</p>
+        <span class="tag free">Free</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h4>Dependency Audit</h4>
+        <p>Live CVE lookup via OSV.dev database</p>
+        <span class="tag pro">Pro</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <h4>API Scanner</h4>
+        <p>OWASP API Top 10 2023 compliance</p>
+        <span class="tag pro">Pro</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">☁️</div>
+        <h4>Cloud Audit</h4>
+        <p>18 AWS/GCP/Azure security checks</p>
+        <span class="tag pro">Pro</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧠</div>
+        <h4>Log Analyzer</h4>
+        <p>11 threat patterns: brute force, SQLi, XSS</p>
+        <span class="tag pro">Pro</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔗</div>
+        <h4>CI/CD Gate</h4>
+        <p>GitHub Actions & GitLab CI integration</p>
+        <span class="tag ent">Enterprise</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔔</div>
+        <h4>Alert Rules</h4>
+        <p>Email, Slack, and webhook notifications</p>
+        <span class="tag pro">Pro</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h4>Security Score</h4>
+        <p>Unified 0–10 score with trend tracking</p>
+        <span class="tag free">Free</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 4 — How It Works
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">04 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>How It Works — 3 Simple Steps</h2>
+    <p>No installation. No CLI. No configuration files. Just scan.</p>
+    <div class="step-flow" style="margin: 32px 0;">
+      <div class="step-item">
+        <div class="step-num">Step 1</div>
+        <div class="step-label">Sign Up & Log In</div>
+        <p style="font-size:12px;margin-top:6px;">Create a free account at securecodereviews.com</p>
+      </div>
+      <span class="step-arrow">→</span>
+      <div class="step-item">
+        <div class="step-num">Step 2</div>
+        <div class="step-label">Paste & Scan</div>
+        <p style="font-size:12px;margin-top:6px;">Paste code, configs, URLs, or logs into the scanner</p>
+      </div>
+      <span class="step-arrow">→</span>
+      <div class="step-item">
+        <div class="step-num">Step 3</div>
+        <div class="step-label">Review & Fix</div>
+        <p style="font-size:12px;margin-top:6px;">Get actionable findings with remediation advice</p>
+      </div>
+    </div>
+    <div class="highlight-box">
+      <p><strong>Zero Code Storage:</strong> Your source code is never stored on our servers. Scans happen in-memory and results are returned directly to your browser.</p>
+    </div>
+    <div style="margin-top: 20px;">
+      <h3>Also Available Via API & CI/CD</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>REST API</h4>
+          <p>Generate an API key from the dashboard. Use cURL or any HTTP client to scan programmatically.</p>
+          <code style="font-size:12px;color:var(--primary);display:block;margin-top:8px;background:#f1f5f9;padding:8px;border-radius:6px;">
+            curl -X POST https://securecodereviews.com/api/shieldx/scan-secrets \<br>
+            &nbsp; -H "x-shieldx-api-key: shx_prod_..." \<br>
+            &nbsp; -d '{"code": "..."}'
+          </code>
+        </div>
+        <div class="card">
+          <h4>CI/CD Pipeline Gate</h4>
+          <p>Add ShieldX to your GitHub Actions or GitLab CI. Fail builds when critical vulnerabilities are found.</p>
+          <code style="font-size:12px;color:var(--primary);display:block;margin-top:8px;background:#f1f5f9;padding:8px;border-radius:6px;">
+            # github-actions.yml<br>
+            - name: ShieldX Scan<br>
+            &nbsp; run: |<br>
+            &nbsp;&nbsp;&nbsp; curl -X POST .../api/shieldx/ci-scan
+          </code>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 5 — Secrets Scanner Deep Dive
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">05 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>🔑 Module 1: Secrets Scanner</h2>
+    <p>Detect hardcoded credentials, API keys, and tokens before they reach production.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>How to Use</h3>
+        <ul class="numbered">
+          <li>Navigate to <strong>ShieldX → Modules</strong></li>
+          <li>Click <strong>"Open Scanner"</strong> on the Secrets Scanner card</li>
+          <li>Paste your source code, .env files, config files, or any text</li>
+          <li>Click <strong>"Run Scan"</strong></li>
+          <li>Review findings with confidence levels (High / Medium / Low)</li>
+        </ul>
+        <div class="warning-box" style="margin-top: 12px;">
+          <p><strong>Demo users:</strong> Click "Run Demo Scan" to see sample results with a pre-loaded .env file without pasting any code.</p>
+        </div>
+      </div>
+      <div>
+        <h3>What It Detects (20+ Patterns)</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          <span class="tag severity-critical">AWS Access Keys</span>
+          <span class="tag severity-critical">GitHub Tokens</span>
+          <span class="tag severity-critical">Private Keys (RSA/EC/PGP)</span>
+          <span class="tag severity-high">Stripe API Keys</span>
+          <span class="tag severity-high">Slack Tokens</span>
+          <span class="tag severity-high">Google API Keys</span>
+          <span class="tag severity-high">JWT Tokens</span>
+          <span class="tag">npm Tokens</span>
+          <span class="tag">Database Connection Strings</span>
+          <span class="tag">Docker Registry Auth</span>
+          <span class="tag">SendGrid / Twilio / Mailgun</span>
+          <span class="tag">Generic Passwords in Code</span>
+          <span class="tag">Internal IP Addresses</span>
+        </div>
+        <h3 style="margin-top: 16px;">Confidence Scoring</h3>
+        <p>Uses <strong>Shannon entropy analysis</strong> to reduce false positives. High-entropy strings (random-looking) get higher confidence scores. Placeholder values (test_, example_, dummy) are automatically filtered out.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 6 — Dependency Scanner Deep Dive
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">06 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>📦 Module 2: Dependency Scanner</h2>
+    <p>Real-time CVE vulnerability detection using the OSV.dev open vulnerability database.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>How to Use</h3>
+        <ul class="numbered">
+          <li>Open <strong>Dependency Scanner</strong> from the Modules tab</li>
+          <li>Paste your <strong>package.json</strong>, <strong>requirements.txt</strong>, <strong>go.mod</strong>, or <strong>build.gradle</strong></li>
+          <li>Click <strong>"Run Scan"</strong></li>
+          <li>Review CVE findings with severity, fix versions, and advisory links</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Supported Ecosystems</h3>
+        <table>
+          <tr><th>Ecosystem</th><th>File Format</th></tr>
+          <tr><td>npm (Node.js)</td><td>package.json</td></tr>
+          <tr><td>PyPI (Python)</td><td>requirements.txt</td></tr>
+          <tr><td>Go Modules</td><td>go.mod</td></tr>
+          <tr><td>Gradle (Java)</td><td>build.gradle</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 20px;">
+      <p><strong>Live Database:</strong> Every scan makes real API calls to <a href="https://osv.dev" style="color:var(--primary);">OSV.dev</a> — Google's open-source vulnerability database with 40,000+ CVEs. Results are always current, never cached.</p>
+    </div>
+
+    <h3 style="margin-top: 16px;">What You Get in Results</h3>
+    <div class="grid-4">
+      <div class="stat-box"><div class="num" style="font-size:18px;">CVE-ID</div><div class="label">Advisory identifier</div></div>
+      <div class="stat-box"><div class="num" style="font-size:18px;color:var(--danger);">Severity</div><div class="label">Critical / High / Medium / Low</div></div>
+      <div class="stat-box"><div class="num" style="font-size:18px;color:var(--success);">Fix Version</div><div class="label">Exact upgrade target</div></div>
+      <div class="stat-box"><div class="num" style="font-size:18px;">References</div><div class="label">Links to advisories</div></div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 7 — API Security Scanner Deep Dive
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">07 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>🌐 Module 3: API Security Scanner</h2>
+    <p>OWASP API Security Top 10 (2023) compliance testing for any publicly accessible API endpoint.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>How to Use</h3>
+        <ul class="numbered">
+          <li>Open <strong>API Security Scanner</strong> from the Modules tab</li>
+          <li>Enter the <strong>target URL</strong> (e.g., https://api.yourcompany.com/v1/health)</li>
+          <li>Click <strong>"Run Scan"</strong></li>
+          <li>Review security headers, CORS, auth, and OWASP compliance</li>
+        </ul>
+        <div class="warning-box" style="margin-top: 12px;">
+          <p><strong>Note:</strong> Only scan APIs that you own or have written permission to test. The scanner makes real HTTP requests to the target.</p>
+        </div>
+      </div>
+      <div>
+        <h3>What Gets Tested</h3>
+        <ul>
+          <li><strong>Security Headers</strong> — X-Content-Type-Options, X-Frame-Options, HSTS, CSP, Referrer-Policy</li>
+          <li><strong>CORS Policy</strong> — Access-Control-Allow-Origin, credentials handling</li>
+          <li><strong>Authentication</strong> — Auth header requirements, exposed endpoints</li>
+          <li><strong>Server Info Leak</strong> — Server header, X-Powered-By exposure</li>
+          <li><strong>OWASP API Top 10</strong> — Broken Object Level Auth, Broken Authentication, Excessive Data Exposure, and more</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 16px;">Security Score</h3>
+    <p>Each API gets a <strong>0–10 security score</strong> based on weighted pass/fail results. A score of 7+ indicates good security posture. Below 4 requires immediate attention.</p>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 8 — Cloud Security Audit Deep Dive
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">08 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>☁️ Module 4: Cloud Security Audit</h2>
+    <p>18-point security audit for AWS, Azure, and GCP infrastructure-as-code configurations.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>How to Use</h3>
+        <ul class="numbered">
+          <li>Open <strong>Cloud Security Audit</strong> from Modules</li>
+          <li>Paste your <strong>Terraform (.tf)</strong>, <strong>CloudFormation (YAML/JSON)</strong>, or cloud configuration</li>
+          <li>Click <strong>"Run Scan"</strong></li>
+          <li>Review pass/fail checks across 6 security categories</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Security Categories (18 Checks)</h3>
+        <table>
+          <tr><td>🔐</td><td><strong>IAM & Access</strong></td><td>Root MFA, wildcard policies, overpermission</td></tr>
+          <tr><td>🔒</td><td><strong>Encryption</strong></td><td>At-rest & in-transit encryption, key management</td></tr>
+          <tr><td>🌐</td><td><strong>Network</strong></td><td>Open ports, security groups, VPC config</td></tr>
+          <tr><td>📝</td><td><strong>Logging</strong></td><td>CloudTrail, access logging, audit trails</td></tr>
+          <tr><td>📁</td><td><strong>Storage</strong></td><td>Public S3 buckets, versioning, lifecycle</td></tr>
+          <tr><td>🖥️</td><td><strong>Compute</strong></td><td>Hardcoded creds, instance roles, key exposure</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 16px;">Score Breakdown</h3>
+    <p>Each check is pass/warn/fail with severity weighting. Critical failures deduct 1.5 points; high failures deduct 1.0; medium deduct 0.5. Score starts at 10.</p>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 9 — Threat Log Analyzer Deep Dive
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">09 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>🧠 Module 5: Threat Log Analyzer</h2>
+    <p>Analyze server, application, and access logs to detect active threats and security incidents.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>How to Use</h3>
+        <ul class="numbered">
+          <li>Open <strong>Threat Log Analyzer</strong> from Modules</li>
+          <li>Paste your server logs (Apache, Nginx, application logs, audit logs, etc.)</li>
+          <li>Click <strong>"Run Scan"</strong></li>
+          <li>Review detected threats with evidence lines, severity, and remediation</li>
+        </ul>
+      </div>
+      <div>
+        <h3>11 Threat Detection Patterns</h3>
+        <table>
+          <tr><td><span class="tag severity-critical">Critical</span></td><td>Brute Force Attacks</td></tr>
+          <tr><td><span class="tag severity-critical">Critical</span></td><td>SQL Injection Attempts</td></tr>
+          <tr><td><span class="tag severity-critical">Critical</span></td><td>Command Injection</td></tr>
+          <tr><td><span class="tag severity-critical">Critical</span></td><td>Privilege Escalation</td></tr>
+          <tr><td><span class="tag severity-high">High</span></td><td>XSS Attempts</td></tr>
+          <tr><td><span class="tag severity-high">High</span></td><td>Path Traversal</td></tr>
+          <tr><td><span class="tag severity-high">High</span></td><td>Data Exfiltration</td></tr>
+          <tr><td><span class="tag severity-high">High</span></td><td>Sensitive Data in Logs</td></tr>
+          <tr><td><span class="tag">Medium</span></td><td>High-Frequency IP Activity</td></tr>
+          <tr><td><span class="tag">Medium</span></td><td>Error Rate Spikes</td></tr>
+          <tr><td><span class="tag">Low</span></td><td>Off-Hours Access Activity</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 10 — CI/CD, Alerts, Score
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">10 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>More Modules: CI/CD, Alerts & Score</h2>
+    <div class="grid-3" style="margin-top: 20px;">
+      <div class="card">
+        <div class="card-icon">🔗</div>
+        <h4>CI/CD Pipeline Gate</h4>
+        <p style="margin-bottom: 12px;">Automate security scanning in your deployment pipeline.</p>
+        <ul class="numbered" style="font-size:13px;">
+          <li>Generate API key from Dashboard</li>
+          <li>Add cURL step to your CI/CD config</li>
+          <li>ShieldX runs secrets + deps scans</li>
+          <li>Pipeline passes or fails based on findings</li>
+        </ul>
+        <span class="tag ent" style="margin-top:8px;">Enterprise Only</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔔</div>
+        <h4>Alert System</h4>
+        <p style="margin-bottom: 12px;">Get notified when critical issues are found.</p>
+        <ul style="font-size:13px;">
+          <li><strong>Email</strong> — SMTP integration</li>
+          <li><strong>Slack</strong> — Webhook to any channel</li>
+          <li><strong>Custom Webhook</strong> — POST to any URL</li>
+          <li><strong>Threshold rules</strong> — Trigger on severity level</li>
+        </ul>
+        <span class="tag pro" style="margin-top:8px;">Pro+</span>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h4>Security Score & History</h4>
+        <p style="margin-bottom: 12px;">Track your security posture over time.</p>
+        <ul style="font-size:13px;">
+          <li>Unified <strong>0–10</strong> score per scan</li>
+          <li>Severity breakdown (Critical/High/Medium/Low)</li>
+          <li>Full scan history with timestamps</li>
+          <li>Average score tracking</li>
+          <li>Downloadable PDF reports</li>
+        </ul>
+        <span class="tag pro" style="margin-top:8px;">Pro+</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 11 — Scan Results Explained
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">11 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>Understanding Scan Results</h2>
+    <p>Every scan produces structured, actionable output.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>Result Components</h3>
+        <ul>
+          <li><strong>Security Score (0–10)</strong> — Overall security rating</li>
+          <li><strong>Severity Counts</strong> — Critical, High, Medium, Low breakdown</li>
+          <li><strong>Individual Findings</strong> — Each issue with context, evidence lines, and fix guidance</li>
+          <li><strong>Remediation</strong> — Specific steps to resolve each finding</li>
+          <li><strong>Scan Metadata</strong> — Timestamp, mode, patterns checked</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Severity Color Code</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:12px;height:12px;background:#dc2626;border-radius:50%;"></div>
+            <span style="font-size:14px;"><strong>Critical</strong> — Immediate action required. Active exploitation risk.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:12px;height:12px;background:#ea580c;border-radius:50%;"></div>
+            <span style="font-size:14px;"><strong>High</strong> — Fix within 24 hours. Significant security risk.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:12px;height:12px;background:#d97706;border-radius:50%;"></div>
+            <span style="font-size:14px;"><strong>Medium</strong> — Fix within 1 week. Moderate risk.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:12px;height:12px;background:#2563eb;border-radius:50%;"></div>
+            <span style="font-size:14px;"><strong>Low</strong> — Informational. Best practice improvement.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 20px;">Auto-Save to History</h3>
+    <p>All scan results from paid plans are automatically saved to your Scan History. You can review past scans, track trends, and compare security improvements over time.</p>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 12 — Plans & Pricing
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">12 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>Plans & Pricing</h2>
+    <p>Straightforward pricing. No hidden fees. Cancel anytime.</p>
+
+    <table style="margin-top: 20px;">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th><span class="tag free">Free</span></th>
+          <th><span class="tag pro">Pro</span></th>
+          <th><span class="tag ent">Enterprise</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Secrets Scanner</td><td>✓ (Demo)</td><td>✓ Full</td><td>✓ Full</td></tr>
+        <tr><td>Dependency Scanner</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><td>API Security Scanner</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Cloud Security Audit</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Threat Log Analyzer</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><td>CI/CD Pipeline Gate</td><td>—</td><td>—</td><td>✓</td></tr>
+        <tr><td>Alert System (Email/Slack/Webhook)</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Scan History & Reports</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><td>API Key Access</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Team Management (25+ seats)</td><td>—</td><td>—</td><td>✓</td></tr>
+        <tr><td>Scan Limit (monthly)</td><td>5</td><td>1,000</td><td>Unlimited</td></tr>
+        <tr><td>Priority Support</td><td>—</td><td>—</td><td>✓</td></tr>
+      </tbody>
+    </table>
+
+    <div class="highlight-box" style="margin-top: 20px;">
+      <p><strong>Try Before You Buy:</strong> Start with a free account and run demo scans on all basic modules. Upgrade to Pro when you're ready for full scans on your own code.</p>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 13 — Dashboard Walkthrough
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">13 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>Dashboard Walkthrough</h2>
+    <p>The ShieldX workspace has 3 tabs designed for efficiency.</p>
+
+    <div class="grid-3" style="margin-top: 24px;">
+      <div class="card highlight">
+        <h4>📋 Modules Tab</h4>
+        <p style="margin-bottom: 8px;">Your primary workspace. All 8 security modules displayed as cards.</p>
+        <ul style="font-size:12px;">
+          <li>Click any module to open its scanner</li>
+          <li>Paste input and run scans inline</li>
+          <li>Results appear below the scan panel</li>
+          <li>Demo users see "Run Demo Scan" button</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>📜 History Tab</h4>
+        <p style="margin-bottom: 8px;">View all past scans (Pro and Enterprise only).</p>
+        <ul style="font-size:12px;">
+          <li>Auto-saved after every paid scan</li>
+          <li>Score, severity, and timestamp per scan</li>
+          <li>Click to expand full findings</li>
+          <li>Track security improvements over time</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>📊 Overview Tab</h4>
+        <p style="margin-bottom: 8px;">Plan management and aggregate stats.</p>
+        <ul style="font-size:12px;">
+          <li>Current plan and billing status</li>
+          <li>Total scans and average score</li>
+          <li>Critical + high issue count</li>
+          <li>Quick links to docs and pricing</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 20px;">
+      <p><strong>Pro Tip:</strong> Use keyboard shortcuts — press the module card to expand, paste your code, and hit "Run Scan". Entire flow takes under 60 seconds.</p>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 14 — API Key & Automation
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">14 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>API Key & Programmatic Access</h2>
+    <p>Every Pro and Enterprise user gets a secure API key for automation.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>Generating Your API Key</h3>
+        <ul class="numbered">
+          <li>Navigate to <strong>Dashboard → Settings</strong></li>
+          <li>Click <strong>"Generate API Key"</strong></li>
+          <li>Copy and store the key securely (shown once)</li>
+          <li>Use the <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px;">x-shieldx-api-key</code> header in HTTP requests</li>
+        </ul>
+        <h3 style="margin-top: 16px;">Security</h3>
+        <ul style="font-size:13px;">
+          <li>Keys use <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px;">shx_prod_</code> prefix for identification</li>
+          <li>Keys are hashed with bcrypt before storage</li>
+          <li>Revocable at any time from the dashboard</li>
+          <li>One active key per user</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Example: Secrets Scan via API</h3>
+        <div style="background:#1e293b;color:#e2e8f0;border-radius:10px;padding:16px;font-family:monospace;font-size:12px;line-height:1.8;">
+          <span style="color:#94a3b8;"># Scan code for secrets</span><br>
+          curl -X POST \<br>
+          &nbsp; https://securecodereviews.com/api/shieldx/scan-secrets \<br>
+          &nbsp; -H "Content-Type: application/json" \<br>
+          &nbsp; -H "x-shieldx-api-key: shx_prod_abc123..." \<br>
+          &nbsp; -d '{"code": "AWS_KEY=AKIAIOSFODNN7EXAMPLE"}'
+        </div>
+        <h3 style="margin-top: 16px;">Available Endpoints</h3>
+        <table style="font-size:12px;">
+          <tr><td><code>/api/shieldx/scan-secrets</code></td><td>Secrets scan</td></tr>
+          <tr><td><code>/api/shieldx/scan-deps</code></td><td>Dependency scan</td></tr>
+          <tr><td><code>/api/shieldx/scan-api</code></td><td>API security scan</td></tr>
+          <tr><td><code>/api/shieldx/scan-cloud</code></td><td>Cloud audit</td></tr>
+          <tr><td><code>/api/shieldx/scan-logs</code></td><td>Log analysis</td></tr>
+          <tr><td><code>/api/shieldx/ci-scan</code></td><td>CI/CD gate</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 15 — Team Management (Enterprise)
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">15 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>👥 Enterprise: Team Management</h2>
+    <p>Manage your security team with role-based access and centralized billing.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>How It Works</h3>
+        <ul class="numbered">
+          <li>Enterprise admin creates a team</li>
+          <li>Generate <strong>invite tokens</strong> for team members</li>
+          <li>Members join using the invite link</li>
+          <li>All members inherit Enterprise plan features</li>
+          <li>Admin manages seats and roles</li>
+        </ul>
+        <h3 style="margin-top: 16px;">Roles</h3>
+        <table>
+          <tr><td><strong>Owner</strong></td><td>Full admin access, billing, seat management</td></tr>
+          <tr><td><strong>Admin</strong></td><td>Manage team settings and view all scans</td></tr>
+          <tr><td><strong>Member</strong></td><td>Run scans, view history, use API keys</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Seat Management</h3>
+        <div class="stat-box" style="margin-bottom: 12px;">
+          <div class="num">25+</div>
+          <div class="label">Team Seats Per Enterprise Plan</div>
+        </div>
+        <ul>
+          <li>Centralized billing — one subscription covers all seats</li>
+          <li>Add or remove members at any time</li>
+          <li>Each member gets their own scan history</li>
+          <li>Shared security score across the team</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 16 — Privacy & Security Architecture
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">16 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>🔒 Privacy & Security Architecture</h2>
+    <p>Your code never touches our disk. Here's how we keep it safe.</p>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3>What We Store</h3>
+        <table>
+          <tr><td style="color:var(--success);">✓ Stored</td><td>Scan results (scores, findings, severity counts)</td></tr>
+          <tr><td style="color:var(--success);">✓ Stored</td><td>User account data (email, name, plan)</td></tr>
+          <tr><td style="color:var(--success);">✓ Stored</td><td>Alert configurations</td></tr>
+          <tr><td style="color:var(--success);">✓ Stored</td><td>API key hashes (bcrypt)</td></tr>
+        </table>
+
+        <h3 style="margin-top: 16px;">What We Do NOT Store</h3>
+        <table>
+          <tr><td style="color:var(--danger);">✗ Never</td><td>Source code, config files, or log data</td></tr>
+          <tr><td style="color:var(--danger);">✗ Never</td><td>Passwords in plaintext</td></tr>
+          <tr><td style="color:var(--danger);">✗ Never</td><td>API keys in plaintext</td></tr>
+          <tr><td style="color:var(--danger);">✗ Never</td><td>Third-party telemetry or analytics</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Security Controls</h3>
+        <ul>
+          <li><strong>HTTPS Everywhere</strong> — TLS 1.3 for all connections</li>
+          <li><strong>JWT Authentication</strong> — Signed tokens, no session storage</li>
+          <li><strong>Rate Limiting</strong> — Per-IP and per-user limits on all endpoints</li>
+          <li><strong>Input Validation</strong> — Size limits: 50KB (free), 500KB (paid), 1MB (logs)</li>
+          <li><strong>SSRF Protection</strong> — Blocks scans targeting private/internal IPs</li>
+          <li><strong>CORS</strong> — Strict same-origin policy</li>
+          <li><strong>bcrypt Hashing</strong> — All passwords and API keys</li>
+          <li><strong>Webhook Verification</strong> — Razorpay webhooks use timingSafeEqual</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 17 — FAQ
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">17 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>Frequently Asked Questions</h2>
+
+    <div class="grid-2" style="margin-top: 20px;">
+      <div>
+        <h3 style="font-size:15px;">Q: Is my source code stored on your servers?</h3>
+        <p><strong>No.</strong> All scans happen in-memory. Your code is never written to disk or logged. Only scan results (scores, finding summaries) are stored.</p>
+
+        <h3 style="font-size:15px;margin-top:16px;">Q: Can ShieldX replace our existing security tools?</h3>
+        <p><strong>For many teams, yes.</strong> ShieldX covers secrets detection, dependency scanning, API testing, cloud auditing, and log analysis — that's typically 4–5 separate tools.</p>
+
+        <h3 style="font-size:15px;margin-top:16px;">Q: How accurate is the scanning?</h3>
+        <p>The secrets scanner uses regex + Shannon entropy to minimize false positives. Dependencies are checked against OSV.dev (Google's real CVE database). API scans make real HTTP requests to test your endpoints.</p>
+
+        <h3 style="font-size:15px;margin-top:16px;">Q: What happens if I cancel my plan?</h3>
+        <p>Your access continues until the end of the billing period. Scan history is retained. You can re-subscribe at any time.</p>
+      </div>
+      <div>
+        <h3 style="font-size:15px;">Q: Can I use ShieldX in my CI/CD pipeline?</h3>
+        <p><strong>Yes.</strong> Enterprise users get CI/CD pipeline gate integration. Generate an API key and add a cURL command to your GitHub Actions, GitLab CI, or Jenkins pipeline.</p>
+
+        <h3 style="font-size:15px;margin-top:16px;">Q: Does ShieldX scan private repositories?</h3>
+        <p>ShieldX doesn't connect to GitHub/GitLab directly. You paste code or use the API to submit code for scanning. This means it works with any repository, private or public.</p>
+
+        <h3 style="font-size:15px;margin-top:16px;">Q: What compliance standards does it help with?</h3>
+        <p>ShieldX helps with <strong>OWASP Top 10</strong>, <strong>OWASP API Top 10</strong>, CIS Benchmarks (cloud), and general DevSecOps best practices. It's not a compliance certification tool.</p>
+
+        <h3 style="font-size:15px;margin-top:16px;">Q: How do I get support?</h3>
+        <p>Email support for all plans. Enterprise gets priority support with dedicated contact. Visit securecodereviews.com/contact.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 18 — Quick-Start for New Users
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">18 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>🚀 Quick-Start Guide for New Users</h2>
+    <p>Get scanning in under 2 minutes.</p>
+
+    <div style="margin-top: 20px;">
+      <div class="step-flow">
+        <div class="step-item" style="flex:2;">
+          <div class="step-num">Step 1 — Register</div>
+          <div class="step-label">Create Account</div>
+          <p style="font-size:12px;margin-top:6px;">Visit <strong>securecodereviews.com/auth/register</strong>. Enter your name, email, and password. Verify your email.</p>
+        </div>
+        <span class="step-arrow">→</span>
+        <div class="step-item" style="flex:2;">
+          <div class="step-num">Step 2 — Access ShieldX</div>
+          <div class="step-label">Open Workspace</div>
+          <p style="font-size:12px;margin-top:6px;">Navigate to <strong>ShieldX</strong> from the navbar. You'll see the workspace with all 8 modules.</p>
+        </div>
+      </div>
+
+      <div class="step-flow" style="margin-top: 12px;">
+        <div class="step-item" style="flex:2;">
+          <div class="step-num">Step 3 — Run Demo</div>
+          <div class="step-label">Try Demo Scans</div>
+          <p style="font-size:12px;margin-top:6px;">Click <strong>Secrets Scanner → "Run Demo Scan"</strong>. See sample results immediately. No code needed.</p>
+        </div>
+        <span class="step-arrow">→</span>
+        <div class="step-item" style="flex:2;">
+          <div class="step-num">Step 4 — Upgrade & Scan</div>
+          <div class="step-label">Full Access</div>
+          <p style="font-size:12px;margin-top:6px;">Upgrade to <strong>Pro</strong> for full scans. Paste your own code, URLs, configs, and logs.</p>
+        </div>
+      </div>
+
+      <div class="step-flow" style="margin-top: 12px;">
+        <div class="step-item" style="flex:2;">
+          <div class="step-num">Step 5 — Automate</div>
+          <div class="step-label">API Key & CI/CD</div>
+          <p style="font-size:12px;margin-top:6px;">Generate API key for programmatic access. Enterprise users can add CI/CD pipeline gates.</p>
+        </div>
+        <span class="step-arrow">→</span>
+        <div class="step-item" style="flex:2;">
+          <div class="step-num">Step 6 — Alert & Track</div>
+          <div class="step-label">Set Up Alerts</div>
+          <p style="font-size:12px;margin-top:6px;">Configure email/Slack alerts. Track your security score over time in the History tab.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 19 — Competitive Advantage
+     ════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">19 / 20</span>
+  </div>
+  <div class="slide-content">
+    <h2>Why Choose ShieldX?</h2>
+    <p>Comparison with major application security solutions.</p>
+
+    <table style="margin-top: 20px;">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th style="color:var(--primary);font-weight:800;">ShieldX</th>
+          <th>Snyk</th>
+          <th>SonarQube</th>
+          <th>Checkov</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Secrets Detection</td><td style="color:var(--success);font-weight:600;">✓</td><td>✓</td><td>Partial</td><td>—</td></tr>
+        <tr><td>Dependency CVE Scanning</td><td style="color:var(--success);font-weight:600;">✓</td><td>✓</td><td>—</td><td>—</td></tr>
+        <tr><td>API Security Testing</td><td style="color:var(--success);font-weight:600;">✓</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><td>Cloud Config Audit</td><td style="color:var(--success);font-weight:600;">✓</td><td>Partial</td><td>—</td><td>✓</td></tr>
+        <tr><td>Log Threat Analysis</td><td style="color:var(--success);font-weight:600;">✓</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><td>CI/CD Integration</td><td style="color:var(--success);font-weight:600;">✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Web UI (No Install)</td><td style="color:var(--success);font-weight:600;">✓</td><td>✓</td><td>Requires server</td><td>CLI only</td></tr>
+        <tr><td>Alert Notifications</td><td style="color:var(--success);font-weight:600;">✓</td><td>✓</td><td>Partial</td><td>—</td></tr>
+        <tr><td>Free Tier Available</td><td style="color:var(--success);font-weight:600;">✓</td><td>Limited</td><td>Community</td><td>Open source</td></tr>
+        <tr><td>Zero Code Storage</td><td style="color:var(--success);font-weight:600;">✓</td><td>—</td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <div class="highlight-box" style="margin-top: 20px;">
+      <p><strong>Key Differentiator:</strong> ShieldX is the only platform that combines secrets, dependencies, API, cloud, logs, and CI/CD scanning in a single web-based tool with zero code storage.</p>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
+    <span>ShieldX Product Overview</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SLIDE 20 — Contact / CTA (Closing Slide)
+     ════════════════════════════════════════════════════ -->
+<div class="slide title-slide">
+  <div class="slide-header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span class="logo-text">Secure<span class="hl">Code</span>Reviews</span>
+    </div>
+    <span class="slide-number">20 / 20</span>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+    <h1 style="font-size:38px;">Ready to Secure<br>Your Applications?</h1>
+    <p class="subtitle" style="max-width:500px;">Start with a free demo account. Upgrade when you're ready. Cancel anytime.</p>
+
+    <div style="display:flex;gap:16px;margin:32px 0;">
+      <div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:20px 28px;text-align:center;backdrop-filter:blur(4px);">
+        <div style="font-size:14px;opacity:0.8;margin-bottom:6px;">Website</div>
+        <div style="font-size:16px;font-weight:600;">securecodereviews.com</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:20px 28px;text-align:center;backdrop-filter:blur(4px);">
+        <div style="font-size:14px;opacity:0.8;margin-bottom:6px;">Platform</div>
+        <div style="font-size:16px;font-weight:600;">securecodereviews.com/shieldx</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;padding:20px 28px;text-align:center;backdrop-filter:blur(4px);">
+        <div style="font-size:14px;opacity:0.8;margin-bottom:6px;">Contact</div>
+        <div style="font-size:16px;font-weight:600;">securecodereviews.com/contact</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;opacity:0.6;margin-top:16px;">Pricing: securecodereviews.com/shieldx/pricing</p>
+  </div>
+  <div class="slide-footer">
+    <span class="copyright">© 2026 SecureCodeReviews. All rights reserved. Proprietary and confidential.</span>
+    <span>ShieldX — Application Security for Development Teams</span>
+  </div>
+</div>
+
+</div><!-- .deck -->
+
+<!-- Print button -->
+<div style="text-align:center;padding:20px 0 60px;">
+  <button onclick="window.print()" style="background:#2563eb;color:white;border:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+    🖨️ Print / Export to PDF
+  </button>
+  <p style="margin-top:8px;font-size:12px;color:#64748b;">Use your browser's Print → Save as PDF for best results.</p>
+</div>
+
+</body>
+</html>
