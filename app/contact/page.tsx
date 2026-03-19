@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -54,6 +54,14 @@ function buildSubscriptionMessage(plan: SubscriptionPlan | null) {
 }
 
 export default function ContactPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContactPageInner />
+    </Suspense>
+  );
+}
+
+function ContactPageInner() {
   const searchParams = useSearchParams();
 
   const requestedPlan = getSubscriptionPlan(searchParams.get("plan"));
