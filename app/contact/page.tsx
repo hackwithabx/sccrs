@@ -336,7 +336,7 @@ function ContactPageInner() {
                         <Label htmlFor="name">Full Name</Label>
                         <Input
                           id="name"
-                          placeholder="John Doe"
+                          placeholder="Your full name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           required

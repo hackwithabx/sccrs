@@ -25,6 +25,11 @@ const UserSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    company: {
+      type: String,
+      maxlength: [120, "Company name cannot be more than 120 characters"],
+      default: null,
+    },
     shieldxPlan: {
       type: String,
       enum: ["free", "pro", "enterprise"],

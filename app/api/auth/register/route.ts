@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, email, password } = await req.json();
+    const { name, email, password, company } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
+      ...(typeof company === "string" && company.trim() ? { company: company.trim().slice(0, 120) } : {}),
     });
 
     return NextResponse.json(

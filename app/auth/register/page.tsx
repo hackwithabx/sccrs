@@ -14,15 +14,18 @@ export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const passwordChecks = [
-    { label: "At least 8 characters", pass: password.length >= 8 },
+    { label: "At least 10 characters", pass: password.length >= 10 },
     { label: "Contains uppercase", pass: /[A-Z]/.test(password) },
+    { label: "Contains lowercase", pass: /[a-z]/.test(password) },
     { label: "Contains number", pass: /[0-9]/.test(password) },
+    { label: "Contains special character", pass: /[^A-Za-z0-9]/.test(password) },
     { label: "Passwords match", pass: password === confirmPassword && password.length > 0 },
   ];
 
@@ -35,8 +38,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (password.length < 10) {
+      setError("Password must be at least 10 characters");
       return;
     }
 
@@ -46,7 +49,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, company: company.trim() || undefined }),
       });
 
       const data = await res.json();
@@ -95,7 +98,7 @@ export default function RegisterPage() {
                 <Input
                   id="name"
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="Your full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -111,6 +114,17 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company">Company / Organization <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input
+                  id="company"
+                  type="text"
+                  placeholder="Your company name"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
                 />
               </div>
 

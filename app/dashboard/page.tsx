@@ -616,35 +616,25 @@ export default function DashboardPage() {
           </motion.div>
         </div>
 
+        {passwordResetRequired && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14 }}
           className="mb-10"
         >
-          <Card className={passwordResetRequired ? "border-amber-500/30" : ""}>
+          <Card className="border-amber-500/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
-                Account Security
+                <Shield className="w-5 h-5 text-amber-500" />
+                Password Change Required
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-6 lg:grid-cols-[0.9fr,1.1fr]">
               <div className="space-y-3 text-sm">
-                {passwordResetRequired ? (
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-700 dark:text-amber-400">
-                    Your account is using a temporary password from the admin panel. Change it now to keep the account secure.
-                  </div>
-                ) : (
-                  <div className="rounded-xl border bg-muted/20 p-4 text-muted-foreground">
-                    Keep your login secure with a strong password and rotate it after any shared-access or admin reset event.
-                  </div>
-                )}
-                <ul className="space-y-2 text-muted-foreground">
-                  <li>Use at least 10 characters and avoid reusing old passwords.</li>
-                  <li>Admin-issued temporary passwords should be changed immediately after sign-in.</li>
-                  <li>ShieldX billing and access stay tied to your account after the password update.</li>
-                </ul>
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-700 dark:text-amber-400">
+                  Your account is using a temporary password issued by an admin. Please change it now to secure your account.
+                </div>
               </div>
 
               <form onSubmit={handleChangePassword} className="space-y-4">
@@ -700,6 +690,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </motion.div>
+        )}
 
         {/* Security Tip Banner */}
         <motion.div
