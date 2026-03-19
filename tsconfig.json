@@ -29,5 +29,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "scrs-temp"]
+  "exclude": ["node_modules", "scrs-temp", "tools_page_orig.tsx", "tools_page_prev.tsx"]
 }
