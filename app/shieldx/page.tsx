@@ -532,7 +532,7 @@ export default function ShieldXWorkspacePage() {
           <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
             <TabsTrigger value="modules">Modules</TabsTrigger>
             <TabsTrigger value="history">
-              History
+              History {mergedHistory.length > 0 && <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">{mergedHistory.length}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
@@ -844,6 +844,10 @@ export default function ShieldXWorkspacePage() {
                         {/* Results */}
                         {scanResults && (
                           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                              <span>Scan tracked — view in <strong>History</strong> & <strong>Overview</strong> tabs</span>
+                            </div>
                             {/* Secrets results */}
                             {activeModule === "secrets" && (
                               <>
