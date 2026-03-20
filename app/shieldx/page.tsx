@@ -66,7 +66,7 @@ const MODULES = [
   { id: "api", name: "API Security Scanner", description: "OWASP API Top 10 2023 compliance checks — security headers, CORS, auth, and 15+ automated tests.", icon: Globe, plans: ["pro", "enterprise"] },
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "AI-powered log analysis to detect brute-force attacks, injection attempts, and anomalous patterns.", icon: Brain, plans: ["pro", "enterprise"] },
-  { id: "cicd", name: "CI/CD Pipeline Gate", description: "Integrate ShieldX into GitHub Actions, GitLab CI, or Jenkins pipelines with pass/fail scan gates.", icon: GitBranch, plans: ["enterprise"] },
+  { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
   // { id: "alerts", name: "Alert System", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected.", icon: Bell, plans: ["pro", "enterprise"] },  // Hidden — re-enable when alerts backend is fully wired
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with severity breakdown and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], demoLabel: "Demo only" },
 ];
@@ -93,6 +93,8 @@ export default function ShieldXWorkspacePage() {
   /* ── Scan UI state ── */
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [scanInput, setScanInput] = useState("");
+  const [cicdDepsInput, setCicdDepsInput] = useState("");
+  const [cicdScanType, setCicdScanType] = useState<"full" | "secrets" | "dependencies">("full");
   const [scanning, setScanning] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scanResults, setScanResults] = useState<any>(null);
@@ -160,6 +162,8 @@ export default function ShieldXWorkspacePage() {
     if (activeModule === moduleId) { setActiveModule(null); return; }
     setActiveModule(moduleId);
     setScanInput("");
+    setCicdDepsInput("");
+    setCicdScanType("full");
     setScanResults(null);
     setScanError(null);
   };
@@ -199,13 +203,22 @@ export default function ShieldXWorkspacePage() {
           endpoint = "/api/shieldx/scan-logs";
           payload = isDemo ? { demo: true } : { logs: scanInput };
           break;
+        case "cicd":
+          endpoint = "/api/shieldx/ci-scan";
+          payload = {
+            scanType: cicdScanType,
+            ...(cicdScanType !== "dependencies" && { code: scanInput }),
+            ...(cicdScanType !== "secrets" && { dependencies: cicdDepsInput }),
+            projectName: "ShieldX UI Scan",
+          };
+          break;
         default:
           setScanError(`The ${mod.name} module is coming soon.`);
           setScanning(false);
           return;
       }
 
-      if (!isDemo && !scanInput.trim()) {
+      if (!isDemo && activeModule !== "cicd" && !scanInput.trim()) {
         setScanError("Please enter input to scan.");
         setScanning(false);
         return;
@@ -315,6 +328,28 @@ export default function ShieldXWorkspacePage() {
           summary: `Analyzed ${data.totalLines || 0} log lines. ${data.stats?.total || 0} threats detected.`,
           counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.stats?.total || 0 },
           findings,
+        };
+      }
+      case "cicd": {
+        const secretsFindings = (data.secrets?.findings || []).map((f: any) => ({
+          category: "Secrets", status: f.severity === "critical" ? "fail" : "warn",
+          finding: `${f.pattern} at line ${f.line}`, recommendation: "Remove or rotate this credential",
+          severity: f.severity,
+        }));
+        const depFindings = (data.dependencies?.vulnerabilities || []).map((v: any) => ({
+          category: "Dependencies", status: v.severity === "critical" || v.severity === "high" ? "fail" : "warn",
+          finding: `${v.package}@${v.version}: ${v.summary}`, recommendation: v.fixedIn ? `Upgrade to ${v.fixedIn}` : "Check advisory",
+          severity: v.severity,
+        }));
+        const allFindings = [...secretsFindings, ...depFindings];
+        const critical = (data.secrets?.critical || 0) + (data.dependencies?.stats?.critical || 0);
+        const high = (data.secrets?.high || 0) + (data.dependencies?.stats?.high || 0);
+        return {
+          scanType: "cicd", title, source: "manual", status: "completed", target: data.projectName || "CI/CD scan",
+          overallScore: data.verdict === "PASS" ? 10 : Math.max(0, 10 - critical * 3 - high * 2),
+          summary: `Pipeline gate: ${data.verdict}. ${allFindings.length} issues found across ${data.scanType} scan.`,
+          counts: { critical, high, medium: allFindings.length - critical - high, low: 0, findingsTotal: allFindings.length },
+          findings: allFindings,
         };
       }
       default: return null;
@@ -485,7 +520,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "cicd"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
@@ -530,7 +565,7 @@ export default function ShieldXWorkspacePage() {
 
             {/* ── Scan Panel ── */}
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud", "logs"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "cicd"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -551,8 +586,62 @@ export default function ShieldXWorkspacePage() {
                         )}
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {/* Input area */}
-                        {!isDemoOnly && (
+                        {/* CI/CD Pipeline Gate — custom input */}
+                        {activeModule === "cicd" && (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Scan Type</label>
+                              <div className="flex gap-2 flex-wrap">
+                                {([["full", "Full Scan (Secrets + Dependencies)"], ["secrets", "Secrets Only"], ["dependencies", "Dependencies Only"]] as const).map(([val, label]) => (
+                                  <Button key={val} size="sm" variant={cicdScanType === val ? "default" : "outline"} onClick={() => setCicdScanType(val)} className="text-xs">
+                                    {label}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                            {cicdScanType !== "dependencies" && (
+                              <div>
+                                <label className="text-sm font-medium mb-2 block">Source Code (for Secrets Scan)</label>
+                                <textarea
+                                  className="w-full min-h-[150px] rounded-lg border bg-muted/30 p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
+                                  placeholder="Paste your source code, .env files, or config files to scan for hardcoded secrets..."
+                                  value={scanInput}
+                                  onChange={(e) => setScanInput(e.target.value)}
+                                />
+                              </div>
+                            )}
+                            {cicdScanType !== "secrets" && (
+                              <div>
+                                <label className="text-sm font-medium mb-2 block">Dependency Manifest (for CVE Scan)</label>
+                                <textarea
+                                  className="w-full min-h-[150px] rounded-lg border bg-muted/30 p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
+                                  placeholder="Paste your package.json, requirements.txt, build.gradle, or go.mod content..."
+                                  value={cicdDepsInput}
+                                  onChange={(e) => setCicdDepsInput(e.target.value)}
+                                />
+                              </div>
+                            )}
+                            <Card className="border-blue-500/20 bg-blue-500/5">
+                              <CardContent className="p-4">
+                                <p className="text-sm font-medium mb-2 flex items-center gap-2"><GitBranch className="h-4 w-4 text-blue-500" /> CI/CD Integration Snippet</p>
+                                <p className="text-xs text-muted-foreground mb-3">Add this to your pipeline to run ShieldX as an automated gate. Failed scans return exit code 1 to break your build.</p>
+                                <pre className="text-[11px] bg-muted/80 rounded-lg p-3 font-mono overflow-x-auto whitespace-pre">{`# GitHub Actions
+- name: ShieldX Security Gate
+  run: |
+    RESULT=$(curl -s -X POST https://securecodereviews.com/api/shieldx/ci-scan \\
+      -H "Content-Type: application/json" \\
+      -H "x-shieldx-api-key: \${{ secrets.SHIELDX_API_KEY }}" \\
+      -d '{"scanType":"full","code":"...","dependencies":"..."}'
+    )
+    echo "$RESULT" | jq .verdict
+    exit $(echo "$RESULT" | jq -r '.exitCode')`}</pre>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        )}
+
+                        {/* Standard module input area */}
+                        {activeModule !== "cicd" && !isDemoOnly && (
                           <div>
                             <label className="text-sm font-medium mb-2 block">{inputCfg.label}</label>
                             {inputCfg.type === "textarea" ? (
@@ -575,8 +664,8 @@ export default function ShieldXWorkspacePage() {
                         )}
 
                         <div className="flex gap-3">
-                          <Button onClick={runScan} disabled={scanning || (!isDemoOnly && !scanInput.trim())} className="gap-2">
-                            {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : "Run Scan"}</>}
+                          <Button onClick={runScan} disabled={scanning || (activeModule === "cicd" ? (cicdScanType !== "dependencies" && !scanInput.trim() && cicdScanType !== "secrets") || (cicdScanType !== "secrets" && !cicdDepsInput.trim() && cicdScanType !== "dependencies") : (!isDemoOnly && !scanInput.trim()))} className="gap-2">
+                            {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : activeModule === "cicd" ? "Run Pipeline Gate" : "Run Scan"}</>}
                           </Button>
                           {scanResults && (
                             <Button variant="outline" onClick={() => { setScanResults(null); setScanError(null); }} className="gap-1.5">
@@ -877,6 +966,134 @@ export default function ShieldXWorkspacePage() {
                                       </div>
                                     ))}
                                   </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* CI/CD Pipeline Gate results */}
+                            {activeModule === "cicd" && (
+                              <>
+                                {/* Verdict Banner */}
+                                <Card className={`${scanResults.verdict === "PASS" ? "border-emerald-500/30 bg-emerald-500/5" : "border-red-500/30 bg-red-500/5"}`}>
+                                  <CardContent className="p-5 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      {scanResults.verdict === "PASS" ? <CheckCircle2 className="h-8 w-8 text-emerald-500" /> : <XCircle className="h-8 w-8 text-red-500" />}
+                                      <div>
+                                        <p className={`text-xl font-bold ${scanResults.verdict === "PASS" ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
+                                          Pipeline Gate: {scanResults.verdict}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                          Exit code {scanResults.exitCode} — {scanResults.verdict === "PASS" ? "safe to deploy" : "deployment should be blocked"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Badge variant={scanResults.verdict === "PASS" ? "secondary" : "destructive"} className="text-sm px-3 py-1">
+                                      {scanResults.scanType === "full" ? "Full Scan" : scanResults.scanType === "secrets" ? "Secrets" : "Dependencies"}
+                                    </Badge>
+                                  </CardContent>
+                                </Card>
+
+                                <p className="text-xs text-muted-foreground">Project: {scanResults.projectName} • Scanner: {scanResults.scanner} • {new Date(scanResults.timestamp).toLocaleString()}</p>
+
+                                {/* Secrets Results */}
+                                {scanResults.secrets && (
+                                  <div className="space-y-3">
+                                    <h4 className="text-sm font-semibold flex items-center gap-2"><Key className="h-4 w-4 text-primary" /> Secrets Scan</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                      <div className="rounded-lg border p-3 text-center">
+                                        <div className="text-xl font-bold">{scanResults.secrets.total}</div>
+                                        <div className="text-xs text-muted-foreground">Findings</div>
+                                      </div>
+                                      <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                        <div className="text-xl font-bold text-red-500">{scanResults.secrets.critical}</div>
+                                        <div className="text-xs text-muted-foreground">Critical</div>
+                                      </div>
+                                      <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                        <div className="text-xl font-bold text-orange-500">{scanResults.secrets.high}</div>
+                                        <div className="text-xs text-muted-foreground">High</div>
+                                      </div>
+                                      <div className={`rounded-lg border p-3 text-center ${scanResults.secrets.passed ? "border-emerald-500/20" : "border-red-500/20"}`}>
+                                        <div className={`text-xl font-bold ${scanResults.secrets.passed ? "text-emerald-500" : "text-red-500"}`}>
+                                          {scanResults.secrets.passed ? "PASS" : "FAIL"}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">Verdict</div>
+                                      </div>
+                                    </div>
+                                    {scanResults.secrets.findings?.length > 0 && (
+                                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                        {scanResults.secrets.findings.map((f: any, idx: number) => (
+                                          <div key={idx} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2 border-red-500/20 bg-red-500/5">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <XCircle className="h-4 w-4 text-red-500 shrink-0" />
+                                              <span className="text-xs font-medium">{f.pattern}</span>
+                                              <span className="text-xs text-muted-foreground">Line {f.line}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              <Badge variant={f.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize">{f.severity}</Badge>
+                                              <Badge variant="secondary" className="text-[8px]">{f.confidence}</Badge>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {scanResults.secrets.passed && (
+                                      <p className="text-sm text-emerald-600 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> No secrets detected in source code.</p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Dependencies Results */}
+                                {scanResults.dependencies && !scanResults.dependencies.error && (
+                                  <div className="space-y-3">
+                                    <h4 className="text-sm font-semibold flex items-center gap-2"><Package className="h-4 w-4 text-primary" /> Dependency Scan</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                      <div className="rounded-lg border p-3 text-center">
+                                        <div className="text-xl font-bold">{scanResults.dependencies.totalDependencies || 0}</div>
+                                        <div className="text-xs text-muted-foreground">Packages</div>
+                                      </div>
+                                      <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                        <div className="text-xl font-bold text-red-500">{scanResults.dependencies.vulnerabilities?.length || 0}</div>
+                                        <div className="text-xs text-muted-foreground">Vulnerable</div>
+                                      </div>
+                                      <div className="rounded-lg border p-3 text-center">
+                                        <div className="text-xl font-bold">{scanResults.dependencies.ecosystem || "—"}</div>
+                                        <div className="text-xs text-muted-foreground">Ecosystem</div>
+                                      </div>
+                                      <div className={`rounded-lg border p-3 text-center ${scanResults.dependencies.passed ? "border-emerald-500/20" : "border-red-500/20"}`}>
+                                        <div className={`text-xl font-bold ${scanResults.dependencies.passed ? "text-emerald-500" : "text-red-500"}`}>
+                                          {scanResults.dependencies.passed ? "PASS" : "FAIL"}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">Verdict</div>
+                                      </div>
+                                    </div>
+                                    {scanResults.dependencies.vulnerabilities?.length > 0 && (
+                                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                        {scanResults.dependencies.vulnerabilities.map((v: any, idx: number) => (
+                                          <div key={idx} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2 border-orange-500/20">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0" />
+                                              <span className="text-xs font-medium">{v.package}@{v.version}</span>
+                                              <span className="text-xs text-muted-foreground truncate max-w-[200px]">{v.summary}</span>
+                                            </div>
+                                            <Badge variant={v.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize shrink-0">{v.severity}</Badge>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {scanResults.dependencies.passed && (
+                                      <p className="text-sm text-emerald-600 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> No known CVEs found in dependencies.</p>
+                                    )}
+                                  </div>
+                                )}
+                                {scanResults.dependencies?.error && (
+                                  <Card className="border-amber-500/20 bg-amber-500/5">
+                                    <CardContent className="p-3 flex items-center gap-2">
+                                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                      <p className="text-sm text-amber-600">Dependency scan: {scanResults.dependencies.error}</p>
+                                    </CardContent>
+                                  </Card>
                                 )}
                               </>
                             )}
