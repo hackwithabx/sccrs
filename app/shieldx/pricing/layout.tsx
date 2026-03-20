@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ShieldX Pricing - Choose Your Security Plan",
     description:
-      "Free demo workspace, Pro live scanning, and Enterprise team onboarding with billing-backed access control.",
+      "Free demo workspace, Pro live scanning, and Enterprise team onboarding.",
     url: "https://securecodereviews.com/shieldx/pricing",
     images: ["/og-image.png"],
   },

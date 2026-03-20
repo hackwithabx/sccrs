@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ShieldX Security Scanner | SecureCodeReviews",
     description:
-      "Run paid security scans for code, dependencies, APIs, cloud posture, alerts, and CI/CD. Free stays demo-only; Pro and Enterprise unlock the live workspace.",
+      "Run security scans for code, dependencies, APIs, cloud posture, and CI/CD. Free demo available; Pro and Enterprise unlock the full workspace.",
     url: "https://securecodereviews.com/shieldx",
     siteName: "SecureCodeReviews",
     type: "website",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ShieldX Security Scanner | SecureCodeReviews",
     description:
-      "Paid security scanning workspace for secrets, dependencies, APIs, cloud posture, alerts, and CI/CD with a separate free demo path.",
+      "Security scanning workspace for secrets, dependencies, APIs, cloud posture, and CI/CD with a free demo path.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -66,7 +66,7 @@ export default function ShieldXLayout({
       url: "https://securecodereviews.com",
     },
     description:
-      "ShieldX is a web-based security scanning platform for secrets, dependencies, APIs, cloud posture, logs, alerts, and CI/CD workflows.",
+      "ShieldX is a web-based security scanning platform for secrets, dependencies, APIs, cloud posture, logs, and CI/CD workflows.",
     offers: [
       {
         "@type": "Offer",
@@ -74,18 +74,7 @@ export default function ShieldXLayout({
         price: "0",
         priceCurrency: "USD",
       },
-      {
-        "@type": "Offer",
-        name: "ShieldX Pro",
-        price: "499",
-        priceCurrency: "USD",
-      },
-      {
-        "@type": "Offer",
-        name: "ShieldX Enterprise",
-        price: "999",
-        priceCurrency: "USD",
-      },
+      // Pro and Enterprise offers hidden until billing integration is live
     ],
     featureList: [
       "Secrets scanner",
@@ -94,7 +83,7 @@ export default function ShieldXLayout({
       "Cloud security assessment",
       "Threat log analysis",
       "CI/CD integration",
-      "Alerts and notifications",
+      // "Alerts and notifications",  // Hidden — re-enable when alerts are live
       "Security score dashboard",
     ],
   };

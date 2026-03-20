@@ -67,7 +67,7 @@ const MODULES = [
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "AI-powered log analysis to detect brute-force attacks, injection attempts, and anomalous patterns.", icon: Brain, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Integrate ShieldX into GitHub Actions, GitLab CI, or Jenkins pipelines with pass/fail scan gates.", icon: GitBranch, plans: ["enterprise"] },
-  { id: "alerts", name: "Alert System", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected.", icon: Bell, plans: ["pro", "enterprise"] },
+  // { id: "alerts", name: "Alert System", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected.", icon: Bell, plans: ["pro", "enterprise"] },  // Hidden — re-enable when alerts backend is fully wired
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with severity breakdown and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], demoLabel: "Demo only" },
 ];
 
@@ -78,7 +78,7 @@ const POSITIONING = {
     "Find secrets, vulnerabilities, and misconfigurations before production.",
     "All-in-one security platform — no need for 5 different tools.",
     "Cheaper than Snyk, faster than Aikido, simpler than any enterprise suite.",
-    "Unified dashboard with real scan results — not mock data.",
+    "Centralized security insights with actionable remediation guidance.",
   ],
 };
 
@@ -357,9 +357,7 @@ export default function ShieldXWorkspacePage() {
               <Link href="/auth/register">
                 <Button size="lg" className="gap-2"><Zap className="h-5 w-5" /> Start Free Demo</Button>
               </Link>
-              <Link href="/shieldx/pricing">
-                <Button size="lg" variant="outline" className="gap-2">View Plans <ArrowRight className="h-4 w-4" /></Button>
-              </Link>
+              {/* Pricing link hidden until billing is live */}
             </div>
           </motion.div>
 
@@ -451,11 +449,7 @@ export default function ShieldXWorkspacePage() {
                 {isPaid && <Crown className="h-3 w-3 mr-1" />}
                 {userPlan} Plan
               </Badge>
-              {!isPaid && (
-                <Link href="/shieldx/pricing">
-                  <Button size="sm" className="gap-1.5"><Zap className="h-3.5 w-3.5" /> Upgrade to Pro</Button>
-                </Link>
-              )}
+              {/* Billing hidden — upgrade buttons removed until payment integration is live */}
             </div>
           </div>
         </motion.div>
@@ -468,8 +462,7 @@ export default function ShieldXWorkspacePage() {
                 <div>
                   <p className="font-medium text-sm">Demo Mode — Limited Access</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    You have access to 2 demo scans on basic modules only. No full reports, no API access, no scan history.
-                    <Link href="/shieldx/pricing" className="text-primary hover:underline ml-1 font-medium">Upgrade to Pro →</Link>
+                    You have access to demo scans on basic modules only. No full reports, no API access, no scan history.
                   </p>
                 </div>
               </CardContent>
@@ -523,11 +516,9 @@ export default function ShieldXWorkspacePage() {
                               Coming Soon
                             </Button>
                           ) : (
-                            <Link href="/shieldx/pricing">
-                              <Button size="sm" variant="outline" className="w-full gap-1.5">
-                                <Lock className="h-3.5 w-3.5" /> Upgrade to Unlock
-                              </Button>
-                            </Link>
+                            <Button size="sm" variant="outline" className="w-full gap-1.5" disabled>
+                              <Lock className="h-3.5 w-3.5" /> Not Available
+                            </Button>
                           )}
                         </div>
                       </CardContent>
@@ -556,7 +547,7 @@ export default function ShieldXWorkspacePage() {
                           </Button>
                         </div>
                         {isDemoOnly && (
-                          <p className="text-sm text-amber-600 mt-1">Demo mode — click &quot;Run Demo Scan&quot; to see sample results, or <Link href="/shieldx/pricing" className="underline font-medium">upgrade to Pro</Link> to scan your own code.</p>
+                          <p className="text-sm text-amber-600 mt-1">Demo mode — click &quot;Run Demo Scan&quot; to see sample results.</p>
                         )}
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -908,9 +899,7 @@ export default function ShieldXWorkspacePage() {
                   <p className="text-muted-foreground mt-2 max-w-md mx-auto">
                     View timestamped scan results, severity breakdowns, and downloadable PDF reports with a paid plan.
                   </p>
-                  <Link href="/shieldx/pricing">
-                    <Button className="mt-6 gap-2"><Zap className="h-4 w-4" /> Upgrade to Pro</Button>
-                  </Link>
+                  {/* Billing hidden — upgrade button removed */}
                 </CardContent>
               </Card>
             ) : loadingHistory ? (
@@ -968,22 +957,7 @@ export default function ShieldXWorkspacePage() {
                     <span className="text-sm text-muted-foreground">Current Plan</span>
                     <Badge className="capitalize">{userPlan}</Badge>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Billing Status</span>
-                    <span className="text-sm capitalize">{billingState?.billingStatus || "inactive"}</span>
-                  </div>
-                  {billingState?.expiresAt && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Access Until</span>
-                      <span className="text-sm">{new Date(billingState.expiresAt).toLocaleDateString()}</span>
-                    </div>
-                  )}
                   <div className="pt-3 flex gap-2">
-                    <Link href="/shieldx/pricing">
-                      <Button size="sm" variant="outline" className="gap-1.5">
-                        <TrendingUp className="h-3.5 w-3.5" /> {isPaid ? "Manage Plan" : "Upgrade"}
-                      </Button>
-                    </Link>
                     <Link href="/shieldx/docs">
                       <Button size="sm" variant="ghost" className="gap-1.5">Documentation <ArrowRight className="h-3.5 w-3.5" /></Button>
                     </Link>
@@ -1033,7 +1007,7 @@ export default function ShieldXWorkspacePage() {
                     <div className="text-center py-6">
                       <Lock className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
                       <p className="text-sm text-muted-foreground">Scan analytics available on Pro and Enterprise plans.</p>
-                      <Link href="/shieldx/pricing"><Button size="sm" className="mt-3 gap-1.5"><Zap className="h-3.5 w-3.5" /> Upgrade to Pro</Button></Link>
+                      {/* Billing hidden — upgrade button removed */}
                     </div>
                   )}
                 </CardContent>

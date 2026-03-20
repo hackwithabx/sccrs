@@ -183,7 +183,7 @@ export default function HomePage() {
               <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
                   <Rocket className="h-5 w-5" />
-                  Upgrade to Pro
+                  Request Pro Access
                 </Button>
               </Link>
               <Link href="/shieldx">
@@ -424,12 +424,7 @@ export default function HomePage() {
                     Open ShieldX
                   </Button>
                 </Link>
-                <Link href="/shieldx/pricing">
-                  <Button size="lg" variant="outline" className="gap-2 rounded-xl">
-                    View Pricing
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
+                {/* Pricing link hidden until billing is live */}
               </div>
             </div>
           </motion.div>
@@ -1098,7 +1093,7 @@ export default function HomePage() {
               <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
                   <Shield className="h-5 w-5" />
-                  Upgrade to Pro
+                  Request Pro Access
                 </Button>
               </Link>
             </div>

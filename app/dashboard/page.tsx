@@ -274,15 +274,15 @@ export default function DashboardPage() {
           badge: "Product Manual",
           color: "text-blue-500",
         },
-          // Add upgrade prompt for restricted modules
-          {
-            icon: Zap,
-            title: "Upgrade Plan",
-            description: "Unlock advanced modules, CI/CD, and unlimited scans",
-            href: "/shieldx/pricing",
-            badge: "Upgrade",
-            color: "text-amber-500",
-          },
+          // Upgrade prompt hidden until billing is live
+          // {
+          //   icon: Zap,
+          //   title: "Upgrade Plan",
+          //   description: "Unlock advanced modules, CI/CD, and unlimited scans",
+          //   href: "/shieldx/pricing",
+          //   badge: "Upgrade",
+          //   color: "text-amber-500",
+          // },
       ]
     : [
         {
@@ -295,9 +295,9 @@ export default function DashboardPage() {
         },
         {
           icon: Zap,
-          title: "Upgrade Plan",
-          description: "Unlock premium scans, CI/CD, and alerts",
-          href: "/shieldx/pricing",
+          title: "Explore Plans",
+          description: "Learn about premium scans and CI/CD",
+          href: "/contact?subject=ShieldX+Plans",
           badge: "Pro / Enterprise",
           color: "text-amber-500",
         },
@@ -471,14 +471,10 @@ export default function DashboardPage() {
                 </Button>
               </Link>
               <Link
-                href={
-                  isEnterprise
-                    ? "/contact?subject=ShieldX+Enterprise+Onboarding"
-                    : "/shieldx/pricing"
-                }
+                href="/contact?subject=ShieldX+Enterprise+Onboarding"
               >
                 <Button variant="outline" className="gap-2">
-                  {isEnterprise ? "Enterprise Onboarding" : "View Plans"}
+                  Contact Sales
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -560,9 +556,9 @@ export default function DashboardPage() {
                       {hasShieldXAccess ? "Open ShieldX" : "Open Demo"}
                     </Button>
                   </Link>
-                  <Link href="/shieldx/pricing">
+                  <Link href="/contact?subject=ShieldX+Plans">
                     <Button variant="outline" className="gap-2">
-                      {hasDirectBilling ? "Manage Billing" : "View Plans"}
+                      Contact Sales
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>

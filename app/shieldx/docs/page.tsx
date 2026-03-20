@@ -169,32 +169,33 @@ const modules = [
     ],
     supported: ["GitHub Actions", "GitLab CI", "Any CI via cURL/REST API", "Jenkins (via cURL)", "CircleCI (via cURL)", "Bitbucket Pipelines (via cURL)"],
   },
-  {
-    id: "alerts",
-    icon: Bell,
-    title: "Alerts & Notifications",
-    description: "Configure automated alerts for critical security findings via Email, Slack, or Webhooks",
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-    features: [
-      "Email notifications for critical findings",
-      "Slack webhook integration",
-      "Custom webhook support for any service",
-      "6 pre-configured alert rules",
-      "Configurable severity thresholds (Critical, High, All)",
-      "Enable/disable individual alert rules",
-      "Test alert functionality",
-    ],
-    howTo: [
-      "Navigate to ShieldX → Alerts tab",
-      "Configure your notification channels (Email, Slack, Webhook)",
-      "Set your alert threshold (Critical only, High+, or All)",
-      "Review and enable/disable individual alert rules",
-      "Click 'Save Configuration' to apply",
-      "Use 'Send Test Alert' to verify your setup",
-    ],
-    supported: ["Email notifications", "Slack webhooks", "Custom webhooks (POST)", "Alert rules: Critical Secrets, Critical CVEs, Cloud Failures, Low API Score, Injection Attacks, Brute Force"],
-  },
+  // Alert module hidden — re-enable when alerts backend is live
+  // {
+  //   id: "alerts",
+  //   icon: Bell,
+  //   title: "Alerts & Notifications",
+  //   description: "Configure automated alerts for critical security findings via Email, Slack, or Webhooks",
+  //   color: "text-amber-500",
+  //   bgColor: "bg-amber-500/10",
+  //   features: [
+  //     "Email notifications for critical findings",
+  //     "Slack webhook integration",
+  //     "Custom webhook support for any service",
+  //     "6 pre-configured alert rules",
+  //     "Configurable severity thresholds (Critical, High, All)",
+  //     "Enable/disable individual alert rules",
+  //     "Test alert functionality",
+  //   ],
+  //   howTo: [
+  //     "Navigate to ShieldX → Alerts tab",
+  //     "Configure your notification channels (Email, Slack, Webhook)",
+  //     "Set your alert threshold (Critical only, High+, or All)",
+  //     "Review and enable/disable individual alert rules",
+  //     "Click 'Save Configuration' to apply",
+  //     "Use 'Send Test Alert' to verify your setup",
+  //   ],
+  //   supported: ["Email notifications", "Slack webhooks", "Custom webhooks (POST)", "Alert rules: Critical Secrets, Critical CVEs, Cloud Failures, Low API Score, Injection Attacks, Brute Force"],
+  // },
   {
     id: "score",
     icon: BarChart3,
@@ -249,11 +250,11 @@ const quickStarts = [
     icon: Zap,
     badge: "Paid scans",
     description:
-      "Run real scans on your own code, dependency manifests, API targets, and security workflows. Save score snapshots, export reports, and configure notifications.",
+      "Run real scans on your own code, dependency manifests, API targets, and security workflows. Save score snapshots and export reports.",
     steps: [
       "Paste your source code, package manifest, or endpoint into the relevant module.",
       "Run a live scan and review the score, findings, and remediation guidance.",
-      "Save scan history, export the PDF report, and set up alerts or CI/CD automation.",
+      "Save scan history, export the PDF report, and configure CI/CD automation.",
     ],
   },
   {
@@ -261,7 +262,7 @@ const quickStarts = [
     icon: Crown,
     badge: "Team seats",
     description:
-      "Create the Enterprise workspace, invite team members, assign seat roles, and keep billing, onboarding, and support aligned to the organization owner account.",
+      "Create the Enterprise workspace, invite team members, assign seat roles, and keep onboarding and support aligned to the organization owner account.",
     steps: [
       "Set the workspace name and generate the CI/CD API key.",
       "Invite team members and assign owner, admin, member, or viewer access.",
@@ -332,7 +333,7 @@ export default function ShieldXDocsPage() {
               <Button className="gap-2"><Shield className="h-4 w-4" /> Open ShieldX</Button>
             </Link>
             <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
-              <Button variant="outline" className="gap-2"><Crown className="h-4 w-4" /> Upgrade to Pro</Button>
+              <Button variant="outline" className="gap-2"><Crown className="h-4 w-4" /> Request Pro Access</Button>
             </Link>
           </div>
         </motion.div>
@@ -390,7 +391,7 @@ export default function ShieldXDocsPage() {
                   <div className="space-y-3">
                     <h3 className="font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-primary" /> Key Capabilities</h3>
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      {["Secrets detection with entropy analysis", "Real-time CVE scanning via OSV.dev", "Cloud security posture assessment", "API endpoint OWASP compliance testing", "Log-based threat detection", "CI/CD pipeline integration", "Configurable alert rules", "Unified security scoring"].map((item) => (
+                      {["Secrets detection with entropy analysis", "Real-time CVE scanning via OSV.dev", "Cloud security posture assessment", "API endpoint OWASP compliance testing", "Log-based threat detection", "CI/CD pipeline integration", "Unified security scoring"].map((item) => (
                         <li key={item} className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> {item}</li>
                       ))}
                     </ul>
@@ -616,8 +617,8 @@ export default function ShieldXDocsPage() {
                 { q: "Can I integrate ShieldX into my CI/CD pipeline?", a: "Yes. ShieldX provides ready-to-use templates for GitHub Actions and GitLab CI, plus cURL commands for any CI system. Failed security checks return exit code 1 to fail your pipeline." },
                 { q: "What platforms does Cloud Security cover?", a: "AWS, GCP, Azure, and general cloud infrastructure. Each platform has specific checks for storage, identity, network, database, logging, and encryption." },
                 { q: "How is the Security Score calculated?", a: "Each module produces a score from 0-10 based on penalty deductions. Critical findings deduct 3 points, High deducts 2, Medium deducts 1. The overall score is the average across all 5 scanning dimensions." },
-                { q: "What does the Enterprise plan include?", a: "Everything in Pro ($499/mo) plus: team management (up to 25 seats), priority support (< 4hr response), custom integrations, dedicated account manager, 99.9% SLA, white-label reports, and on-premise deployment option — all for $999/month." },
-                { q: "Can I cancel anytime?", a: "Yes. Both Pro and Enterprise plans can be cancelled at any time. Your access continues until the end of the billing period." },
+                { q: "What does the Enterprise plan include?", a: "Everything in Pro plus: team management (up to 25 seats), priority support (< 4hr response), custom integrations, dedicated account manager, 99.9% SLA, white-label reports, and on-premise deployment option." },
+                { q: "Can I cancel anytime?", a: "Yes. Both Pro and Enterprise plans can be cancelled at any time. Contact support for details." },
               ].map((faq) => (
                 <Card key={faq.q}>
                   <CardHeader className="py-4">
@@ -643,7 +644,7 @@ export default function ShieldXDocsPage() {
                   <Button size="lg" className="gap-2"><Shield className="h-5 w-5" /> Open ShieldX</Button>
                 </Link>
             <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
-              <Button size="lg" variant="outline" className="gap-2"><Crown className="h-5 w-5" /> Upgrade to Pro</Button>
+              <Button size="lg" variant="outline" className="gap-2"><Crown className="h-5 w-5" /> Request Pro Access</Button>
                 </Link>
                 <Link href="/contact?subject=ShieldX+Enterprise">
                   <Button size="lg" variant="outline" className="gap-2">Contact Sales <ArrowRight className="h-4 w-4" /></Button>

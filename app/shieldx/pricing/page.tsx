@@ -53,7 +53,7 @@ const FEATURES: PlanFeature[] = [
   { name: "API Scanner (OWASP API Top 10)", icon: Globe, free: false, pro: true, enterprise: true },
   { name: "Threat Log Analyzer", icon: Brain, free: false, pro: true, enterprise: true },
   { name: "CI/CD Pipeline Gate", icon: GitBranch, free: false, pro: true, enterprise: true },
-  { name: "Alerts (Email, Slack, Webhook)", icon: Bell, free: false, pro: true, enterprise: true },
+  // { name: "Alerts (Email, Slack, Webhook)", icon: Bell, free: false, pro: true, enterprise: true },  // Hidden — re-enable when alerts are live
   { name: "Security Score Dashboard", icon: BarChart3, free: "Demo only", pro: true, enterprise: true },
   { name: "Run Full Demo", icon: Zap, free: true, pro: true, enterprise: true },
   { name: "Saved Scan History & Report Export", icon: Shield, free: false, pro: true, enterprise: true },
