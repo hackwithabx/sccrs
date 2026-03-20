@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 function decodeBase64Url(value: string): Uint8Array {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -63,7 +64,11 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-      // For page routes, allow through (page handles its own login UI)
+      // For page routes, only allow users with NextAuth admin role
+      const nextAuthToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+      if (!nextAuthToken || nextAuthToken.role !== "admin") {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
       return NextResponse.next();
     }
 
@@ -78,7 +83,13 @@ export async function middleware(request: NextRequest) {
           response.cookies.delete("scr-admin-token");
           return response;
         }
-        // Page routes: clear expired cookie so the page can show login UI
+        // Page routes: clear expired cookie, only allow NextAuth admin users
+        const nextAuthToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+        if (!nextAuthToken || nextAuthToken.role !== "admin") {
+          const response = NextResponse.redirect(new URL("/", request.url));
+          response.cookies.delete("scr-admin-token");
+          return response;
+        }
         const response = NextResponse.next();
         response.cookies.delete("scr-admin-token");
         return response;
@@ -92,7 +103,13 @@ export async function middleware(request: NextRequest) {
         response.cookies.delete("scr-admin-token");
         return response;
       }
-      // Page routes: clear invalid cookie
+      // Page routes: clear invalid cookie, only allow NextAuth admin users
+      const nextAuthToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+      if (!nextAuthToken || nextAuthToken.role !== "admin") {
+        const response = NextResponse.redirect(new URL("/", request.url));
+        response.cookies.delete("scr-admin-token");
+        return response;
+      }
       const response = NextResponse.next();
       response.cookies.delete("scr-admin-token");
       return response;
