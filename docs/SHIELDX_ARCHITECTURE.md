@@ -1,6 +1,6 @@
 # ShieldX — Detailed Architecture & Developer Documentation
 
-**Version:** 2.1  
+**Version:** 2.2  
 **Last Updated:** March 20, 2026  
 **Author:** SecureCodeReviews Engineering  
 **Audience:** Developers, Engineering Leads, DevSecOps Teams
@@ -592,6 +592,21 @@ Common HTTP status codes:
 User Login → NextAuth.js → JWT Token (cookie) → API Route → Session Extraction → Plan Check → Scan
 ```
 
+### Auth Resilience (v2.2)
+
+All scanner routes handle expired/invalid sessions gracefully:
+
+| Scenario | Behavior |
+|----------|----------|
+| **Demo mode** (`demo: true`) | Auth call skipped entirely. Rate limited to 5/hr per IP. |
+| **Valid session, paid plan** | Full scan with history tracking. |
+| **Valid session, free plan** | Scan with reduced limits (secrets only). |
+| **No session + no input** | Graceful fallback to demo results (secrets scanner). |
+| **No session + input provided** | Returns "Session expired. Please sign in again." (401) |
+| **Expired JWT** | Returns actionable error instead of generic "Authentication required". |
+
+Auth call ordering (v2.2): Demo mode is checked **before** calling `getShieldXAuthorizedUser()` in all scanners, avoiding unnecessary auth overhead for demo users.
+
 ### Key Files
 
 | File | Purpose |
@@ -1132,6 +1147,10 @@ ShieldX is a real, production-grade scanning platform. Below are honest technica
 ---
 
 ## Changelog
+
+### v2.2 (March 20, 2026)
+- **Scanner Auth Flow Improvements** — All 5 scanner routes updated with resilient auth handling. Demo mode is now checked before auth calls (deps, api scanners reordered). Secrets scanner adds graceful demo fallback when session is expired and no code is provided. All scanners return actionable "Session expired or Pro plan required" messages instead of generic errors.
+- **Files changed:** `scan-secrets/route.ts`, `scan-deps/route.ts`, `scan-api/route.ts`, `scan-cloud/route.ts`, `scan-logs/route.ts`
 
 ### v2.1 (March 20, 2026)
 - **Security Score Dashboard** — Fully wired interactive dashboard showing real composite score from scan history. Includes severity breakdown, per-module scores (latest + average), and trend tracking. No mock data — all metrics from actual scan results.
