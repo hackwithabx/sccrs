@@ -100,6 +100,7 @@ export default function ShieldXWorkspacePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scanResults, setScanResults] = useState<any>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [sessionScans, setSessionScans] = useState<ScanHistoryItem[]>([]);
 
   /* ── Admin plan upgrade ── */
   const [upgradingPlan, setUpgradingPlan] = useState(false);
@@ -238,10 +239,24 @@ export default function ShieldXWorkspacePage() {
       if (!res.ok) throw new Error(data.error || "Scan failed");
       setScanResults(data);
 
+      // Track scan in current session for Security Score (works for all users)
+      const historyPayload = buildHistoryPayload(activeModule, data, scanInput);
+      if (historyPayload) {
+        const sessionItem: ScanHistoryItem = {
+          _id: `session-${Date.now()}`,
+          scanType: historyPayload.scanType,
+          title: historyPayload.title,
+          overallScore: historyPayload.overallScore,
+          counts: historyPayload.counts,
+          createdAt: new Date().toISOString(),
+          status: historyPayload.status,
+        };
+        setSessionScans((prev) => [sessionItem, ...prev]);
+      }
+
       // Auto-save to history for paid plans
       if (isPaid && data && !isDemo) {
         try {
-          const historyPayload = buildHistoryPayload(activeModule, data, scanInput);
           if (historyPayload) {
             await fetch("/api/shieldx/history", {
               method: "POST",
@@ -286,13 +301,13 @@ export default function ShieldXWorkspacePage() {
         return {
           scanType: "deps", title, source: "manual", status: "completed", target,
           overallScore: Math.max(0, 10 - (data.stats?.critical || 0) * 3 - (data.stats?.high || 0) * 2 - (data.stats?.medium || 0)),
-          summary: `Scanned ${data.totalDependencies || 0} dependencies, found ${data.vulnerabilities?.length || 0} vulnerabilities`,
+          summary: `Scanned ${data.totalDeps || data.totalDependencies || 0} dependencies, found ${data.vulnerabilities?.length || 0} vulnerabilities`,
           counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.vulnerabilities?.length || 0 },
           findings,
         };
       }
       case "api": {
-        const allChecks = [...(data.headerResults || []), ...(data.apiChecks || [])];
+        const allChecks = [...(data.headers || data.headerResults || []), ...(data.apiChecks || [])];
         const findings = allChecks.filter((c: any) => c.status !== "pass").map((c: any) => ({
           category: "API Security", status: c.status === "fail" ? "fail" : "warn",
           finding: `${c.name}: ${c.message || c.detail}`, recommendation: c.recommendation || "Review security configuration",
@@ -301,8 +316,8 @@ export default function ShieldXWorkspacePage() {
         const failCount = findings.filter((f: any) => f.status === "fail").length;
         return {
           scanType: "api", title, source: "manual", status: "completed", target: input,
-          overallScore: data.securityScore || 0,
-          summary: `API security score: ${data.securityScore?.toFixed(1)}/10. ${allChecks.length} checks performed.`,
+          overallScore: data.score || data.securityScore || 0,
+          summary: `API security score: ${(data.score || data.securityScore || 0).toFixed(1)}/10. ${allChecks.length} checks performed.`,
           counts: { critical: 0, high: failCount, medium: findings.length - failCount, low: 0, findingsTotal: findings.length },
           findings,
         };
@@ -671,21 +686,25 @@ export default function ShieldXWorkspacePage() {
 
                         {/* Security Score Dashboard */}
                         {activeModule === "score" && (() => {
+                          // Merge DB history + session scans, deduplicate by _id
+                          const dbIds = new Set(scanHistory.map((s) => s._id));
+                          const mergedScans = [...scanHistory, ...sessionScans.filter((s) => !dbIds.has(s._id))];
+
                           const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "cicd"];
                           const byModule = moduleTypes.map((type) => {
-                            const scans = scanHistory.filter((s) => s.scanType === type);
+                            const scans = mergedScans.filter((s) => s.scanType === type);
                             const latest = scans[0]; // already sorted by date desc
                             const avg = scans.length > 0 ? scans.reduce((a, s) => a + s.overallScore, 0) / scans.length : null;
                             return { type, name: MODULES.find((m) => m.id === type)?.name || type, scans: scans.length, latest, avg };
                           }).filter((m) => m.scans > 0);
 
-                          const allScores = scanHistory.map((s) => s.overallScore);
+                          const allScores = mergedScans.map((s) => s.overallScore);
                           const compositeScore = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : null;
-                          const totalFindings = scanHistory.reduce((a, s) => a + s.counts.findingsTotal, 0);
-                          const totalCritical = scanHistory.reduce((a, s) => a + s.counts.critical, 0);
-                          const totalHigh = scanHistory.reduce((a, s) => a + s.counts.high, 0);
-                          const totalMedium = scanHistory.reduce((a, s) => a + s.counts.medium, 0);
-                          const totalLow = scanHistory.reduce((a, s) => a + s.counts.low, 0);
+                          const totalFindings = mergedScans.reduce((a, s) => a + s.counts.findingsTotal, 0);
+                          const totalCritical = mergedScans.reduce((a, s) => a + s.counts.critical, 0);
+                          const totalHigh = mergedScans.reduce((a, s) => a + s.counts.high, 0);
+                          const totalMedium = mergedScans.reduce((a, s) => a + s.counts.medium, 0);
+                          const totalLow = mergedScans.reduce((a, s) => a + s.counts.low, 0);
 
                           // Trend: compare first half vs second half of scans
                           let trend: "improving" | "declining" | "stable" | "none" = "none";
@@ -701,17 +720,7 @@ export default function ShieldXWorkspacePage() {
                           const scoreColor = (s: number) => s >= 7 ? "text-emerald-500" : s >= 4 ? "text-amber-500" : "text-red-500";
                           const scoreBg = (s: number) => s >= 7 ? "border-emerald-500/20 bg-emerald-500/5" : s >= 4 ? "border-amber-500/20 bg-amber-500/5" : "border-red-500/20 bg-red-500/5";
 
-                          if (!isPaid) {
-                            return (
-                              <div className="text-center py-8">
-                                <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                                <p className="text-sm font-medium">Security Score requires a Pro or Enterprise plan</p>
-                                <p className="text-xs text-muted-foreground mt-1">Run scans on a paid plan to see your composite security score with real data.</p>
-                              </div>
-                            );
-                          }
-
-                          if (scanHistory.length === 0) {
+                          if (mergedScans.length === 0) {
                             return (
                               <div className="text-center py-8">
                                 <BarChart3 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
@@ -731,7 +740,7 @@ export default function ShieldXWorkspacePage() {
                                 </div>
                                 <div className="flex-1 space-y-2">
                                   <h3 className="text-lg font-semibold">Composite Security Score</h3>
-                                  <p className="text-sm text-muted-foreground">Weighted average across {scanHistory.length} scan{scanHistory.length !== 1 ? "s" : ""} from {byModule.length} module{byModule.length !== 1 ? "s" : ""}.</p>
+                                  <p className="text-sm text-muted-foreground">Weighted average across {mergedScans.length} scan{mergedScans.length !== 1 ? "s" : ""} from {byModule.length} module{byModule.length !== 1 ? "s" : ""}.</p>
                                   {trend !== "none" && (
                                     <div className={`flex items-center gap-1.5 text-sm ${trend === "improving" ? "text-emerald-600" : trend === "declining" ? "text-red-600" : "text-muted-foreground"}`}>
                                       <TrendingUp className={`h-4 w-4 ${trend === "declining" ? "rotate-180" : ""}`} />

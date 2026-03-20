@@ -1,6 +1,6 @@
 # ShieldX — Detailed Architecture & Developer Documentation
 
-**Version:** 2.4  
+**Version:** 2.5  
 **Last Updated:** March 20, 2026  
 **Author:** SecureCodeReviews Engineering  
 **Audience:** Developers, Engineering Leads, DevSecOps Teams
@@ -1162,6 +1162,10 @@ ShieldX is a real, production-grade scanning platform. Below are honest technica
 ---
 
 ## Changelog
+
+### v2.5 (March 20, 2026)
+- **Security Score Fix** — Security Score dashboard now works for all users (free, demo, pro, enterprise). Previously, the dashboard was gated behind a paid plan check and relied solely on DB-backed scan history (which required a working JWT + Pro plan). Now uses in-memory `sessionScans` state to track every scan result in the current browser session, merged with DB history for paid users. Fixed field name mismatches in `buildHistoryPayload`: API scanner `score`/`headers` (was `securityScore`/`headerResults`), deps scanner `totalDeps` (was `totalDependencies`). All 6 scanner types verified.
+- **File changed:** `app/shieldx/page.tsx`
 
 ### v2.4 (March 20, 2026)
 - **Graceful Auth Fallback** — All 5 scanner routes now fall back to demo mode when server-side authentication fails, instead of returning "Session expired" errors. This handles the edge case where the client has a valid NextAuth session but the server-side JWT is invalid (e.g., `NEXTAUTH_SECRET` mismatch between environments, or token expired mid-session). User-provided code/config is still scanned in demo mode with rate limiting (5/hr per IP).
