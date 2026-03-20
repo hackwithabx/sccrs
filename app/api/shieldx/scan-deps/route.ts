@@ -3,6 +3,7 @@ import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
+import { generateFix } from "@/lib/fix-engine";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -52,6 +53,11 @@ interface VulnResult {
   effort: "low" | "medium" | "high";
   source: "osv" | "local";
   references: string[];
+  fix: string;
+  codeExample: string | null;
+  compliance: string[];
+  riskScore: number;
+  priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 }
 
 // Map CVSS score to severity
@@ -281,18 +287,37 @@ export async function POST(request: NextRequest) {
             effort = "high";
           }
 
+          const vulnSeverity = extractSeverity(vuln);
+          const fixEngineResult = generateFix({
+            scanType: "deps",
+            id,
+            title: `${result.name}@${result.version} — ${vuln.summary || id}`,
+            severity: vulnSeverity,
+            confidence: "high",
+            description: vuln.summary || vuln.details?.slice(0, 200) || "No description available",
+            packageName: result.name,
+            packageVersion: result.version,
+            fixedVersion: fixedIn || undefined,
+            ecosystem,
+          });
+
           allVulns.push({
             package: result.name,
             version: result.version,
             id,
             aliases: vuln.aliases || [],
-            severity: extractSeverity(vuln),
+            severity: vulnSeverity,
             summary: vuln.summary || vuln.details?.slice(0, 200) || "No description available",
             fixedIn,
-            fixCommand,
+            fixCommand: fixCommand || fixEngineResult.fixCommand,
             effort,
             source: "osv",
             references: refs,
+            fix: fixEngineResult.fix,
+            codeExample: fixEngineResult.codeExample,
+            compliance: fixEngineResult.compliance,
+            riskScore: fixEngineResult.riskScore,
+            priority: fixEngineResult.priority,
           });
         }
       }

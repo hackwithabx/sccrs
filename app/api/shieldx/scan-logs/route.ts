@@ -3,6 +3,7 @@ import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { generateFix, type Severity } from "@/lib/fix-engine";
 
 export const maxDuration = 15;
 export const dynamic = "force-dynamic";
@@ -25,6 +26,13 @@ interface ThreatFinding {
   count: number;
   detail: string;
   remediation: string;
+  fix?: string;
+  fixCommand?: string | null;
+  codeExample?: string | null;
+  effort?: "low" | "medium" | "high";
+  compliance?: string[];
+  riskScore?: number;
+  priority?: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 }
 
 const THREAT_PATTERNS: ThreatPattern[] = [
@@ -365,8 +373,29 @@ function analyzeLogs(logText: string): { findings: ThreatFinding[]; stats: Recor
   const findings: ThreatFinding[] = [];
 
   for (const pattern of THREAT_PATTERNS) {
-    const results = pattern.detect(lines);
-    findings.push(...results);
+    const rawResults = pattern.detect(lines);
+    for (const r of rawResults) {
+      const fixResult = generateFix({
+        scanType: "logs",
+        id: r.patternId,
+        title: r.name,
+        severity: r.severity as Severity,
+        confidence: "high",
+        description: r.detail,
+        patternId: r.patternId,
+        category: r.category,
+      });
+      findings.push({
+        ...r,
+        fix: fixResult.fix,
+        fixCommand: fixResult.fixCommand,
+        codeExample: fixResult.codeExample,
+        effort: fixResult.effort,
+        compliance: fixResult.compliance,
+        riskScore: fixResult.riskScore,
+        priority: fixResult.priority,
+      });
+    }
   }
 
   // Sort by severity

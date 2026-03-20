@@ -3,6 +3,7 @@ import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { generateFix, type Severity } from "@/lib/fix-engine";
 
 export const maxDuration = 15;
 export const dynamic = "force-dynamic";
@@ -302,6 +303,15 @@ function runCloudAudit(config: string) {
   const results = CLOUD_CHECKS.map((check) => {
     const result = check.evaluate(config);
     const remediation = CLOUD_REMEDIATION[check.id];
+    const fixEngine = result.status !== "pass" ? generateFix({
+      scanType: "cloud",
+      id: check.id,
+      title: check.name,
+      severity: check.severity as Severity,
+      confidence: result.status === "fail" ? "high" : "medium",
+      description: result.detail,
+      category: check.category,
+    }) : null;
     return {
       id: check.id,
       category: check.category,
@@ -310,6 +320,9 @@ function runCloudAudit(config: string) {
       ...result,
       fix: result.status !== "pass" && remediation ? remediation.fix : null,
       effort: result.status !== "pass" && remediation ? remediation.effort : null,
+      compliance: fixEngine?.compliance || [],
+      riskScore: fixEngine?.riskScore || 0,
+      priority: fixEngine?.priority || "LOW",
     };
   });
 

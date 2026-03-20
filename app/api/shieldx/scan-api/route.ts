@@ -4,6 +4,7 @@ import { enforceShieldXFeatureAccess, enforceShieldXScanLimit } from "@/lib/shie
 import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { generateFix, type Severity } from "@/lib/fix-engine";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -520,10 +521,20 @@ export async function POST(request: NextRequest) {
     };
 
     // Run header checks
-    const headerResults: HeaderCheck[] = SECURITY_HEADERS.map((h) => {
+    const headerResults = SECURITY_HEADERS.map((h) => {
       const value = headersObj[h.key] || null;
       const result = h.evaluate(value);
       const fixInfo = HEADER_FIXES[h.name];
+      const fixEngine = result.status !== "pass" ? generateFix({
+        scanType: "api",
+        id: h.key,
+        title: h.name,
+        severity: h.severity as Severity,
+        confidence: "high",
+        description: result.message,
+        headerName: h.name,
+        status: result.status,
+      }) : null;
       return {
         name: h.name,
         present: !!value,
@@ -533,6 +544,11 @@ export async function POST(request: NextRequest) {
         message: result.message,
         fix: result.status !== "pass" && fixInfo ? fixInfo.fix : null,
         effort: result.status !== "pass" && fixInfo ? fixInfo.effort : null,
+        fixCommand: fixEngine?.fixCommand || null,
+        codeExample: fixEngine?.codeExample || null,
+        compliance: fixEngine?.compliance || [],
+        riskScore: fixEngine?.riskScore || 0,
+        priority: fixEngine?.priority || "LOW",
       };
     });
 
@@ -540,6 +556,16 @@ export async function POST(request: NextRequest) {
     const apiResults = API_CHECKS.map((c) => {
       const result = c.check({ headers: headersObj, status: response.status, body: truncatedBody, url: targetUrl, cookies, allowedMethods });
       const fixInfo = API_FIXES[c.name];
+      const fixEngine = result.status !== "pass" ? generateFix({
+        scanType: "api",
+        id: c.owasp || c.name,
+        title: c.name,
+        severity: c.severity as Severity,
+        confidence: result.status === "fail" ? "high" : "medium",
+        description: result.message,
+        owasp: c.owasp,
+        status: result.status,
+      }) : null;
       return {
         name: c.name,
         owasp: c.owasp || null,
@@ -547,6 +573,11 @@ export async function POST(request: NextRequest) {
         ...result,
         fix: result.status !== "pass" && fixInfo ? fixInfo.fix : null,
         effort: result.status !== "pass" && fixInfo ? fixInfo.effort : null,
+        fixCommand: fixEngine?.fixCommand || null,
+        codeExample: fixEngine?.codeExample || null,
+        compliance: fixEngine?.compliance || [],
+        riskScore: fixEngine?.riskScore || 0,
+        priority: fixEngine?.priority || "LOW",
       };
     });
 

@@ -1050,14 +1050,36 @@ export default function ShieldXWorkspacePage() {
                                       <Card key={idx} className={`${f.confidence === "high" ? "border-red-500/30" : f.confidence === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`}>
                                         <CardContent className="p-4">
                                           <div className="flex items-start justify-between gap-3 mb-2">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                               <Badge variant={f.confidence === "high" ? "destructive" : "secondary"} className="text-[10px] capitalize">{f.confidence}</Badge>
+                                              {f.priority && <Badge variant="outline" className={`text-[9px] ${f.priority === "CRITICAL" ? "border-red-500 text-red-500" : f.priority === "HIGH" ? "border-orange-500 text-orange-500" : f.priority === "MEDIUM" ? "border-amber-500 text-amber-500" : "border-blue-500 text-blue-500"}`}>{f.priority}</Badge>}
                                               <span className="font-medium text-sm">{f.name}</span>
                                             </div>
-                                            <span className="text-xs text-muted-foreground shrink-0">Line {f.line}, Col {f.column}</span>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              {f.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {f.riskScore}/100</span>}
+                                              <span className="text-xs text-muted-foreground">Line {f.line}, Col {f.column}</span>
+                                            </div>
                                           </div>
                                           <code className="block text-xs bg-muted/50 rounded p-2 font-mono break-all">{f.matchPreview}</code>
-                                          <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>
+                                          {f.fix && (
+                                            <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                                              <p className="text-xs font-medium text-emerald-700 mb-1">🔧 Fix:</p>
+                                              <p className="text-xs text-emerald-600">{f.fix}</p>
+                                              {f.fixCommand && <code className="block text-xs font-mono bg-muted/50 rounded px-2 py-1 mt-1 break-all">{f.fixCommand}</code>}
+                                              {f.codeExample && <pre className="text-xs font-mono bg-muted/50 rounded px-2 py-1 mt-1 overflow-x-auto whitespace-pre-wrap">{f.codeExample}</pre>}
+                                              <div className="flex items-center gap-2 mt-1">
+                                                {f.effort && <Badge variant="secondary" className={`text-[9px] ${f.effort === "low" ? "bg-emerald-100 text-emerald-700" : f.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {f.effort}</Badge>}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {!f.fix && <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>}
+                                          {f.compliance?.length > 0 && (
+                                            <div className="flex gap-1 mt-2 flex-wrap">
+                                              {f.compliance.map((c: string, ci: number) => (
+                                                <Badge key={ci} variant="outline" className="text-[8px] font-normal">{c}</Badge>
+                                              ))}
+                                            </div>
+                                          )}
                                         </CardContent>
                                       </Card>
                                     ))}
@@ -1106,11 +1128,15 @@ export default function ShieldXWorkspacePage() {
                                       <Card key={idx} className={`${v.severity === "critical" ? "border-red-500/30" : v.severity === "high" ? "border-orange-500/30" : "border-amber-500/30"}`}>
                                         <CardContent className="p-4">
                                           <div className="flex items-start justify-between gap-3 mb-2">
-                                            <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
                                               <Badge variant={v.severity === "critical" ? "destructive" : "secondary"} className="text-[10px] capitalize">{v.severity}</Badge>
-                                              <span className="font-medium text-sm ml-2">{v.package}@{v.version}</span>
+                                              {v.priority && <Badge variant="outline" className={`text-[9px] ${v.priority === "CRITICAL" ? "border-red-500 text-red-500" : v.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{v.priority}</Badge>}
+                                              <span className="font-medium text-sm">{v.package}@{v.version}</span>
                                             </div>
-                                            <span className="text-xs font-mono text-muted-foreground">{v.id}</span>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              {v.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {v.riskScore}/100</span>}
+                                              <span className="text-xs font-mono text-muted-foreground">{v.id}</span>
+                                            </div>
                                           </div>
                                           <p className="text-sm text-muted-foreground">{v.summary}</p>
                                           {v.fixedIn && (
@@ -1127,10 +1153,23 @@ export default function ShieldXWorkspacePage() {
                                               )}
                                             </div>
                                           )}
-                                          {!v.fixedIn && (
+                                          {!v.fixedIn && v.fix && (
+                                            <div className="mt-2 rounded-md bg-amber-500/10 border border-amber-500/20 p-2.5">
+                                              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">⚠️ No Fix Version</p>
+                                              <p className="text-xs text-amber-600">{v.fix}</p>
+                                            </div>
+                                          )}
+                                          {!v.fixedIn && !v.fix && (
                                             <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
                                               <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" /> No fix version available — check advisory for workarounds
                                             </p>
+                                          )}
+                                          {v.compliance?.length > 0 && (
+                                            <div className="flex gap-1 mt-2 flex-wrap">
+                                              {v.compliance.map((c: string, ci: number) => (
+                                                <Badge key={ci} variant="outline" className="text-[8px] font-normal">{c}</Badge>
+                                              ))}
+                                            </div>
                                           )}
                                           {v.references?.length > 0 && (
                                             <div className="flex gap-2 mt-2 flex-wrap">
@@ -1185,14 +1224,27 @@ export default function ShieldXWorkspacePage() {
                                             <div className="flex items-center gap-2">
                                               {h.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : h.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
                                               <span className="font-mono text-xs">{h.name}</span>
+                                              {h.priority && <Badge variant="outline" className={`text-[8px] ${h.priority === "CRITICAL" ? "border-red-500 text-red-500" : h.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{h.priority}</Badge>}
                                             </div>
-                                            <span className="text-xs text-muted-foreground max-w-[50%] truncate">{h.message}</span>
+                                            <div className="flex items-center gap-2">
+                                              {h.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {h.riskScore}/100</span>}
+                                              <span className="text-xs text-muted-foreground max-w-[200px] truncate">{h.message}</span>
+                                            </div>
                                           </div>
                                           {h.fix && (
                                             <div className="mt-2 ml-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
                                               <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">🔧 Fix:</p>
-                                              <code className="block text-[11px] font-mono break-all mt-0.5">{h.fix}</code>
+                                              {h.fixCommand && <code className="block text-[11px] font-mono bg-muted/50 rounded px-2 py-1 mt-0.5 break-all">{h.fixCommand}</code>}
+                                              {h.codeExample && <pre className="text-[11px] font-mono bg-muted/50 rounded px-2 py-1 mt-1 overflow-x-auto whitespace-pre-wrap">{h.codeExample}</pre>}
+                                              {!h.fixCommand && !h.codeExample && <code className="block text-[11px] font-mono break-all mt-0.5">{h.fix}</code>}
                                               {h.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${h.effort === "low" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>Effort: {h.effort}</Badge>}
+                                            </div>
+                                          )}
+                                          {h.compliance?.length > 0 && (
+                                            <div className="flex gap-1 mt-1.5 ml-6 flex-wrap">
+                                              {h.compliance.map((c: string, ci: number) => (
+                                                <Badge key={ci} variant="outline" className="text-[8px] font-normal">{c}</Badge>
+                                              ))}
                                             </div>
                                           )}
                                         </div>
@@ -1212,14 +1264,27 @@ export default function ShieldXWorkspacePage() {
                                               {c.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : c.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
                                               <span className="text-xs">{c.name}</span>
                                               {c.owasp && <Badge variant="secondary" className="text-[8px]">{c.owasp}</Badge>}
+                                              {c.priority && <Badge variant="outline" className={`text-[8px] ${c.priority === "CRITICAL" ? "border-red-500 text-red-500" : c.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{c.priority}</Badge>}
                                             </div>
-                                            <span className="text-xs text-muted-foreground max-w-[40%] truncate">{c.detail}</span>
+                                            <div className="flex items-center gap-2">
+                                              {c.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {c.riskScore}/100</span>}
+                                              <span className="text-xs text-muted-foreground max-w-[200px] truncate">{c.detail}</span>
+                                            </div>
                                           </div>
                                           {c.fix && (
                                             <div className="mt-2 ml-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
                                               <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">🔧 Fix:</p>
-                                              <p className="text-[11px] break-all mt-0.5">{c.fix}</p>
+                                              {c.fixCommand && <code className="block text-[11px] font-mono bg-muted/50 rounded px-2 py-1 mt-0.5 break-all">{c.fixCommand}</code>}
+                                              {c.codeExample && <pre className="text-[11px] font-mono bg-muted/50 rounded px-2 py-1 mt-1 overflow-x-auto whitespace-pre-wrap">{c.codeExample}</pre>}
+                                              {!c.fixCommand && !c.codeExample && <p className="text-[11px] break-all mt-0.5">{c.fix}</p>}
                                               {c.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${c.effort === "low" ? "bg-emerald-100 text-emerald-700" : c.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {c.effort}</Badge>}
+                                            </div>
+                                          )}
+                                          {c.compliance?.length > 0 && (
+                                            <div className="flex gap-1 mt-1.5 ml-6 flex-wrap">
+                                              {c.compliance.map((comp: string, ci: number) => (
+                                                <Badge key={ci} variant="outline" className="text-[8px] font-normal">{comp}</Badge>
+                                              ))}
                                             </div>
                                           )}
                                         </div>
@@ -1263,11 +1328,15 @@ export default function ShieldXWorkspacePage() {
                                       <Card key={idx} className={`${f.severity === "critical" ? "border-red-500/30" : f.severity === "high" ? "border-orange-500/30" : f.severity === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`}>
                                         <CardContent className="p-4">
                                           <div className="flex items-start justify-between gap-3 mb-2">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                               <Badge variant={f.severity === "critical" ? "destructive" : "secondary"} className="text-[10px] capitalize">{f.severity}</Badge>
+                                              {f.priority && <Badge variant="outline" className={`text-[9px] ${f.priority === "CRITICAL" ? "border-red-500 text-red-500" : f.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{f.priority}</Badge>}
                                               <span className="font-medium text-sm">{f.name}</span>
                                             </div>
-                                            <Badge variant="secondary" className="text-[10px] shrink-0">{f.category}</Badge>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              {f.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {f.riskScore}/100</span>}
+                                              <Badge variant="secondary" className="text-[10px]">{f.category}</Badge>
+                                            </div>
                                           </div>
                                           <p className="text-sm text-muted-foreground mb-2">{f.detail}</p>
                                           <div className="text-xs text-muted-foreground mb-2">{f.count} occurrence(s)</div>
@@ -1278,7 +1347,24 @@ export default function ShieldXWorkspacePage() {
                                               ))}
                                             </div>
                                           )}
-                                          <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>
+                                          {f.fix ? (
+                                            <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                                              <p className="text-xs font-medium text-emerald-700 mb-1">🔧 Fix:</p>
+                                              <p className="text-xs text-emerald-600">{f.fix}</p>
+                                              {f.fixCommand && <code className="block text-xs font-mono bg-muted/50 rounded px-2 py-1 mt-1 break-all">{f.fixCommand}</code>}
+                                              {f.codeExample && <pre className="text-xs font-mono bg-muted/50 rounded px-2 py-1 mt-1 overflow-x-auto whitespace-pre-wrap">{f.codeExample}</pre>}
+                                              {f.effort && <Badge variant="secondary" className={`text-[9px] mt-1 ${f.effort === "low" ? "bg-emerald-100 text-emerald-700" : f.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {f.effort}</Badge>}
+                                            </div>
+                                          ) : (
+                                            <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>
+                                          )}
+                                          {f.compliance?.length > 0 && (
+                                            <div className="flex gap-1 mt-2 flex-wrap">
+                                              {f.compliance.map((c: string, ci: number) => (
+                                                <Badge key={ci} variant="outline" className="text-[8px] font-normal">{c}</Badge>
+                                              ))}
+                                            </div>
+                                          )}
                                         </CardContent>
                                       </Card>
                                     ))}
@@ -1332,6 +1418,8 @@ export default function ShieldXWorkspacePage() {
                                             </div>
                                           </div>
                                           <div className="flex items-center gap-2 shrink-0">
+                                            {c.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {c.riskScore}/100</span>}
+                                            {c.priority && <Badge variant="outline" className={`text-[8px] ${c.priority === "CRITICAL" ? "border-red-500 text-red-500" : c.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{c.priority}</Badge>}
                                             <Badge variant="secondary" className="text-[8px]">{c.category}</Badge>
                                             <Badge variant={c.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize">{c.severity}</Badge>
                                           </div>
@@ -1341,6 +1429,13 @@ export default function ShieldXWorkspacePage() {
                                             <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">🔧 Fix:</p>
                                             <code className="block text-[11px] font-mono break-all mt-0.5">{c.fix}</code>
                                             {c.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${c.effort === "low" ? "bg-emerald-100 text-emerald-700" : c.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {c.effort}</Badge>}
+                                          </div>
+                                        )}
+                                        {c.compliance?.length > 0 && (
+                                          <div className="flex gap-1 mt-1.5 ml-6 flex-wrap">
+                                            {c.compliance.map((comp: string, ci: number) => (
+                                              <Badge key={ci} variant="outline" className="text-[8px] font-normal">{comp}</Badge>
+                                            ))}
                                           </div>
                                         )}
                                       </div>

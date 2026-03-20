@@ -4,6 +4,7 @@ import { getShieldXSessionUser } from "@/lib/shieldx-access";
 import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { generateFix, type Severity } from "@/lib/fix-engine";
 
 export const maxDuration = 15;
 export const dynamic = "force-dynamic";
@@ -73,6 +74,14 @@ interface Finding {
   matchPreview: string;
   entropy: number;
   remediation: string;
+  severity: Severity;
+  fix: string;
+  fixCommand: string | null;
+  codeExample: string | null;
+  effort: "low" | "medium" | "high";
+  compliance: string[];
+  riskScore: number;
+  priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 }
 
 function scanCode(code: string): Finding[] {
@@ -109,6 +118,19 @@ function scanCode(code: string): Finding[] {
           ? matchStr.slice(0, 20) + "..." + matchStr.slice(-10)
           : matchStr;
 
+        // Map confidence to severity for fix engine
+        const severity: Severity = pattern.confidence === "high" ? "high" : pattern.confidence === "medium" ? "medium" : "low";
+
+        const fixResult = generateFix({
+          scanType: "secrets",
+          id: pattern.id,
+          title: pattern.name,
+          severity,
+          confidence: pattern.confidence,
+          description: pattern.remediation,
+          patternId: pattern.id,
+        });
+
         findings.push({
           id: pattern.id,
           name: pattern.name,
@@ -118,6 +140,14 @@ function scanCode(code: string): Finding[] {
           matchPreview: preview,
           entropy: parseFloat(ent.toFixed(2)),
           remediation: pattern.remediation,
+          severity: fixResult.severity,
+          fix: fixResult.fix,
+          fixCommand: fixResult.fixCommand,
+          codeExample: fixResult.codeExample,
+          effort: fixResult.effort,
+          compliance: fixResult.compliance,
+          riskScore: fixResult.riskScore,
+          priority: fixResult.priority,
         });
       }
     }

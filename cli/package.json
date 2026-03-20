@@ -1,0 +1,28 @@
+{
+  "name": "shieldx-cli",
+  "version": "1.0.0",
+  "description": "ShieldX Security Scanner CLI — Scan code for secrets, vulnerabilities, API issues, and cloud misconfigurations",
+  "main": "shieldx.js",
+  "bin": {
+    "shieldx": "./shieldx.js"
+  },
+  "keywords": [
+    "security",
+    "scanner",
+    "secrets",
+    "vulnerability",
+    "appsec",
+    "devsecops",
+    "shieldx",
+    "cli"
+  ],
+  "author": "SecureCodeReviews.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hackwithabx/sccrs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
