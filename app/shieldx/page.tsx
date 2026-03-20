@@ -125,14 +125,13 @@ export default function ShieldXWorkspacePage() {
   }, [session]);
 
   const loadScanHistory = useCallback(async () => {
-    if (!isPaid) return;
     setLoadingHistory(true);
     try {
       const res = await fetch("/api/shieldx/history?limit=10");
       const data = await res.json();
       if (res.ok && data.scans) setScanHistory(data.scans);
     } catch { /* silent */ } finally { setLoadingHistory(false); }
-  }, [isPaid]);
+  }, []);
 
   useEffect(() => { void loadBillingState(); }, [loadBillingState]);
   useEffect(() => { void loadScanHistory(); }, [loadScanHistory]);
@@ -485,6 +484,10 @@ export default function ShieldXWorkspacePage() {
     );
   }
 
+  /* ── Merged scan data (DB history + in-memory session scans) ── */
+  const dbIds = new Set(scanHistory.map((s) => s._id));
+  const mergedHistory = [...scanHistory, ...sessionScans.filter((s) => !dbIds.has(s._id))];
+
   /* ── Authenticated workspace ── */
   return (
     <div className="py-8 sm:py-12">
@@ -528,8 +531,8 @@ export default function ShieldXWorkspacePage() {
         <Tabs defaultValue="modules" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
             <TabsTrigger value="modules">Modules</TabsTrigger>
-            <TabsTrigger value="history" disabled={!isPaid}>
-              {!isPaid && <Lock className="h-3 w-3 mr-1" />} History
+            <TabsTrigger value="history">
+              History
             </TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
@@ -687,24 +690,21 @@ export default function ShieldXWorkspacePage() {
                         {/* Security Score Dashboard */}
                         {activeModule === "score" && (() => {
                           // Merge DB history + session scans, deduplicate by _id
-                          const dbIds = new Set(scanHistory.map((s) => s._id));
-                          const mergedScans = [...scanHistory, ...sessionScans.filter((s) => !dbIds.has(s._id))];
-
                           const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "cicd"];
                           const byModule = moduleTypes.map((type) => {
-                            const scans = mergedScans.filter((s) => s.scanType === type);
+                            const scans = mergedHistory.filter((s) => s.scanType === type);
                             const latest = scans[0]; // already sorted by date desc
                             const avg = scans.length > 0 ? scans.reduce((a, s) => a + s.overallScore, 0) / scans.length : null;
                             return { type, name: MODULES.find((m) => m.id === type)?.name || type, scans: scans.length, latest, avg };
                           }).filter((m) => m.scans > 0);
 
-                          const allScores = mergedScans.map((s) => s.overallScore);
+                          const allScores = mergedHistory.map((s) => s.overallScore);
                           const compositeScore = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : null;
-                          const totalFindings = mergedScans.reduce((a, s) => a + s.counts.findingsTotal, 0);
-                          const totalCritical = mergedScans.reduce((a, s) => a + s.counts.critical, 0);
-                          const totalHigh = mergedScans.reduce((a, s) => a + s.counts.high, 0);
-                          const totalMedium = mergedScans.reduce((a, s) => a + s.counts.medium, 0);
-                          const totalLow = mergedScans.reduce((a, s) => a + s.counts.low, 0);
+                          const totalFindings = mergedHistory.reduce((a, s) => a + s.counts.findingsTotal, 0);
+                          const totalCritical = mergedHistory.reduce((a, s) => a + s.counts.critical, 0);
+                          const totalHigh = mergedHistory.reduce((a, s) => a + s.counts.high, 0);
+                          const totalMedium = mergedHistory.reduce((a, s) => a + s.counts.medium, 0);
+                          const totalLow = mergedHistory.reduce((a, s) => a + s.counts.low, 0);
 
                           // Trend: compare first half vs second half of scans
                           let trend: "improving" | "declining" | "stable" | "none" = "none";
@@ -720,7 +720,7 @@ export default function ShieldXWorkspacePage() {
                           const scoreColor = (s: number) => s >= 7 ? "text-emerald-500" : s >= 4 ? "text-amber-500" : "text-red-500";
                           const scoreBg = (s: number) => s >= 7 ? "border-emerald-500/20 bg-emerald-500/5" : s >= 4 ? "border-amber-500/20 bg-amber-500/5" : "border-red-500/20 bg-red-500/5";
 
-                          if (mergedScans.length === 0) {
+                          if (mergedHistory.length === 0) {
                             return (
                               <div className="text-center py-8">
                                 <BarChart3 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
@@ -740,7 +740,7 @@ export default function ShieldXWorkspacePage() {
                                 </div>
                                 <div className="flex-1 space-y-2">
                                   <h3 className="text-lg font-semibold">Composite Security Score</h3>
-                                  <p className="text-sm text-muted-foreground">Weighted average across {mergedScans.length} scan{mergedScans.length !== 1 ? "s" : ""} from {byModule.length} module{byModule.length !== 1 ? "s" : ""}.</p>
+                                  <p className="text-sm text-muted-foreground">Weighted average across {mergedHistory.length} scan{mergedHistory.length !== 1 ? "s" : ""} from {byModule.length} module{byModule.length !== 1 ? "s" : ""}.</p>
                                   {trend !== "none" && (
                                     <div className={`flex items-center gap-1.5 text-sm ${trend === "improving" ? "text-emerald-600" : trend === "declining" ? "text-red-600" : "text-muted-foreground"}`}>
                                       <TrendingUp className={`h-4 w-4 ${trend === "declining" ? "rotate-180" : ""}`} />
@@ -1266,20 +1266,9 @@ export default function ShieldXWorkspacePage() {
           </TabsContent>
 
           <TabsContent value="history">
-            {!isPaid ? (
-              <Card className="border-dashed">
-                <CardContent className="py-16 text-center">
-                  <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-lg">Scan History — Pro & Enterprise</h3>
-                  <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                    View timestamped scan results, severity breakdowns, and downloadable PDF reports with a paid plan.
-                  </p>
-                  {/* Billing hidden — upgrade button removed */}
-                </CardContent>
-              </Card>
-            ) : loadingHistory ? (
+            {loadingHistory ? (
               <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-            ) : scanHistory.length === 0 ? (
+            ) : mergedHistory.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="py-16 text-center text-muted-foreground">
                   <FileText className="h-10 w-10 mx-auto mb-4 text-muted-foreground/50" />
@@ -1289,7 +1278,7 @@ export default function ShieldXWorkspacePage() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {scanHistory.map((scan) => (
+                {mergedHistory.map((scan) => (
                   <Card key={scan._id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between gap-4">
@@ -1357,34 +1346,26 @@ export default function ShieldXWorkspacePage() {
               <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" /> Workspace Stats</CardTitle></CardHeader>
                 <CardContent>
-                  {isPaid ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="rounded-xl border bg-muted/20 p-4 text-center">
-                        <div className="text-2xl font-bold">{scanHistory.length}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Total Scans</div>
-                      </div>
-                      <div className="rounded-xl border bg-muted/20 p-4 text-center">
-                        <div className="text-2xl font-bold">
-                          {scanHistory.length > 0 ? (scanHistory.reduce((a, s) => a + s.overallScore, 0) / scanHistory.length).toFixed(1) : "—"}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">Avg Score</div>
-                      </div>
-                      <div className="rounded-xl border bg-muted/20 p-4 text-center">
-                        <div className="text-2xl font-bold text-red-500">{scanHistory.reduce((a, s) => a + s.counts.critical, 0)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Critical Issues</div>
-                      </div>
-                      <div className="rounded-xl border bg-muted/20 p-4 text-center">
-                        <div className="text-2xl font-bold text-orange-500">{scanHistory.reduce((a, s) => a + s.counts.high, 0)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">High Issues</div>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl border bg-muted/20 p-4 text-center">
+                      <div className="text-2xl font-bold">{mergedHistory.length}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Total Scans</div>
                     </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <Lock className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground">Scan analytics available on Pro and Enterprise plans.</p>
-                      {/* Billing hidden — upgrade button removed */}
+                    <div className="rounded-xl border bg-muted/20 p-4 text-center">
+                      <div className="text-2xl font-bold">
+                        {mergedHistory.length > 0 ? (mergedHistory.reduce((a, s) => a + s.overallScore, 0) / mergedHistory.length).toFixed(1) : "—"}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Avg Score</div>
                     </div>
-                  )}
+                    <div className="rounded-xl border bg-muted/20 p-4 text-center">
+                      <div className="text-2xl font-bold text-red-500">{mergedHistory.reduce((a, s) => a + s.counts.critical, 0)}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Critical Issues</div>
+                    </div>
+                    <div className="rounded-xl border bg-muted/20 p-4 text-center">
+                      <div className="text-2xl font-bold text-orange-500">{mergedHistory.reduce((a, s) => a + s.counts.high, 0)}</div>
+                      <div className="text-xs text-muted-foreground mt-1">High Issues</div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>

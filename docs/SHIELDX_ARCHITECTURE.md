@@ -1,6 +1,6 @@
 # ShieldX — Detailed Architecture & Developer Documentation
 
-**Version:** 2.5  
+**Version:** 2.6  
 **Last Updated:** March 20, 2026  
 **Author:** SecureCodeReviews Engineering  
 **Audience:** Developers, Engineering Leads, DevSecOps Teams
@@ -1162,6 +1162,10 @@ ShieldX is a real, production-grade scanning platform. Below are honest technica
 ---
 
 ## Changelog
+
+### v2.6 (March 20, 2026)
+- **History & Overview Fix** — Both tabs now work for all users (free, demo, pro, enterprise). History tab was disabled and locked behind `isPaid`; Overview "Workspace Stats" showed a lock screen for free users. Both now use shared `mergedHistory` (DB history + in-memory session scans). `loadScanHistory` no longer bails on free plans. Security Score IIFE also refactored to use the shared `mergedHistory` variable, eliminating duplicate merge logic.
+- **File changed:** `app/shieldx/page.tsx`
 
 ### v2.5 (March 20, 2026)
 - **Security Score Fix** — Security Score dashboard now works for all users (free, demo, pro, enterprise). Previously, the dashboard was gated behind a paid plan check and relied solely on DB-backed scan history (which required a working JWT + Pro plan). Now uses in-memory `sessionScans` state to track every scan result in the current browser session, merged with DB history for paid users. Fixed field name mismatches in `buildHistoryPayload`: API scanner `score`/`headers` (was `securityScore`/`headerResults`), deps scanner `totalDeps` (was `totalDependencies`). All 6 scanner types verified.
