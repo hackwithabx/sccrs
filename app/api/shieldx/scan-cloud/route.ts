@@ -334,7 +334,24 @@ export async function POST(request: NextRequest) {
     // Authenticated scan
     const user = await getShieldXAuthorizedUser(request, "pro", { allowApiKey: true });
     if (!user) {
-      return NextResponse.json({ error: "Session expired or Pro plan required. Please sign in again to run cloud security audits." }, { status: 403 });
+      // Auth failed — fall back to demo mode
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const rl = rateLimit(`scan-cloud-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+      if (!rl.allowed) {
+        return NextResponse.json(
+          { error: "Demo rate limit reached (5 scans/hour). Sign in for unlimited access." },
+          { status: 429 }
+        );
+      }
+      const config = body?.config;
+      const configToScan = (config && typeof config === "string" && config.trim().length >= 10) ? config : DEMO_CONFIG;
+      const audit = runCloudAudit(configToScan);
+      return NextResponse.json({
+        mode: "demo",
+        ...audit,
+        checksPerformed: CLOUD_CHECKS.length,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     const config = body?.config;

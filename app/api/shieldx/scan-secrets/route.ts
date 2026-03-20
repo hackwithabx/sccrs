@@ -184,38 +184,31 @@ export async function POST(request: NextRequest) {
       // Fall back to session-based auth for free users
       const freeUser = await getShieldXSessionUser(request);
       if (!freeUser) {
-        // No valid session at all — if code was provided, tell user to log in;
-        // otherwise fall back to demo scan so the UI never blocks
-        const code = body?.code;
-        if (!code || typeof code !== "string" || code.trim().length < 5) {
-          // No code and no auth — return demo results as graceful fallback
-          const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-          const rl = rateLimit(`scan-secrets-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
-          if (!rl.allowed) {
-            return NextResponse.json(
-              { error: "Demo rate limit reached (5 scans/hour). Sign in for more scans." },
-              { status: 429 }
-            );
-          }
-          const findings = scanCode(DEMO_CODE);
-          return NextResponse.json({
-            mode: "demo",
-            totalLines: DEMO_CODE.split("\n").length,
-            findings,
-            stats: {
-              high: findings.filter((f) => f.confidence === "high").length,
-              medium: findings.filter((f) => f.confidence === "medium").length,
-              low: findings.filter((f) => f.confidence === "low").length,
-              total: findings.length,
-            },
-            patternsChecked: SECRET_PATTERNS.length,
-            timestamp: new Date().toISOString(),
-          });
+        // No valid session — fall back to demo mode (user may have stale client session)
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+        const rl = rateLimit(`scan-secrets-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+        if (!rl.allowed) {
+          return NextResponse.json(
+            { error: "Demo rate limit reached (5 scans/hour). Sign in for more scans." },
+            { status: 429 }
+          );
         }
-        return NextResponse.json(
-          { error: "Session expired. Please sign in again to scan your code." },
-          { status: 401 }
-        );
+        const code = body?.code;
+        const codeToScan = (code && typeof code === "string" && code.trim().length >= 5) ? code : DEMO_CODE;
+        const findings = scanCode(codeToScan);
+        return NextResponse.json({
+          mode: "demo",
+          totalLines: codeToScan.split("\n").length,
+          findings,
+          stats: {
+            high: findings.filter((f) => f.confidence === "high").length,
+            medium: findings.filter((f) => f.confidence === "medium").length,
+            low: findings.filter((f) => f.confidence === "low").length,
+            total: findings.length,
+          },
+          patternsChecked: SECRET_PATTERNS.length,
+          timestamp: new Date().toISOString(),
+        });
       }
       // Free users can scan secrets but with limits
       const code = body?.code;

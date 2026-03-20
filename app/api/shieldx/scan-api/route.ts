@@ -379,14 +379,17 @@ export async function POST(request: NextRequest) {
       allowApiKey: true,
     });
 
-    if (!authorizedUser && !demoMode) {
-      return NextResponse.json(
-        { error: "Session expired or Pro plan required. Please sign in again to run live API scans." },
-        { status: 403 }
-      );
+    // If auth fails on a non-demo request, fall back to demo mode
+    const effectiveDemo = demoMode || !authorizedUser;
+    if (!demoMode && !authorizedUser) {
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const { allowed } = rateLimit(`scan-api-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+      if (!allowed) {
+        return NextResponse.json({ error: "Demo rate limit reached (5 scans/hour). Sign in for unlimited access." }, { status: 429 });
+      }
     }
 
-    const url = demoMode ? SHIELDX_DEMO_API_URL : body?.url;
+    const url = effectiveDemo ? SHIELDX_DEMO_API_URL : body?.url;
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
@@ -417,7 +420,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Demo mode: enforce demo scan limits and restrict modules
-    if (demoMode && !authorizedUser) {
+    if (effectiveDemo && !authorizedUser) {
       // Limit demo scans
       const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
       const { allowed } = rateLimit(`scan-api-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
@@ -535,7 +538,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      mode: demoMode ? "demo" : "paid",
+      mode: effectiveDemo ? "demo" : "paid",
       url: targetUrl,
       status: response.status,
       headers: headerResults,

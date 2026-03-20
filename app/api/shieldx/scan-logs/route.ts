@@ -411,7 +411,24 @@ export async function POST(request: NextRequest) {
     // Authenticated scan
     const user = await getShieldXAuthorizedUser(request, "pro", { allowApiKey: true });
     if (!user) {
-      return NextResponse.json({ error: "Session expired or Pro plan required. Please sign in again to run log analysis." }, { status: 403 });
+      // Auth failed — fall back to demo mode
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const rl = rateLimit(`scan-logs-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+      if (!rl.allowed) {
+        return NextResponse.json(
+          { error: "Demo rate limit reached (5 scans/hour). Sign in for unlimited access." },
+          { status: 429 }
+        );
+      }
+      const logs = body?.logs;
+      const logsToScan = (logs && typeof logs === "string" && logs.trim().length >= 10) ? logs : DEMO_LOGS;
+      const analysis = analyzeLogs(logsToScan);
+      return NextResponse.json({
+        mode: "demo",
+        ...analysis,
+        patternsChecked: THREAT_PATTERNS.length,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     const logs = body?.logs;
