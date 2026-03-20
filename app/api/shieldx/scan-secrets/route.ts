@@ -180,13 +180,42 @@ export async function POST(request: NextRequest) {
 
     // Paid/Free authenticated scan
     const user = await getShieldXAuthorizedUser(request, "pro", { allowApiKey: true });
-    // Allow free users too for secrets scan (it's a free-tier feature)
-    const sessionUser = user;
-    if (!sessionUser) {
+    if (!user) {
       // Fall back to session-based auth for free users
       const freeUser = await getShieldXSessionUser(request);
       if (!freeUser) {
-        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+        // No valid session at all — if code was provided, tell user to log in;
+        // otherwise fall back to demo scan so the UI never blocks
+        const code = body?.code;
+        if (!code || typeof code !== "string" || code.trim().length < 5) {
+          // No code and no auth — return demo results as graceful fallback
+          const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+          const rl = rateLimit(`scan-secrets-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+          if (!rl.allowed) {
+            return NextResponse.json(
+              { error: "Demo rate limit reached (5 scans/hour). Sign in for more scans." },
+              { status: 429 }
+            );
+          }
+          const findings = scanCode(DEMO_CODE);
+          return NextResponse.json({
+            mode: "demo",
+            totalLines: DEMO_CODE.split("\n").length,
+            findings,
+            stats: {
+              high: findings.filter((f) => f.confidence === "high").length,
+              medium: findings.filter((f) => f.confidence === "medium").length,
+              low: findings.filter((f) => f.confidence === "low").length,
+              total: findings.length,
+            },
+            patternsChecked: SECRET_PATTERNS.length,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        return NextResponse.json(
+          { error: "Session expired. Please sign in again to scan your code." },
+          { status: 401 }
+        );
       }
       // Free users can scan secrets but with limits
       const code = body?.code;
@@ -212,6 +241,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const sessionUser = user || await getShieldXSessionUser(request);
     const code = body?.code;
     if (!code || typeof code !== "string" || code.trim().length < 5) {
       return NextResponse.json({ error: "Provide source code to scan (minimum 5 characters)." }, { status: 400 });

@@ -144,23 +144,26 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const demoMode = body?.demo === true;
-    const authorizedUser = await getShieldXAuthorizedUser(request, "pro", {
+
+    // Demo mode — no auth required
+    if (demoMode) {
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const { allowed } = rateLimit(`scan-deps-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+      if (!allowed) {
+        return NextResponse.json({ error: "Demo rate limit reached (5 scans/hour). Sign in for unlimited access." }, { status: 429 });
+      }
+    }
+
+    // Authenticated scan
+    const authorizedUser = demoMode ? null : await getShieldXAuthorizedUser(request, "pro", {
       allowApiKey: true,
     });
 
     if (!authorizedUser && !demoMode) {
       return NextResponse.json(
-        { error: "ShieldX Pro or Enterprise is required for live dependency scans" },
+        { error: "Session expired or Pro plan required. Please sign in again to run live dependency scans." },
         { status: 403 }
       );
-    }
-
-    if (demoMode && !authorizedUser) {
-      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      const { allowed } = rateLimit(`scan-deps-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
-      if (!allowed) {
-        return NextResponse.json({ error: "Demo rate limit exceeded. Try again later." }, { status: 429 });
-      }
     }
 
     const input = demoMode

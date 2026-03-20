@@ -373,13 +373,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const demoMode = body?.demo === true;
-    const authorizedUser = await getShieldXAuthorizedUser(request, "pro", {
+
+    // Authenticated scan — skip auth call entirely for demo mode
+    const authorizedUser = demoMode ? null : await getShieldXAuthorizedUser(request, "pro", {
       allowApiKey: true,
     });
 
     if (!authorizedUser && !demoMode) {
       return NextResponse.json(
-        { error: "ShieldX Pro or Enterprise is required for live API scans" },
+        { error: "Session expired or Pro plan required. Please sign in again to run live API scans." },
         { status: 403 }
       );
     }

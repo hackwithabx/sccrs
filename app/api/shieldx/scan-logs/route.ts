@@ -411,7 +411,7 @@ export async function POST(request: NextRequest) {
     // Authenticated scan
     const user = await getShieldXAuthorizedUser(request, "pro", { allowApiKey: true });
     if (!user) {
-      return NextResponse.json({ error: "Pro or Enterprise plan required for log analysis." }, { status: 403 });
+      return NextResponse.json({ error: "Session expired or Pro plan required. Please sign in again to run log analysis." }, { status: 403 });
     }
 
     const logs = body?.logs;
