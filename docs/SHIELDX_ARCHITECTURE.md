@@ -1,6 +1,6 @@
 # ShieldX — Detailed Architecture & Developer Documentation
 
-**Version:** 2.3  
+**Version:** 2.4  
 **Last Updated:** March 20, 2026  
 **Author:** SecureCodeReviews Engineering  
 **Audience:** Developers, Engineering Leads, DevSecOps Teams
@@ -1162,6 +1162,10 @@ ShieldX is a real, production-grade scanning platform. Below are honest technica
 ---
 
 ## Changelog
+
+### v2.4 (March 20, 2026)
+- **Graceful Auth Fallback** — All 5 scanner routes now fall back to demo mode when server-side authentication fails, instead of returning "Session expired" errors. This handles the edge case where the client has a valid NextAuth session but the server-side JWT is invalid (e.g., `NEXTAUTH_SECRET` mismatch between environments, or token expired mid-session). User-provided code/config is still scanned in demo mode with rate limiting (5/hr per IP).
+- **Files changed:** `scan-secrets/route.ts`, `scan-deps/route.ts`, `scan-api/route.ts`, `scan-cloud/route.ts`, `scan-logs/route.ts`
 
 ### v2.3 (March 20, 2026)
 - **Admin Access Control Fix** — Critical security fix: `/admin` page routes now require NextAuth session with `role: "admin"`. Previously, any user could navigate to `/admin` and see the admin login form (broken access control, OWASP A01). Non-admin users are now silently redirected to the homepage. Defense in depth: admin users still require `ADMIN_PASSWORD` to authenticate.
