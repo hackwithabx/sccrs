@@ -1,6 +1,6 @@
 # ShieldX — Detailed Architecture & Developer Documentation
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Last Updated:** March 20, 2026  
 **Author:** SecureCodeReviews Engineering  
 **Audience:** Developers, Engineering Leads, DevSecOps Teams
@@ -19,12 +19,12 @@
    - 4.4 [Cloud Security Audit](#44-cloud-security-audit)
    - 4.5 [Threat Log Analyzer](#45-threat-log-analyzer)
    - 4.6 [CI/CD Pipeline Gate](#46-cicd-pipeline-gate)
-   - 4.7 [Alert System](#47-alert-system)
+   - 4.7 [Alert System (Hidden)](#47-alert-system-hidden)
    - 4.8 [Security Score](#48-security-score)
 5. [API Reference](#5-api-reference)
 6. [Authentication & Authorization](#6-authentication--authorization)
 7. [Data Flow & Privacy](#7-data-flow--privacy)
-8. [Billing & Plans](#8-billing--plans)
+8. [Billing & Plans (Hidden)](#8-billing--plans-hidden)
 9. [External APIs & Data Sources](#9-external-apis--data-sources)
 10. [Database Schema](#10-database-schema)
 11. [Deployment Architecture](#11-deployment-architecture)
@@ -36,13 +36,15 @@
 
 ## 1. System Overview
 
-ShieldX is a multi-module application security platform built as part of the SecureCodeReviews.com (SCRs) Next.js application. It operates as a SaaS product with three plan tiers:
+ShieldX is a multi-module application security platform built as part of the SecureCodeReviews.com (SCRs) Next.js application. It operates as a SaaS product with plan tiers managed via admin provisioning.
 
-| Plan | Modules | Scan Limit | History | API Key | Team Seats | Price |
-|------|---------|-----------|---------|---------|-----------|-------|
-| **Free/Demo** | Secrets, Score (demo only) | 5 total | No | No | No | Free |
-| **Pro** | All 8 modules | 1,000/month | Yes | Yes | No | Paid |
-| **Enterprise** | All 8 modules | Unlimited | Yes | Yes | 25+ seats | Paid |
+> **Note (v2.1):** Billing (Razorpay) and Email Alerts are **hidden from the UI** but fully preserved in the backend. They can be re-enabled when the corresponding environment variables are configured. All pricing/upgrade links have been replaced with "Request Pro Access" flows.
+
+| Plan | Active UI Modules | Scan Limit | History | API Key | Team Seats | Provisioning |
+|------|-------------------|-----------|---------|---------|-----------|-------|
+| **Free/Demo** | Secrets, Score (demo only) | 5 total | No | No | No | Default |
+| **Pro** | 6 modules (all except CI/CD) | 1,000/month | Yes | Yes | No | Admin-assigned |
+| **Enterprise** | All 7 active modules | Unlimited | Yes | Yes | 25+ seats | Admin-assigned |
 
 ### Core Philosophy
 - **Zero code storage** — All scans happen in memory, results returned to browser, nothing persisted on server
@@ -75,7 +77,7 @@ ShieldX is a multi-module application security platform built as part of the Sec
 | Service | Purpose | API Key Required? |
 |---------|---------|-------------------|
 | **OSV.dev API** | Vulnerability database queries (Google) | No (free, open) |
-| **Razorpay** | Payment processing (India/global) | Yes (server-side) |
+| **Razorpay** | Payment processing (India/global) — *hidden from UI* | Yes (server-side) |
 | **MongoDB Atlas** | Database hosting | Yes (connection string) |
 | **Vercel** | Hosting & deployment | Automatic via Git |
 
@@ -88,9 +90,9 @@ ShieldX is a multi-module application security platform built as part of the Sec
 │                        CLIENT (Browser)                         │
 │                                                                 │
 │  ShieldX Workspace (/shieldx)                                   │
-│  ├── Module Cards (8 modules)                                   │
-│  ├── Scan Input Panel (textarea / URL input)                    │
-│  ├── Results Display (findings, scores, charts)                 │
+│  ├── Module Cards (7 active — alerts hidden from UI)            │
+│  ├── Scan Input Panel (textarea / URL / dual-input for CI/CD)   │
+│  ├── Results Display (findings, scores, PASS/FAIL verdict)      │
 │  ├── History Tab (Pro+)                                         │
 │  └── Overview Tab (plan info, stats, admin controls)            │
 └─────────────────────┬───────────────────────────────────────────┘
@@ -110,13 +112,13 @@ ShieldX is a multi-module application security platform built as part of the Sec
 │  Management Endpoints:                                          │
 │  ├── GET  /api/shieldx/history          (Scan History)          │
 │  ├── POST /api/shieldx/api-key          (Generate API Key)      │
-│  ├── POST /api/shieldx/alerts           (Alert Config)          │
-│  ├── POST /api/shieldx/alerts/test      (Test Alert)            │
+│  ├── POST /api/shieldx/alerts           (Alert Config) [hidden] │
+│  ├── POST /api/shieldx/alerts/test      (Test Alert)   [hidden] │
 │  ├── POST /api/shieldx/team             (Team Management)       │
 │  ├── POST /api/shieldx/upgrade-plan     (Admin Plan Change)     │
 │  └── POST /api/shieldx/demo-signup      (Demo Registration)     │
 │                                                                 │
-│  Billing Endpoints:                                             │
+│  Billing Endpoints (hidden from UI):                            │
 │  ├── POST /api/shieldx/billing/checkout     (Create Order)      │
 │  ├── GET  /api/shieldx/billing/subscription (Get Plan Status)   │
 │  ├── POST /api/shieldx/billing/cancel       (Cancel Sub)        │
@@ -138,7 +140,7 @@ ShieldX is a multi-module application security platform built as part of the Sec
      │  ├── alerts   │  │  │   (API scan)   │
      │  ├── teams    │  │  │                │
      │  └── billing  │  │  └── Razorpay     │
-     └───────────────┘  │      (billing)    │
+     └───────────────┘  │    (hidden in UI) │
                         └───────────────────┘
 ```
 
@@ -406,12 +408,38 @@ Analyzes pasted server/application/access logs against 11 threat detection patte
 
 **API Endpoint:** `POST /api/shieldx/ci-scan`  
 **File:** `app/api/shieldx/ci-scan/route.ts`  
-**Plan Access:** Enterprise  
-**Authentication:** API Key (header: `x-shieldx-api-key`)
+**Plan Access:** Enterprise (API key), Pro+ (browser session)  
+**Authentication:** API Key (header: `x-shieldx-api-key`) or NextAuth session  
+**UI Status:** ✅ Full interactive UI in workspace (added v2.1)
 
 #### How It Works
 
-Designed for automated pipeline integration. Accepts code via API key authentication and runs secrets + dependency scans in a single call.
+Runs secrets detection + dependency vulnerability scanning in a single combined scan. Available both as a browser-based interactive module and as a headless API for CI/CD pipeline integration.
+
+**Scan Types:**
+
+| Type | What It Does |
+|------|-------------|
+| `full` | Runs both secrets scan and dependency scan, merges results |
+| `secrets` | Secrets detection only on submitted code |
+| `dependencies` | Dependency CVE lookup only against OSV.dev |
+
+#### Browser UI (Workspace)
+
+1. **Module Selection:** User clicks the "CI/CD Pipeline Gate" card in the workspace
+2. **Scan Type Selector:** Dropdown to choose Full Scan, Secrets Only, or Dependencies Only
+3. **Dual Input Panel:**
+   - **Code / Config** textarea — Source code to scan for secrets
+   - **Dependencies (package.json)** textarea — Dependency manifest for CVE scanning
+   - For secrets-only or deps-only scans, only the relevant input is required
+4. **Execution:** Calls `POST /api/shieldx/ci-scan` with `{ code, dependencies, scanType }`
+5. **Result Rendering:**
+   - **PASS / FAIL verdict banner** (green/red) with exit code
+   - **Secrets sub-results** — finding count with severity breakdown, individual findings with line/column, masked preview, remediation
+   - **Dependency sub-results** — vulnerability count with severity breakdown, affected packages with CVE IDs, fixed versions, summaries
+6. **Pipeline Snippet:** Collapsible GitHub Actions YAML snippet for CI/CD integration
+
+#### API (Headless Pipeline Use)
 
 ```yaml
 # GitHub Actions Example
@@ -427,17 +455,44 @@ jobs:
           RESULT=$(curl -s -X POST https://securecodereviews.com/api/shieldx/ci-scan \
             -H "Content-Type: application/json" \
             -H "x-shieldx-api-key: ${{ secrets.SHIELDX_API_KEY }}" \
-            -d "{\"code\": \"$(cat package.json)\"}")
-          SCORE=$(echo $RESULT | jq -r '.score // 0')
-          if (( $(echo "$SCORE < 5" | bc -l) )); then
-            echo "Security score too low: $SCORE"
+            -d "{\"code\": \"$(cat src/**/*.ts)\", \"dependencies\": \"$(cat package.json)\", \"scanType\": \"full\"}")
+          VERDICT=$(echo $RESULT | jq -r '.verdict')
+          if [ "$VERDICT" = "FAIL" ]; then
+            echo "::error::Security gate failed"
             exit 1
           fi
 ```
 
+#### Request/Response
+
+```typescript
+// Request
+POST /api/shieldx/ci-scan
+{
+  "code": "const key = 'AKIAIOSFODNN7EXAMPLE'...",
+  "dependencies": "{\"dependencies\":{\"express\":\"4.17.1\"}}",
+  "scanType": "full" | "secrets" | "dependencies"
+}
+
+// Response
+{
+  "verdict": "PASS" | "FAIL",
+  "exitCode": 0 | 1,
+  "secrets": {
+    "findings": [...],
+    "stats": { "high": 0, "medium": 0, "low": 0, "total": 0 }
+  },
+  "dependencies": {
+    "vulnerabilities": [...],
+    "stats": { "critical": 0, "high": 0, "medium": 0, "low": 0, "total": 0 }
+  },
+  "timestamp": "2026-03-20T10:00:00.000Z"
+}
+```
+
 ---
 
-### 4.7 Alert System
+### 4.7 Alert System (Hidden)
 
 **API Endpoint:** `POST /api/shieldx/alerts`  
 **File:** `app/api/shieldx/alerts/route.ts`  
@@ -489,17 +544,17 @@ All scan APIs support two authentication methods:
 | `POST` | `/api/shieldx/scan-deps` | Session/API/Demo | Pro+ | Dependency CVE scan |
 | `POST` | `/api/shieldx/scan-api` | Session/API/Demo | Pro+ | API security scan |
 | `POST` | `/api/shieldx/scan-cloud` | Session/API/Demo | Pro+ | Cloud config audit |
-| `POST` | `/api/shieldx/ci-scan` | API Key only | Enterprise | CI/CD pipeline scan |
+| `POST` | `/api/shieldx/ci-scan` | Session/API Key | Enterprise | CI/CD pipeline scan (UI + API) |
 | `GET` | `/api/shieldx/history` | Session | Pro+ | Scan history |
 | `POST` | `/api/shieldx/api-key` | Session | Pro+ | Generate API key |
-| `POST` | `/api/shieldx/alerts` | Session | Pro+ | Alert configuration |
-| `POST` | `/api/shieldx/alerts/test` | Session | Pro+ | Test alert delivery |
+| `POST` | `/api/shieldx/alerts` | Session | Pro+ | Alert configuration *(hidden from UI)* |
+| `POST` | `/api/shieldx/alerts/test` | Session | Pro+ | Test alert delivery *(hidden from UI)* |
 | `POST` | `/api/shieldx/team` | Session | Enterprise | Team management |
 | `POST` | `/api/shieldx/upgrade-plan` | Session (Admin) | Admin | Manual plan change |
-| `POST` | `/api/shieldx/billing/checkout` | Session | Any | Create payment order |
-| `GET` | `/api/shieldx/billing/subscription` | Session | Any | Get plan status |
-| `POST` | `/api/shieldx/billing/cancel` | Session | Paid | Cancel subscription |
-| `POST` | `/api/shieldx/billing/webhook` | Razorpay signature | N/A | Payment webhook |
+| `POST` | `/api/shieldx/billing/checkout` | Session | Any | Create payment order *(hidden from UI)* |
+| `GET` | `/api/shieldx/billing/subscription` | Session | Any | Get plan status *(hidden from UI)* |
+| `POST` | `/api/shieldx/billing/cancel` | Session | Paid | Cancel subscription *(hidden from UI)* |
+| `POST` | `/api/shieldx/billing/webhook` | Razorpay signature | N/A | Payment webhook *(hidden from UI)* |
 
 ### Error Response Format
 ```json
@@ -613,22 +668,26 @@ const planFeatures = {
 
 ---
 
-## 8. Billing & Plans
+## 8. Billing & Plans (Hidden)
 
-### Payment Flow (Razorpay)
+> **Status (v2.1):** Billing UI (pricing page, upgrade links, plan comparison) is **hidden from the product UI**. All backend routes, models, and Razorpay integration code are fully preserved. Plans are currently provisioned via admin API (`POST /api/shieldx/upgrade-plan`). To re-enable self-service billing, uncomment the pricing links and billing UI components (search for `// Hidden`) and configure `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` environment variables.
+
+### Payment Flow (Razorpay) — Currently Inactive in UI
 
 ```
-1. User clicks "Upgrade to Pro" → /shieldx/pricing
-2. Frontend calls POST /api/shieldx/billing/checkout
-3. Backend creates Razorpay order (amount, currency)
-4. Razorpay checkout modal opens in browser
-5. User completes payment
-6. Razorpay sends webhook to POST /api/shieldx/billing/webhook
-7. Webhook handler:
+1. User clicks "Request Pro Access" → contact flow (was: "Upgrade to Pro" → /shieldx/pricing)
+2. Admin provisions plan via POST /api/shieldx/upgrade-plan
+   — OR (when billing is re-enabled) —
+3. Frontend calls POST /api/shieldx/billing/checkout
+4. Backend creates Razorpay order (amount, currency)
+5. Razorpay checkout modal opens in browser
+6. User completes payment
+7. Razorpay sends webhook to POST /api/shieldx/billing/webhook
+8. Webhook handler:
    a. Verifies signature using timingSafeEqual
    b. Updates user: shieldxPlan="pro", shieldxExpiry=+30 days
    c. Creates ShieldXBillingEvent record
-8. User refreshes → session reflects new plan
+9. User refreshes → session reflects new plan
 ```
 
 ### Key Files
@@ -688,7 +747,9 @@ function getEffectiveShieldXPlan(user) {
 
 **Response includes:** Vulnerability ID, aliases (CVE-xxx), summary, severity (CVSS), affected version ranges, fixed versions, references.
 
-### Razorpay (Payment Gateway)
+### Razorpay (Payment Gateway) — Hidden from UI
+
+> Backend integration is intact but not exposed in the product UI. Re-enable by configuring env vars and uncommenting billing UI components.
 
 | Property | Value |
 |----------|-------|
@@ -697,6 +758,7 @@ function getEffectiveShieldXPlan(user) {
 | **Webhook** | HMAC SHA256 signature verification |
 | **Used By** | Billing checkout, webhook, subscription management |
 | **Env Vars** | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` |
+| **UI Status** | ❌ Hidden — pricing page exists but is unlinked |
 
 ### No Other External APIs
 
@@ -972,12 +1034,13 @@ curl -s -X POST https://securecodereviews.com/api/shieldx/scan-cloud \
 ```
 app/shieldx/
 ├── page.tsx              # Main workspace (scan UIs, module cards, results)
-├── layout.tsx            # Layout wrapper
+├── layout.tsx            # Layout wrapper + SEO metadata
 ├── docs/
-│   ├── page.tsx          # Product documentation page
-│   └── layout.tsx        # Docs layout
+│   ├── page.tsx          # Product documentation (alerts section hidden)
+│   └── layout.tsx        # Docs layout + metadata
 └── pricing/
-    └── page.tsx          # Pricing plans page
+    ├── page.tsx          # Pricing plans page (exists but unlinked from nav)
+    └── layout.tsx        # Pricing metadata
 
 app/api/shieldx/
 ├── scan-secrets/route.ts     # Secrets scanner API
@@ -1053,6 +1116,22 @@ ShieldX is a real, production-grade scanning platform. Below are honest technica
 - **Not a SIEM** — Log analyzer is pattern-based, not behavioral/ML-based
 - **Not a compliance certifier** — Helps with OWASP/CIS alignment but does not issue compliance certificates
 - **Not a WAF** — Detects issues but does not block traffic
+
+---
+
+## Changelog
+
+### v2.1 (March 20, 2026)
+- **CI/CD Pipeline Gate** — Full interactive UI added to the workspace. Users can select scan type (full/secrets/dependencies), provide dual inputs (code + dependencies), and see PASS/FAIL verdict with detailed sub-results. GitHub Actions snippet included in the panel.
+- **Billing (Razorpay)** — Hidden from product UI. All backend routes, models, and Razorpay integration preserved. Plans now provisioned via admin API. "Upgrade to Pro" links replaced with "Request Pro Access" contact flows.
+- **Email Alerts** — Hidden from product UI. Backend API routes and models preserved. Requires SMTP environment variables to re-enable.
+- **Docs & Dashboard** — Updated to remove references to billing and alerts features. Pricing page exists but is unlinked from navigation.
+- **Re-enable guide:** Search codebase for `// Hidden` comments to find all hidden UI sections.
+
+### v2.0 (March 2026)
+- Initial comprehensive architecture documentation
+- Full module documentation for all 8 modules
+- API reference, auth flow, data privacy, deployment architecture
 
 ---
 
