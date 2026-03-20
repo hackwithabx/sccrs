@@ -1,6 +1,6 @@
 # ShieldX — Detailed Architecture & Developer Documentation
 
-**Version:** 2.2  
+**Version:** 2.3  
 **Last Updated:** March 20, 2026  
 **Author:** SecureCodeReviews Engineering  
 **Audience:** Developers, Engineering Leads, DevSecOps Teams
@@ -607,6 +607,21 @@ All scanner routes handle expired/invalid sessions gracefully:
 
 Auth call ordering (v2.2): Demo mode is checked **before** calling `getShieldXAuthorizedUser()` in all scanners, avoiding unnecessary auth overhead for demo users.
 
+### Admin Access Control (v2.3)
+
+The `/admin` portal is protected by **defense in depth** with two layers:
+
+1. **Middleware (NextAuth role check):** Only users with `role: "admin"` in their NextAuth JWT can access `/admin` page routes. Non-admin users are silently redirected to the homepage. This prevents non-admin users from even seeing the admin login form.
+2. **Admin Password (HMAC token):** Admin-role users must also enter the `ADMIN_PASSWORD` to authenticate. A signed `scr-admin-token` cookie is issued on success.
+
+| Path | No Admin Token | Valid Admin Token |
+|------|---------------|-------------------|
+| `/admin` (page) | Check NextAuth role → redirect if not admin | Allow through |
+| `/api/admin/*` (except auth) | 401 Unauthorized | Allow through |
+| `/api/admin/auth` | Always allowed (login endpoint) | Always allowed |
+
+**File:** `middleware.ts` — uses `getToken()` from `next-auth/jwt` to decode the NextAuth session.
+
 ### Key Files
 
 | File | Purpose |
@@ -1147,6 +1162,10 @@ ShieldX is a real, production-grade scanning platform. Below are honest technica
 ---
 
 ## Changelog
+
+### v2.3 (March 20, 2026)
+- **Admin Access Control Fix** — Critical security fix: `/admin` page routes now require NextAuth session with `role: "admin"`. Previously, any user could navigate to `/admin` and see the admin login form (broken access control, OWASP A01). Non-admin users are now silently redirected to the homepage. Defense in depth: admin users still require `ADMIN_PASSWORD` to authenticate.
+- **File changed:** `middleware.ts`
 
 ### v2.2 (March 20, 2026)
 - **Scanner Auth Flow Improvements** — All 5 scanner routes updated with resilient auth handling. Demo mode is now checked before auth calls (deps, api scanners reordered). Secrets scanner adds graceful demo fallback when session is expired and no code is provided. All scanners return actionable "Session expired or Pro plan required" messages instead of generic errors.
