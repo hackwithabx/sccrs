@@ -37,6 +37,7 @@ import {
   KeyRound,
   Copy,
   Check,
+  Download,
 } from "lucide-react";
 import { blogPosts } from "@/lib/blog-data";
 
@@ -71,6 +72,23 @@ interface UserRecord {
   avatar: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface ScanLogRecord {
+  _id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  plan: string;
+  scanType: string;
+  title: string;
+  source: string;
+  status: string;
+  target?: string;
+  overallScore?: number;
+  summary?: string;
+  counts?: { critical: number; high: number; medium: number; low: number; findingsTotal: number };
+  createdAt: string;
 }
 
 interface ReportRecord {
@@ -142,6 +160,24 @@ export default function AdminPage() {
   const [reportsAvgScore, setReportsAvgScore] = useState(0);
   const [reportsTotalDownloads, setReportsTotalDownloads] = useState(0);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+
+  /* Scan Logs */
+  const [scanLogs, setScanLogs] = useState<ScanLogRecord[]>([]);
+  const [scanLogsLoading, setScanLogsLoading] = useState(false);
+  const [scanLogsError, setScanLogsError] = useState("");
+  const [scanLogsTotal, setScanLogsTotal] = useState(0);
+  const [scanLogsPage, setScanLogsPage] = useState(1);
+  const [scanLogsTotalPages, setScanLogsTotalPages] = useState(1);
+  const [scanLogsTypeFilter, setScanLogsTypeFilter] = useState("");
+  const [scanLogsSearch, setScanLogsSearch] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  /* ShieldX Overview */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [shieldxOverview, setShieldxOverview] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [shieldxRecentScans, setShieldxRecentScans] = useState<any[]>([]);
+  const [shieldxLoading, setShieldxLoading] = useState(false);
 
   /* ========== DATA FETCHING ========== */
 
@@ -215,6 +251,43 @@ export default function AdminPage() {
       setReportsLoading(false);
     }
   }, [authenticated, reportsPage]);
+
+  const fetchShieldxOverview = useCallback(async () => {
+    if (!authenticated) return;
+    setShieldxLoading(true);
+    try {
+      const res = await fetch("/api/admin/shieldx?view=overview", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setShieldxOverview(data.overview);
+        setShieldxRecentScans(data.recentScans || []);
+      }
+    } catch { /* silent */ } finally { setShieldxLoading(false); }
+  }, [authenticated]);
+
+  const fetchScanLogs = useCallback(async () => {
+    if (!authenticated) return;
+    setScanLogsLoading(true);
+    setScanLogsError("");
+    try {
+      const params = new URLSearchParams({ view: "scans", page: scanLogsPage.toString(), limit: "20" });
+      if (scanLogsTypeFilter) params.set("scanType", scanLogsTypeFilter);
+      if (scanLogsSearch.trim()) params.set("search", scanLogsSearch.trim());
+      const res = await fetch(`/api/admin/shieldx?${params}`, { credentials: "include" });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to fetch scan logs");
+      }
+      const data = await res.json();
+      setScanLogs(data.scans);
+      setScanLogsTotal(data.total);
+      setScanLogsTotalPages(data.totalPages);
+    } catch (err) {
+      setScanLogsError(err instanceof Error ? err.message : "Failed to load scan logs");
+    } finally {
+      setScanLogsLoading(false);
+    }
+  }, [authenticated, scanLogsPage, scanLogsTypeFilter, scanLogsSearch]);
 
   /* ========== ACTIONS ========== */
 
@@ -445,12 +518,18 @@ export default function AdminPage() {
       fetchContacts();
       fetchUsers();
       fetchReports();
+      fetchScanLogs();
+      fetchShieldxOverview();
     }
-  }, [authenticated, fetchContacts, fetchUsers, fetchReports]);
+  }, [authenticated, fetchContacts, fetchUsers, fetchReports, fetchScanLogs, fetchShieldxOverview]);
 
   useEffect(() => {
     setUsersPage(1);
   }, [userPlanFilter, userSearch]);
+
+  useEffect(() => {
+    setScanLogsPage(1);
+  }, [scanLogsTypeFilter, scanLogsSearch]);
 
   const handleLogout = async () => {
     try {
@@ -590,6 +669,9 @@ export default function AdminPage() {
             <TabsTrigger value="contacts" className="gap-2">
               <MessageSquare className="h-4 w-4" /> Contacts
             </TabsTrigger>
+            <TabsTrigger value="scan-logs" className="gap-2">
+              <Activity className="h-4 w-4" /> Scan Logs
+            </TabsTrigger>
           </TabsList>
 
           {/* ==================== OVERVIEW TAB ==================== */}
@@ -673,6 +755,136 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* ── ShieldX Platform Stats ── */}
+            {shieldxLoading ? (
+              <div className="flex justify-center py-6"><RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : shieldxOverview && (
+              <>
+                <div className="mb-4">
+                  <h3 className="text-base font-semibold flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> ShieldX Platform</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { label: "Total Scans", value: shieldxOverview.totalScans, icon: Activity, color: "text-violet-500" },
+                    { label: "Avg Score", value: `${shieldxOverview.avgScore}/10`, icon: BarChart3, color: shieldxOverview.avgScore >= 7 ? "text-green-500" : shieldxOverview.avgScore >= 4 ? "text-yellow-500" : "text-red-500" },
+                    { label: "Pro Users", value: shieldxOverview.proUsers, icon: Zap, color: "text-blue-500" },
+                    { label: "Enterprise Users", value: shieldxOverview.enterpriseUsers, icon: Crown, color: "text-amber-500" },
+                  ].map((stat) => (
+                    <Card key={stat.label}>
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">{stat.label}</p>
+                            <p className="text-2xl font-bold mt-1">{typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}</p>
+                          </div>
+                          <stat.icon className={`h-8 w-8 ${stat.color} opacity-20`} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Severity Breakdown */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { label: "Critical", value: shieldxOverview.severity?.critical || 0, color: "text-red-600 bg-red-50 dark:bg-red-950" },
+                    { label: "High", value: shieldxOverview.severity?.high || 0, color: "text-orange-600 bg-orange-50 dark:bg-orange-950" },
+                    { label: "Medium", value: shieldxOverview.severity?.medium || 0, color: "text-yellow-600 bg-yellow-50 dark:bg-yellow-950" },
+                    { label: "Low", value: shieldxOverview.severity?.low || 0, color: "text-blue-600 bg-blue-50 dark:bg-blue-950" },
+                  ].map((s) => (
+                    <div key={s.label} className={`rounded-lg p-4 text-center ${s.color.split(" ").slice(1).join(" ")}`}>
+                      <div className={`text-2xl font-bold ${s.color.split(" ")[0]}`}>{s.value.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{s.label} Findings</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scans by Type + Plan Breakdown */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                  <Card>
+                    <CardHeader className="pb-3"><CardTitle className="text-sm">Scans by Type</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {Object.entries(shieldxOverview.scansByType || {}).sort(([,a]: [string, unknown],[,b]: [string, unknown]) => (b as number) - (a as number)).map(([type, count]: [string, unknown]) => (
+                          <div key={type} className="flex items-center justify-between">
+                            <span className="text-sm capitalize">{type}</span>
+                            <Badge variant="secondary">{(count as number).toLocaleString()}</Badge>
+                          </div>
+                        ))}
+                        {Object.keys(shieldxOverview.scansByType || {}).length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-2">No scans yet</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3"><CardTitle className="text-sm">User Plan Distribution</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {[
+                          { label: "Free", count: shieldxOverview.freeUsers, color: "bg-gray-300" },
+                          { label: "Pro", count: shieldxOverview.proUsers, color: "bg-blue-500" },
+                          { label: "Enterprise", count: shieldxOverview.enterpriseUsers, color: "bg-amber-500" },
+                        ].map((p) => (
+                          <div key={p.label}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>{p.label}</span>
+                              <span className="font-medium">{p.count}</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-muted overflow-hidden">
+                              <div className={`h-full rounded-full ${p.color}`} style={{ width: `${shieldxOverview.totalUsers > 0 ? (p.count / shieldxOverview.totalUsers) * 100 : 0}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Recent ShieldX Scans */}
+                {shieldxRecentScans.length > 0 && (
+                  <Card className="mb-6">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Recent ShieldX Scans</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-muted-foreground">
+                              <th className="pb-2 font-medium">User</th>
+                              <th className="pb-2 font-medium">Type</th>
+                              <th className="pb-2 font-medium">Score</th>
+                              <th className="pb-2 font-medium">Status</th>
+                              <th className="pb-2 font-medium">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {shieldxRecentScans.slice(0, 10).map((scan: { _id?: string; userEmail?: string; userName?: string; scanType?: string; overallScore?: number; status?: string; createdAt?: string }, i: number) => (
+                              <tr key={scan._id || i}>
+                                <td className="py-2">
+                                  <div className="text-xs font-medium">{scan.userName || "—"}</div>
+                                  <div className="text-xs text-muted-foreground">{scan.userEmail}</div>
+                                </td>
+                                <td className="py-2"><Badge variant="outline" className="text-xs capitalize">{scan.scanType}</Badge></td>
+                                <td className="py-2">
+                                  {scan.overallScore != null ? (
+                                    <span className={`font-semibold text-xs ${scan.overallScore >= 7 ? "text-green-600" : scan.overallScore >= 4 ? "text-yellow-600" : "text-red-600"}`}>{scan.overallScore}/10</span>
+                                  ) : "—"}
+                                </td>
+                                <td className="py-2"><Badge variant={scan.status === "completed" ? "default" : "destructive"} className={`text-xs ${scan.status === "completed" ? "bg-green-600 text-white" : ""}`}>{scan.status}</Badge></td>
+                                <td className="py-2 text-xs text-muted-foreground">{scan.createdAt ? new Date(scan.createdAt).toLocaleDateString() : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
 
             {/* Quick Actions */}
             <Card>
@@ -1838,6 +2050,224 @@ export default function AdminPage() {
                     size="sm"
                     disabled={contactsPage >= contactsTotalPages}
                     onClick={() => setContactsPage((p) => p + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          {/* ==================== SCAN LOGS TAB ==================== */}
+          <TabsContent value="scan-logs">
+            <div className="space-y-6">
+              {/* Header with download buttons */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Scan Logs</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {scanLogsTotal} total scan{scanLogsTotal !== 1 ? "s" : ""} across all users
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={exporting}
+                    onClick={async () => {
+                      setExporting(true);
+                      try {
+                        const params = new URLSearchParams({ format: "csv", limit: "5000" });
+                        if (scanLogsTypeFilter) params.set("scanType", scanLogsTypeFilter);
+                        if (scanLogsSearch.trim()) params.set("userEmail", scanLogsSearch.trim());
+                        const res = await fetch(`/api/admin/shieldx/export?${params}`, { credentials: "include" });
+                        if (!res.ok) throw new Error("Export failed");
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `shieldx-scan-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      } catch { /* ignore */ } finally { setExporting(false); }
+                    }}
+                  >
+                    <Download className="h-4 w-4" /> Export CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={exporting}
+                    onClick={async () => {
+                      setExporting(true);
+                      try {
+                        const params = new URLSearchParams({ format: "json", limit: "5000" });
+                        if (scanLogsTypeFilter) params.set("scanType", scanLogsTypeFilter);
+                        if (scanLogsSearch.trim()) params.set("userEmail", scanLogsSearch.trim());
+                        const res = await fetch(`/api/admin/shieldx/export?${params}`, { credentials: "include" });
+                        if (!res.ok) throw new Error("Export failed");
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `shieldx-scan-logs-${new Date().toISOString().slice(0, 10)}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      } catch { /* ignore */ } finally { setExporting(false); }
+                    }}
+                  >
+                    <Download className="h-4 w-4" /> Export JSON
+                  </Button>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by user email, name, or title..."
+                    value={scanLogsSearch}
+                    onChange={(e) => setScanLogsSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <select
+                  value={scanLogsTypeFilter}
+                  onChange={(e) => setScanLogsTypeFilter(e.target.value)}
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">All Scan Types</option>
+                  <option value="secrets">Secrets</option>
+                  <option value="deps">Dependencies</option>
+                  <option value="cloud">Cloud</option>
+                  <option value="api">API</option>
+                  <option value="logs">Logs</option>
+                  <option value="cicd">CI/CD</option>
+                  <option value="score">Score</option>
+                </select>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fetchScanLogs()}
+                  className="gap-1"
+                >
+                  <RefreshCw className="h-4 w-4" /> Refresh
+                </Button>
+              </div>
+
+              {/* Loading / Error */}
+              {scanLogsLoading && (
+                <div className="flex justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {scanLogsError && (
+                <Card className="border-destructive">
+                  <CardContent className="pt-6">
+                    <p className="text-destructive text-sm">{scanLogsError}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Table */}
+              {!scanLogsLoading && !scanLogsError && (
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="px-4 py-3 text-left font-medium">Date</th>
+                        <th className="px-4 py-3 text-left font-medium">User</th>
+                        <th className="px-4 py-3 text-left font-medium">Plan</th>
+                        <th className="px-4 py-3 text-left font-medium">Type</th>
+                        <th className="px-4 py-3 text-left font-medium">Title</th>
+                        <th className="px-4 py-3 text-left font-medium">Score</th>
+                        <th className="px-4 py-3 text-left font-medium">Findings</th>
+                        <th className="px-4 py-3 text-left font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {scanLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                            No scan logs found
+                          </td>
+                        </tr>
+                      ) : (
+                        scanLogs.map((scan) => (
+                          <tr key={scan._id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                              {new Date(scan.createdAt).toLocaleDateString()}{" "}
+                              {new Date(scan.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-xs">{scan.userName || "—"}</div>
+                              <div className="text-xs text-muted-foreground">{scan.userEmail}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant={scan.plan === "enterprise" ? "default" : scan.plan === "pro" ? "default" : "secondary"} className={`text-xs ${scan.plan === "enterprise" ? "bg-amber-500 text-white" : scan.plan === "pro" ? "bg-primary text-primary-foreground" : ""}`}>
+                                {scan.plan}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant="outline" className="text-xs capitalize">{scan.scanType}</Badge>
+                            </td>
+                            <td className="px-4 py-3 max-w-[200px] truncate text-xs" title={scan.title}>
+                              {scan.title || "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              {scan.overallScore != null ? (
+                                <span className={`font-semibold text-xs ${
+                                  scan.overallScore >= 8 ? "text-green-600" :
+                                  scan.overallScore >= 5 ? "text-yellow-600" : "text-red-600"
+                                }`}>
+                                  {scan.overallScore}/10
+                                </span>
+                              ) : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              {scan.counts ? (
+                                <div className="flex gap-1 text-xs">
+                                  {scan.counts.critical > 0 && <Badge variant="destructive" className="text-[10px] px-1">{scan.counts.critical}C</Badge>}
+                                  {scan.counts.high > 0 && <Badge className="bg-orange-500 text-white text-[10px] px-1">{scan.counts.high}H</Badge>}
+                                  {scan.counts.medium > 0 && <Badge className="bg-yellow-500 text-white text-[10px] px-1">{scan.counts.medium}M</Badge>}
+                                  {scan.counts.low > 0 && <Badge variant="secondary" className="text-[10px] px-1">{scan.counts.low}L</Badge>}
+                                </div>
+                              ) : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant={scan.status === "completed" ? "default" : "destructive"} className={`text-xs ${scan.status === "completed" ? "bg-green-600 text-white" : ""}`}>
+                                {scan.status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {scanLogsTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={scanLogsPage <= 1}
+                    onClick={() => setScanLogsPage((p) => p - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {scanLogsPage} of {scanLogsTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={scanLogsPage >= scanLogsTotalPages}
+                    onClick={() => setScanLogsPage((p) => p + 1)}
                   >
                     Next
                   </Button>

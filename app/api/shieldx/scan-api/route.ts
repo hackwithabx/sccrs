@@ -486,10 +486,44 @@ export async function POST(request: NextRequest) {
       // OPTIONS not supported — that's fine
     }
 
+    // Remediation recommendations for headers
+    const HEADER_FIXES: Record<string, { fix: string; effort: "low" | "medium" | "high" }> = {
+      "Strict-Transport-Security": { fix: 'Add header: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload', effort: "low" },
+      "Content-Security-Policy": { fix: "Configure CSP: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; Remove unsafe-eval if present.", effort: "medium" },
+      "X-Content-Type-Options": { fix: "Add header: X-Content-Type-Options: nosniff", effort: "low" },
+      "X-Frame-Options": { fix: "Add header: X-Frame-Options: DENY (or SAMEORIGIN if framing is needed)", effort: "low" },
+      "X-XSS-Protection": { fix: "Add header: X-XSS-Protection: 0 (rely on CSP instead for modern browsers)", effort: "low" },
+      "Referrer-Policy": { fix: "Add header: Referrer-Policy: strict-origin-when-cross-origin", effort: "low" },
+      "Permissions-Policy": { fix: "Add header: Permissions-Policy: camera=(), microphone=(), geolocation=()", effort: "low" },
+      "Access-Control-Allow-Origin": { fix: "Replace wildcard (*) with specific allowed origins. Never combine * with credentials.", effort: "medium" },
+      "Server": { fix: "Remove or obfuscate the Server header in your web server config (e.g. nginx: server_tokens off;)", effort: "low" },
+      "X-Powered-By": { fix: "Remove X-Powered-By header. Express: app.disable('x-powered-by'). Most frameworks have similar options.", effort: "low" },
+    };
+
+    // Remediation recommendations for OWASP checks
+    const API_FIXES: Record<string, { fix: string; effort: "low" | "medium" | "high" }> = {
+      "Object-Level Authorization": { fix: "Implement per-object access control checks. Validate the requesting user owns or has permission to access each resource by ID.", effort: "high" },
+      "Authentication Enforcement": { fix: "Add authentication middleware (JWT, OAuth2, or session-based) to all sensitive endpoints. Return 401 for unauthenticated requests.", effort: "medium" },
+      "Excessive Data Exposure": { fix: "Use response serializers/DTOs to filter sensitive fields. Implement field-level access control. Reduce response payload size.", effort: "medium" },
+      "Rate Limiting / Resource Controls": { fix: "Add rate limiting headers (X-RateLimit-Limit, X-RateLimit-Remaining). Use express-rate-limit, nginx rate limiting, or API gateway throttling.", effort: "low" },
+      "HTTP Method Restrictions": { fix: "Restrict HTTP methods to only those needed. Block TRACE method. Add proper authorization for DELETE/PUT/PATCH operations.", effort: "low" },
+      "Bot Protection": { fix: "Deploy a WAF (Cloudflare, AWS WAF, or Akamai). Add CAPTCHA for sensitive flows. Implement request fingerprinting.", effort: "medium" },
+      "Redirect Chain Analysis": { fix: "Validate all redirect destinations against an allowlist. Never redirect to user-supplied URLs without validation.", effort: "medium" },
+      "HTTPS Enforcement": { fix: "Enable TLS/SSL certificate. Redirect all HTTP traffic to HTTPS. Set HSTS header.", effort: "low" },
+      "Server Information Disclosure": { fix: "Remove Server, X-Powered-By, X-AspNet-Version, X-Runtime headers from responses.", effort: "low" },
+      "Error Information Leakage": { fix: "Use generic error messages in production. Configure error handlers to suppress stack traces. Log detailed errors server-side only.", effort: "low" },
+      "API Versioning": { fix: "Implement URL-based (/v1/) or header-based (API-Version) versioning. Maintain version inventory.", effort: "medium" },
+      "Content-Type Validation": { fix: "Always set Content-Type header with charset: application/json; charset=utf-8", effort: "low" },
+      "Cookie Security": { fix: "Set HttpOnly, Secure, and SameSite=Strict flags on all cookies. Example: Set-Cookie: token=abc; HttpOnly; Secure; SameSite=Strict", effort: "low" },
+      "Cache-Control": { fix: "Add Cache-Control: no-store, no-cache for sensitive endpoints. Use private for user-specific data.", effort: "low" },
+      "CORS Configuration": { fix: "Replace wildcard (*) CORS with specific allowed origins. Never set Access-Control-Allow-Credentials: true with wildcard origin.", effort: "medium" },
+    };
+
     // Run header checks
     const headerResults: HeaderCheck[] = SECURITY_HEADERS.map((h) => {
       const value = headersObj[h.key] || null;
       const result = h.evaluate(value);
+      const fixInfo = HEADER_FIXES[h.name];
       return {
         name: h.name,
         present: !!value,
@@ -497,13 +531,23 @@ export async function POST(request: NextRequest) {
         severity: h.severity,
         status: result.status,
         message: result.message,
+        fix: result.status !== "pass" && fixInfo ? fixInfo.fix : null,
+        effort: result.status !== "pass" && fixInfo ? fixInfo.effort : null,
       };
     });
 
     // Run OWASP API checks
     const apiResults = API_CHECKS.map((c) => {
       const result = c.check({ headers: headersObj, status: response.status, body: truncatedBody, url: targetUrl, cookies, allowedMethods });
-      return { name: c.name, owasp: c.owasp || null, severity: c.severity, ...result };
+      const fixInfo = API_FIXES[c.name];
+      return {
+        name: c.name,
+        owasp: c.owasp || null,
+        severity: c.severity,
+        ...result,
+        fix: result.status !== "pass" && fixInfo ? fixInfo.fix : null,
+        effort: result.status !== "pass" && fixInfo ? fixInfo.effort : null,
+      };
     });
 
     // Calculate score

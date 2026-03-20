@@ -4,6 +4,12 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
+const ADMIN_EMAILS = [
+  "scr@securecodereviews.com",
+  "support@securecodereviews.com",
+  process.env.ADMIN_EMAIL?.toLowerCase(),
+].filter(Boolean) as string[];
+
 export async function POST(req: Request) {
   try {
     // Rate limiting: 3 registration attempts per 15 minutes per IP
@@ -64,11 +70,13 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
+    const isAdminEmail = ADMIN_EMAILS.includes(email.toLowerCase());
     const user = await User.create({
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
       ...(typeof company === "string" && company.trim() ? { company: company.trim().slice(0, 120) } : {}),
+      ...(isAdminEmail ? { role: "admin", shieldxPlan: "enterprise", shieldxPlanSource: "admin" } : {}),
     });
 
     return NextResponse.json(

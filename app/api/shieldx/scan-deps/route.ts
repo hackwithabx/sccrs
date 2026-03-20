@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
 import { rateLimit } from "@/lib/rate-limit";
+import connectDB from "@/lib/mongodb";
+import User from "@/models/User";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -46,6 +48,8 @@ interface VulnResult {
   severity: "critical" | "high" | "medium" | "low";
   summary: string;
   fixedIn: string | null;
+  fixCommand: string | null;
+  effort: "low" | "medium" | "high";
   source: "osv" | "local";
   references: string[];
 }
@@ -248,6 +252,35 @@ export async function POST(request: NextRequest) {
           const fixedIn = getFixedVersion(vuln, result.name);
           const refs = (vuln.references || []).map((r: { url: string }) => r.url).slice(0, 3);
 
+          // Build actionable fix command based on ecosystem
+          let fixCommand: string | null = null;
+          let effort: "low" | "medium" | "high" = "medium";
+          if (fixedIn) {
+            switch (ecosystem) {
+              case "npm":
+                fixCommand = `npm install ${result.name}@${fixedIn}`;
+                effort = "low";
+                break;
+              case "PyPI":
+                fixCommand = `pip install ${result.name}>=${fixedIn}`;
+                effort = "low";
+                break;
+              case "Go":
+                fixCommand = `go get ${result.name}@v${fixedIn}`;
+                effort = "low";
+                break;
+              case "Maven":
+                fixCommand = `Update <version>${fixedIn}</version> in pom.xml for ${result.name}`;
+                effort = "medium";
+                break;
+              default:
+                fixCommand = `Upgrade ${result.name} to version ${fixedIn}`;
+                effort = "low";
+            }
+          } else {
+            effort = "high";
+          }
+
           allVulns.push({
             package: result.name,
             version: result.version,
@@ -256,6 +289,8 @@ export async function POST(request: NextRequest) {
             severity: extractSeverity(vuln),
             summary: vuln.summary || vuln.details?.slice(0, 200) || "No description available",
             fixedIn,
+            fixCommand,
+            effort,
             source: "osv",
             references: refs,
           });
@@ -282,6 +317,14 @@ export async function POST(request: NextRequest) {
       medium: uniqueVulns.filter((v) => v.severity === "medium").length,
       low: uniqueVulns.filter((v) => v.severity === "low").length,
     };
+
+    // Increment scan count for authenticated users
+    if (authorizedUser && !effectiveDemo) {
+      try {
+        await connectDB();
+        await User.findByIdAndUpdate(authorizedUser.id, { $inc: { shieldxScanCount: 1 } });
+      } catch { /* non-blocking */ }
+    }
 
     return NextResponse.json({
       mode: effectiveDemo ? "demo" : "paid",

@@ -276,15 +276,40 @@ variable "db_config" {
 }
 `;
 
+// Structured remediation for each cloud check
+const CLOUD_REMEDIATION: Record<string, { fix: string; effort: "low" | "medium" | "high" }> = {
+  "iam-root-access": { fix: "Delete root access keys via AWS Console > Security Credentials. Create IAM users with specific policies instead. Enable MFA on root account.", effort: "medium" },
+  "iam-wildcard": { fix: "Replace Action: \"*\" with specific actions needed. Use AWS IAM Access Analyzer to identify minimum required permissions. Apply the principle of least privilege.", effort: "high" },
+  "iam-mfa": { fix: "Enable MFA: aws iam enable-mfa-device --user-name USER --serial-number ARN --authentication-code1 CODE1 --authentication-code2 CODE2. Enforce via IAM policy condition: aws:MultiFactorAuthPresent.", effort: "low" },
+  "enc-at-rest": { fix: "Enable encryption: aws s3api put-bucket-encryption --bucket BUCKET --server-side-encryption-configuration '{\"Rules\":[{\"ApplyServerSideEncryptionByDefault\":{\"SSEAlgorithm\":\"AES256\"}}]}'", effort: "low" },
+  "enc-in-transit": { fix: "Replace all http:// URLs with https://. Configure TLS certificates. Add aws:SecureTransport condition to S3 bucket policies.", effort: "medium" },
+  "enc-kms": { fix: "Create a KMS key: aws kms create-key --description 'App encryption key'. Use for S3 SSE-KMS, RDS encryption, and EBS volume encryption.", effort: "medium" },
+  "net-public-access": { fix: "Replace 0.0.0.0/0 CIDR with specific IP ranges. Use VPN or AWS PrivateLink for internal access. Enable S3 Block Public Access.", effort: "medium" },
+  "net-sg-open": { fix: "Restrict security group ingress rules: aws ec2 revoke-security-group-ingress --group-id SG_ID --protocol tcp --port 22 --cidr 0.0.0.0/0. Allow only known IPs or VPN CIDR.", effort: "low" },
+  "net-vpc-flow": { fix: "Enable VPC Flow Logs: aws ec2 create-flow-logs --resource-type VPC --resource-ids VPC_ID --traffic-type ALL --log-destination-type cloud-watch-logs", effort: "low" },
+  "log-cloudtrail": { fix: "Create trail: aws cloudtrail create-trail --name my-trail --s3-bucket-name my-trail-bucket --is-multi-region-trail. Enable for all regions.", effort: "low" },
+  "log-alarm": { fix: "Create CloudWatch alarm: aws cloudwatch put-metric-alarm --alarm-name SecurityAlert --metric-name UnauthorizedAPICalls --threshold 1 --comparison-operator GreaterThanThreshold", effort: "medium" },
+  "stor-bucket-public": { fix: "Block public access: aws s3api put-public-access-block --bucket BUCKET --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true", effort: "low" },
+  "stor-versioning": { fix: "Enable versioning: aws s3api put-bucket-versioning --bucket BUCKET --versioning-configuration Status=Enabled", effort: "low" },
+  "comp-imds-v2": { fix: "Enforce IMDSv2: aws ec2 modify-instance-metadata-options --instance-id INSTANCE_ID --http-tokens required --http-endpoint enabled", effort: "low" },
+  "comp-auto-update": { fix: "Configure SSM Patch Manager: Create a patch baseline and maintenance window. Or use AWS Systems Manager for automated patching.", effort: "medium" },
+  "misc-hardcoded-creds": { fix: "Move secrets to AWS Secrets Manager or SSM Parameter Store. Reference via: aws secretsmanager get-secret-value --secret-id my-secret. Update code to use SDK.", effort: "medium" },
+  "misc-debug-mode": { fix: "Set NODE_ENV=production in deployment. Remove debug: true from all config files. Ensure environment variables are properly set in CI/CD.", effort: "low" },
+  "misc-backup-retention": { fix: "Enable automated backups: aws rds modify-db-instance --db-instance-identifier mydb --backup-retention-period 7. Configure S3 lifecycle rules for backup retention.", effort: "medium" },
+};
+
 function runCloudAudit(config: string) {
   const results = CLOUD_CHECKS.map((check) => {
     const result = check.evaluate(config);
+    const remediation = CLOUD_REMEDIATION[check.id];
     return {
       id: check.id,
       category: check.category,
       name: check.name,
       severity: check.severity,
       ...result,
+      fix: result.status !== "pass" && remediation ? remediation.fix : null,
+      effort: result.status !== "pass" && remediation ? remediation.effort : null,
     };
   });
 

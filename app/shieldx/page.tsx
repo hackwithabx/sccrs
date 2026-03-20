@@ -67,7 +67,7 @@ const MODULES = [
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "AI-powered log analysis to detect brute-force attacks, injection attempts, and anomalous patterns.", icon: Brain, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
-  // { id: "alerts", name: "Alert System", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected.", icon: Bell, plans: ["pro", "enterprise"] },  // Hidden — re-enable when alerts backend is fully wired
+  { id: "alerts", name: "Alert System", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected in your scans.", icon: Bell, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
 ];
 
@@ -101,6 +101,14 @@ export default function ShieldXWorkspacePage() {
   const [scanResults, setScanResults] = useState<any>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [sessionScans, setSessionScans] = useState<ScanHistoryItem[]>([]);
+
+  /* ── Alert config state ── */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [alertConfig, setAlertConfig] = useState<any>(null);
+  const [alertLoading, setAlertLoading] = useState(false);
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertTesting, setAlertTesting] = useState(false);
 
   /* ── Admin plan upgrade ── */
   const [upgradingPlan, setUpgradingPlan] = useState(false);
@@ -136,6 +144,49 @@ export default function ShieldXWorkspacePage() {
   useEffect(() => { void loadBillingState(); }, [loadBillingState]);
   useEffect(() => { void loadScanHistory(); }, [loadScanHistory]);
 
+  /* ── Alert Config Management ── */
+  const loadAlertConfig = useCallback(async () => {
+    if (!isPaid) return;
+    setAlertLoading(true);
+    try {
+      const res = await fetch("/api/shieldx/alerts");
+      const data = await res.json();
+      if (res.ok) setAlertConfig(data.config);
+    } catch { /* silent */ } finally { setAlertLoading(false); }
+  }, [isPaid]);
+
+  const saveAlertConfig = async () => {
+    if (!alertConfig) return;
+    setAlertSaving(true);
+    setAlertMessage(null);
+    try {
+      const res = await fetch("/api/shieldx/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(alertConfig),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save");
+      setAlertMessage("Alert configuration saved successfully!");
+      setAlertConfig(data.config);
+    } catch (err) {
+      setAlertMessage(err instanceof Error ? err.message : "Failed to save");
+    } finally { setAlertSaving(false); }
+  };
+
+  const testAlert = async () => {
+    setAlertTesting(true);
+    setAlertMessage(null);
+    try {
+      const res = await fetch("/api/shieldx/alerts/test", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Test failed");
+      setAlertMessage("Test alert sent! Check your configured channels.");
+    } catch (err) {
+      setAlertMessage(err instanceof Error ? err.message : "Test failed");
+    } finally { setAlertTesting(false); }
+  };
+
   /* ── Admin plan upgrade ── */
   const adminUpgradePlan = async (plan: PlanTier) => {
     setUpgradingPlan(true);
@@ -167,6 +218,7 @@ export default function ShieldXWorkspacePage() {
     setCicdScanType("full");
     setScanResults(null);
     setScanError(null);
+    if (moduleId === "alerts") void loadAlertConfig();
     // Scroll to the scan panel after state update + animation start
     setTimeout(() => {
       scanPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -240,6 +292,7 @@ export default function ShieldXWorkspacePage() {
 
       // Track scan in current session for Security Score (works for all users)
       const historyPayload = buildHistoryPayload(activeModule, data, scanInput);
+      let sessionItemId: string | null = null;
       if (historyPayload) {
         const sessionItem: ScanHistoryItem = {
           _id: `session-${Date.now()}`,
@@ -250,6 +303,7 @@ export default function ShieldXWorkspacePage() {
           createdAt: new Date().toISOString(),
           status: historyPayload.status,
         };
+        sessionItemId = sessionItem._id;
         setSessionScans((prev) => [sessionItem, ...prev]);
       }
 
@@ -257,12 +311,18 @@ export default function ShieldXWorkspacePage() {
       if (isPaid && data && !isDemo) {
         try {
           if (historyPayload) {
-            await fetch("/api/shieldx/history", {
+            const saveRes = await fetch("/api/shieldx/history", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(historyPayload),
             });
-            void loadScanHistory();
+            if (saveRes.ok) {
+              // Remove the session scan to avoid duplicate with DB record
+              if (sessionItemId) {
+                setSessionScans((prev) => prev.filter((s) => s._id !== sessionItemId));
+              }
+              void loadScanHistory();
+            }
           }
         } catch { /* silent — don't block UI */ }
       }
@@ -543,7 +603,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "cicd", "score"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "cicd", "score", "alerts"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
@@ -567,7 +627,7 @@ export default function ShieldXWorkspacePage() {
                           {isAvailable && hasScanUI ? (
                             <Button size="sm" variant={isActive ? "default" : "outline"} className="w-full gap-1.5"
                               onClick={(e) => { e.stopPropagation(); openModule(mod.id); }}>
-                              {isActive ? <>Close Scanner <X className="h-3.5 w-3.5" /></> : <>{isDemoOnly ? "Open Demo Scanner" : mod.id === "score" ? "View Score Dashboard" : "Open Scanner"} <ChevronDown className="h-3.5 w-3.5" /></>}
+                              {isActive ? <>Close Scanner <X className="h-3.5 w-3.5" /></> : <>{isDemoOnly ? "Open Demo Scanner" : mod.id === "score" ? "View Score Dashboard" : mod.id === "alerts" ? "Configure Alerts" : "Open Scanner"} <ChevronDown className="h-3.5 w-3.5" /></>}
                             </Button>
                           ) : isAvailable ? (
                             <Button size="sm" variant="outline" className="w-full gap-1.5" disabled>
@@ -589,7 +649,7 @@ export default function ShieldXWorkspacePage() {
             {/* ── Scan Panel ── */}
             <div ref={scanPanelRef} />
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "cicd", "score"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "cicd", "score", "alerts"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -819,8 +879,121 @@ export default function ShieldXWorkspacePage() {
                           );
                         })()}
 
+                        {/* Alert Configuration UI */}
+                        {activeModule === "alerts" && (
+                          <div className="space-y-5">
+                            {alertLoading ? (
+                              <div className="flex items-center justify-center py-8 gap-2">
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                <span className="text-sm text-muted-foreground">Loading alert configuration...</span>
+                              </div>
+                            ) : !isPaid ? (
+                              <Card className="border-amber-500/20 bg-amber-500/5">
+                                <CardContent className="p-4 flex items-center gap-3">
+                                  <Lock className="h-5 w-5 text-amber-500" />
+                                  <p className="text-sm">Alert system requires Pro or Enterprise plan.</p>
+                                </CardContent>
+                              </Card>
+                            ) : alertConfig ? (
+                              <>
+                                {/* Notification Channels */}
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><Bell className="h-4 w-4 text-primary" /> Notification Channels</h4>
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="text-xs font-medium mb-1 block">Email Address</label>
+                                      <input type="email" className="w-full rounded-lg border bg-muted/30 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        placeholder="your@email.com" value={alertConfig.email || ""}
+                                        onChange={(e) => setAlertConfig({ ...alertConfig, email: e.target.value })} />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium mb-1 block">Slack Webhook URL</label>
+                                      <input type="url" className="w-full rounded-lg border bg-muted/30 p-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        placeholder="https://hooks.slack.com/services/..." value={alertConfig.slackWebhook || ""}
+                                        onChange={(e) => setAlertConfig({ ...alertConfig, slackWebhook: e.target.value })} />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium mb-1 block">Custom Webhook URL</label>
+                                      <input type="url" className="w-full rounded-lg border bg-muted/30 p-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        placeholder="https://your-server.com/webhook" value={alertConfig.customWebhook || ""}
+                                        onChange={(e) => setAlertConfig({ ...alertConfig, customWebhook: e.target.value })} />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Alert Threshold */}
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-3">Alert Threshold</h4>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {([["critical", "Critical Only"], ["high", "High & Critical"], ["all", "All Severities"]] as const).map(([val, label]) => (
+                                      <Button key={val} size="sm" variant={alertConfig.threshold === val ? "default" : "outline"} className="text-xs"
+                                        onClick={() => setAlertConfig({ ...alertConfig, threshold: val })}>
+                                        {label}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Alert Rules */}
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-3">Alert Rules</h4>
+                                  <div className="space-y-2">
+                                    {(alertConfig.rules || []).map((rule: any, idx: number) => (
+                                      <div key={rule.id || idx} className="flex items-center justify-between border rounded-lg px-3 py-2.5">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <button className={`w-9 h-5 rounded-full transition-colors relative ${rule.enabled ? "bg-primary" : "bg-muted"}`}
+                                            onClick={() => {
+                                              const newRules = [...alertConfig.rules];
+                                              newRules[idx] = { ...rule, enabled: !rule.enabled };
+                                              setAlertConfig({ ...alertConfig, rules: newRules });
+                                            }}>
+                                            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${rule.enabled ? "left-[18px]" : "left-0.5"}`} />
+                                          </button>
+                                          <div className="min-w-0">
+                                            <span className="text-sm font-medium block">{rule.name}</span>
+                                            <span className="text-xs text-muted-foreground block truncate">{rule.description}</span>
+                                          </div>
+                                        </div>
+                                        <Badge variant={rule.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize shrink-0">{rule.severity}</Badge>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex gap-3 flex-wrap">
+                                  <Button onClick={saveAlertConfig} disabled={alertSaving} className="gap-2">
+                                    {alertSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <>Save Configuration</>}
+                                  </Button>
+                                  <Button variant="outline" onClick={testAlert} disabled={alertTesting} className="gap-2">
+                                    {alertTesting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : <>Send Test Alert</>}
+                                  </Button>
+                                </div>
+
+                                {alertMessage && (
+                                  <Card className={alertMessage.includes("success") || alertMessage.includes("sent") ? "border-emerald-500/30 bg-emerald-500/5" : "border-red-500/30 bg-red-500/5"}>
+                                    <CardContent className="p-3 flex items-center gap-2">
+                                      {alertMessage.includes("success") || alertMessage.includes("sent")
+                                        ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                        : <XCircle className="h-4 w-4 text-red-500" />}
+                                      <p className="text-sm">{alertMessage}</p>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </>
+                            ) : (
+                              <Card className="border-amber-500/20 bg-amber-500/5">
+                                <CardContent className="p-4 text-center">
+                                  <p className="text-sm text-muted-foreground">Failed to load alert configuration. Please try again.</p>
+                                  <Button size="sm" variant="outline" className="mt-2" onClick={() => void loadAlertConfig()}>Retry</Button>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </div>
+                        )}
+
                         <div className="flex gap-3">
-                          {activeModule !== "score" && (
+                          {activeModule !== "score" && activeModule !== "alerts" && (
                           <Button onClick={runScan} disabled={scanning || (activeModule === "cicd" ? (cicdScanType !== "dependencies" && !scanInput.trim() && cicdScanType !== "secrets") || (cicdScanType !== "secrets" && !cicdDepsInput.trim() && cicdScanType !== "dependencies") : (!isDemoOnly && !scanInput.trim()))} className="gap-2">
                             {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : activeModule === "cicd" ? "Run Pipeline Gate" : "Run Scan"}</>}
                           </Button>
@@ -940,7 +1113,25 @@ export default function ShieldXWorkspacePage() {
                                             <span className="text-xs font-mono text-muted-foreground">{v.id}</span>
                                           </div>
                                           <p className="text-sm text-muted-foreground">{v.summary}</p>
-                                          {v.fixedIn && <p className="text-xs text-emerald-600 mt-2">Fix: Upgrade to {v.fixedIn}</p>}
+                                          {v.fixedIn && (
+                                            <div className="mt-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2.5">
+                                              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">🔧 Fix Available</p>
+                                              {v.fixCommand && (
+                                                <code className="block text-xs font-mono bg-muted/50 rounded px-2 py-1 mb-1 break-all">{v.fixCommand}</code>
+                                              )}
+                                              <p className="text-xs text-emerald-600">Upgrade to {v.fixedIn}</p>
+                                              {v.effort && (
+                                                <Badge variant="secondary" className={`text-[9px] mt-1 ${v.effort === "low" ? "bg-emerald-100 text-emerald-700" : v.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                                                  Effort: {v.effort}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          )}
+                                          {!v.fixedIn && (
+                                            <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
+                                              <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" /> No fix version available — check advisory for workarounds
+                                            </p>
+                                          )}
                                           {v.references?.length > 0 && (
                                             <div className="flex gap-2 mt-2 flex-wrap">
                                               {v.references.slice(0, 2).map((ref: string, ri: number) => (
@@ -989,12 +1180,21 @@ export default function ShieldXWorkspacePage() {
                                     <div className="space-y-2 max-h-[300px] overflow-y-auto">
                                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                       {scanResults.headerResults.map((h: any, idx: number) => (
-                                        <div key={idx} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2">
-                                          <div className="flex items-center gap-2">
-                                            {h.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : h.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
-                                            <span className="font-mono text-xs">{h.name}</span>
+                                        <div key={idx} className="text-sm border rounded-lg px-3 py-2">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              {h.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : h.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                                              <span className="font-mono text-xs">{h.name}</span>
+                                            </div>
+                                            <span className="text-xs text-muted-foreground max-w-[50%] truncate">{h.message}</span>
                                           </div>
-                                          <span className="text-xs text-muted-foreground max-w-[50%] truncate">{h.message}</span>
+                                          {h.fix && (
+                                            <div className="mt-2 ml-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
+                                              <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">🔧 Fix:</p>
+                                              <code className="block text-[11px] font-mono break-all mt-0.5">{h.fix}</code>
+                                              {h.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${h.effort === "low" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>Effort: {h.effort}</Badge>}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -1006,13 +1206,22 @@ export default function ShieldXWorkspacePage() {
                                     <div className="space-y-2 max-h-[300px] overflow-y-auto">
                                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                       {scanResults.apiChecks.map((c: any, idx: number) => (
-                                        <div key={idx} className="flex items-center justify-between text-sm border rounded-lg px-3 py-2">
-                                          <div className="flex items-center gap-2">
-                                            {c.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : c.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
-                                            <span className="text-xs">{c.name}</span>
-                                            {c.owasp && <Badge variant="secondary" className="text-[8px]">{c.owasp}</Badge>}
+                                        <div key={idx} className="text-sm border rounded-lg px-3 py-2">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              {c.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : c.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                                              <span className="text-xs">{c.name}</span>
+                                              {c.owasp && <Badge variant="secondary" className="text-[8px]">{c.owasp}</Badge>}
+                                            </div>
+                                            <span className="text-xs text-muted-foreground max-w-[40%] truncate">{c.detail}</span>
                                           </div>
-                                          <span className="text-xs text-muted-foreground max-w-[40%] truncate">{c.detail}</span>
+                                          {c.fix && (
+                                            <div className="mt-2 ml-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
+                                              <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">🔧 Fix:</p>
+                                              <p className="text-[11px] break-all mt-0.5">{c.fix}</p>
+                                              {c.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${c.effort === "low" ? "bg-emerald-100 text-emerald-700" : c.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {c.effort}</Badge>}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -1113,18 +1322,27 @@ export default function ShieldXWorkspacePage() {
                                   <div className="space-y-2 max-h-[500px] overflow-y-auto">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {scanResults.checks.map((c: any, idx: number) => (
-                                      <div key={idx} className={`flex items-center justify-between text-sm border rounded-lg px-3 py-2 ${c.status === "fail" ? "border-red-500/20 bg-red-500/5" : c.status === "warn" ? "border-amber-500/20 bg-amber-500/5" : ""}`}>
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          {c.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> : c.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" /> : <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
-                                          <div className="min-w-0">
-                                            <span className="text-xs font-medium block">{c.name}</span>
-                                            <span className="text-xs text-muted-foreground block truncate">{c.detail}</span>
+                                      <div key={idx} className={`text-sm border rounded-lg px-3 py-2 ${c.status === "fail" ? "border-red-500/20 bg-red-500/5" : c.status === "warn" ? "border-amber-500/20 bg-amber-500/5" : ""}`}>
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            {c.status === "pass" ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> : c.status === "warn" ? <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" /> : <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
+                                            <div className="min-w-0">
+                                              <span className="text-xs font-medium block">{c.name}</span>
+                                              <span className="text-xs text-muted-foreground block truncate">{c.detail}</span>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            <Badge variant="secondary" className="text-[8px]">{c.category}</Badge>
+                                            <Badge variant={c.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize">{c.severity}</Badge>
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                          <Badge variant="secondary" className="text-[8px]">{c.category}</Badge>
-                                          <Badge variant={c.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize">{c.severity}</Badge>
-                                        </div>
+                                        {c.fix && (
+                                          <div className="mt-2 ml-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
+                                            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">🔧 Fix:</p>
+                                            <code className="block text-[11px] font-mono break-all mt-0.5">{c.fix}</code>
+                                            {c.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${c.effort === "low" ? "bg-emerald-100 text-emerald-700" : c.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {c.effort}</Badge>}
+                                          </div>
+                                        )}
                                       </div>
                                     ))}
                                   </div>

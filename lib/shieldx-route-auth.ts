@@ -33,10 +33,12 @@ interface ShieldXUserLike {
   planTier?: string;
   shieldxPlan?: string;
   shieldxScanCount?: number;
+  role?: string;
 }
 
 // RBAC: Enforce feature access and scan limits
 export function enforceShieldXFeatureAccess(user: ShieldXUserLike | null, feature: string) {
+  if (user?.role === "admin") return; // Admins bypass all feature gates
   const plan = user?.planTier || user?.shieldxPlan || "free";
   if (!isFeatureEnabled(plan as import("@/lib/feature-flags").PlanTier, feature)) {
     throw new Error(`Access denied: Feature '${feature}' not enabled for your ${plan} plan.`);
@@ -44,6 +46,7 @@ export function enforceShieldXFeatureAccess(user: ShieldXUserLike | null, featur
 }
 
 export function enforceShieldXScanLimit(user: ShieldXUserLike | null, requestedScans = 1) {
+  if (user?.role === "admin") return; // Admins bypass scan limits
   const plan = user?.planTier || user?.shieldxPlan || "free";
   const limit = getScanLimit(plan as import("@/lib/feature-flags").PlanTier);
   const used = user?.shieldxScanCount ?? 0;

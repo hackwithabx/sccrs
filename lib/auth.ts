@@ -8,6 +8,12 @@ import { rateLimit } from "@/lib/rate-limit";
 type ShieldXPlan = "free" | "pro" | "enterprise";
 type ShieldXPlanSource = "free" | "admin" | "billing" | "team";
 
+const ADMIN_EMAILS = [
+  "scr@securecodereviews.com",
+  "support@securecodereviews.com",
+  process.env.ADMIN_EMAIL?.toLowerCase(),
+].filter(Boolean) as string[];
+
 function getEffectiveShieldXPlan(user: {
   shieldxPlan?: ShieldXPlan;
   shieldxExpiry?: Date | string | null;
@@ -69,6 +75,19 @@ export const authOptions: NextAuthOptions = {
 
         if (!isCorrectPassword) {
           throw new Error("Invalid credentials");
+        }
+
+        // Auto-promote configured admin emails
+        const isAdminEmail = ADMIN_EMAILS.includes(user.email.toLowerCase());
+        if (isAdminEmail && (user.role !== "admin" || user.shieldxPlan !== "enterprise")) {
+          await User.findByIdAndUpdate(user._id, {
+            role: "admin",
+            shieldxPlan: "enterprise",
+            shieldxPlanSource: "admin",
+          });
+          user.role = "admin";
+          user.shieldxPlan = "enterprise";
+          user.shieldxPlanSource = "admin";
         }
 
         return {
