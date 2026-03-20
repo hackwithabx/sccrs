@@ -166,6 +166,7 @@ ShieldX is a multi-module application security platform built as part of the Sec
    - Google API Keys (`AIza[A-Za-z0-9_-]{35}`)
    - Private Keys (`-----BEGIN ... PRIVATE KEY-----`)
    - Database Connection Strings (`mongodb://`, `postgres://`)
+
    - JWT/Bearer Tokens
    - SendGrid, Twilio, Mailgun, npm, Docker tokens
    - Generic password/API key patterns
@@ -515,15 +516,26 @@ Supports three notification channels:
 
 ### 4.8 Security Score
 
-**Location:** Workspace tab (client-side calculation)  
-**Plan Access:** Free (demo), Pro, Enterprise
+**Location:** Workspace module panel (client-side aggregation of scan history)  
+**Plan Access:** Free (locked view), Pro, Enterprise  
+**UI Status:** ✅ Full interactive dashboard (added v2.1)
 
-Composite 0-10 score calculated from scan results across 5 dimensions:
-- Secrets posture
-- Dependency security
-- Cloud compliance
-- API hardening
-- Log threat level
+Interactive dashboard that computes a real composite security score from scan history data. No mock data — all metrics are derived from actual scan results.
+
+#### Dashboard Components
+
+1. **Composite Score** — Weighted average (0–10) across all historical scan results, displayed as a large score badge with color coding (green ≥7, amber ≥4, red <4)
+2. **Severity Breakdown** — Aggregate counts of Critical, High, Medium, Low findings across all scans
+3. **Per-Module Scores** — Individual latest and average scores for each scan module (Secrets, Dependencies, API, Cloud, Logs, CI/CD) with scan count and last scanned date
+4. **Trend Indicator** — Compares newer half vs older half of scan scores to show if security posture is improving, declining, or stable (requires ≥4 scans)
+
+#### Data Source
+
+All data comes from the `scanHistory` state (loaded via `GET /api/shieldx/history`). No additional API calls are made — the score is computed entirely client-side from existing scan history records.
+
+#### Free/Demo Users
+
+Shows a locked view explaining that scan data from a paid plan is required. No fake scores or demo data are displayed.
 
 ---
 
@@ -1122,6 +1134,8 @@ ShieldX is a real, production-grade scanning platform. Below are honest technica
 ## Changelog
 
 ### v2.1 (March 20, 2026)
+- **Security Score Dashboard** — Fully wired interactive dashboard showing real composite score from scan history. Includes severity breakdown, per-module scores (latest + average), and trend tracking. No mock data — all metrics from actual scan results.
+- **Auto-scroll on module click** — Clicking any module card now smoothly scrolls to the scan panel.
 - **CI/CD Pipeline Gate** — Full interactive UI added to the workspace. Users can select scan type (full/secrets/dependencies), provide dual inputs (code + dependencies), and see PASS/FAIL verdict with detailed sub-results. GitHub Actions snippet included in the panel.
 - **Billing (Razorpay)** — Hidden from product UI. All backend routes, models, and Razorpay integration preserved. Plans now provisioned via admin API. "Upgrade to Pro" links replaced with "Request Pro Access" contact flows.
 - **Email Alerts** — Hidden from product UI. Backend API routes and models preserved. Requires SMTP environment variables to re-enable.

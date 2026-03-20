@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -61,14 +61,14 @@ interface ScanHistoryItem {
 
 /* ── Module definitions ── */
 const MODULES = [
-  { id: "secrets", name: "Secrets Scanner", description: "Detect hardcoded API keys, tokens, and credentials using 20+ regex patterns and Shannon entropy analysis.", icon: Key, plans: ["free", "pro", "enterprise"], demoLabel: "Demo only" },
+  { id: "secrets", name: "Secrets Scanner", description: "Detect hardcoded API keys, tokens, and credentials using 20+ regex patterns and Shannon entropy analysis.", icon: Key, plans: ["free", "pro", "enterprise"], },
   { id: "deps", name: "Dependency Scanner", description: "Real-time vulnerability scanning via OSV.dev for npm, pip, Go, and Gradle dependencies.", icon: Package, plans: ["pro", "enterprise"] },
   { id: "api", name: "API Security Scanner", description: "OWASP API Top 10 2023 compliance checks — security headers, CORS, auth, and 15+ automated tests.", icon: Globe, plans: ["pro", "enterprise"] },
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "AI-powered log analysis to detect brute-force attacks, injection attempts, and anomalous patterns.", icon: Brain, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
   // { id: "alerts", name: "Alert System", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected.", icon: Bell, plans: ["pro", "enterprise"] },  // Hidden — re-enable when alerts backend is fully wired
-  { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with severity breakdown and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], demoLabel: "Demo only" },
+  { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
 ];
 
 const POSITIONING = {
@@ -91,6 +91,7 @@ export default function ShieldXWorkspacePage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   /* ── Scan UI state ── */
+  const scanPanelRef = useRef<HTMLDivElement>(null);
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [scanInput, setScanInput] = useState("");
   const [cicdDepsInput, setCicdDepsInput] = useState("");
@@ -166,6 +167,10 @@ export default function ShieldXWorkspacePage() {
     setCicdScanType("full");
     setScanResults(null);
     setScanError(null);
+    // Scroll to the scan panel after state update + animation start
+    setTimeout(() => {
+      scanPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
   };
 
   const runScan = async () => {
@@ -422,7 +427,7 @@ export default function ShieldXWorkspacePage() {
                     <div className="flex items-center justify-between">
                       <mod.icon className="h-6 w-6 text-primary" />
                       {mod.plans.includes("free") ? (
-                        <Badge variant="secondary" className="text-[10px]">{mod.demoLabel || "Free"}</Badge>
+                        <Badge variant="secondary" className="text-[10px]">{mod.id === "score" ? "Dashboard" : "Demo"}</Badge>
                       ) : (
                         <Badge className="bg-primary/10 text-primary text-[10px]">
                           {mod.plans.includes("pro") ? "Pro+" : "Enterprise"}
@@ -520,7 +525,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "cicd"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "cicd", "score"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
@@ -544,7 +549,7 @@ export default function ShieldXWorkspacePage() {
                           {isAvailable && hasScanUI ? (
                             <Button size="sm" variant={isActive ? "default" : "outline"} className="w-full gap-1.5"
                               onClick={(e) => { e.stopPropagation(); openModule(mod.id); }}>
-                              {isActive ? <>Close Scanner <X className="h-3.5 w-3.5" /></> : <>{isDemoOnly ? "Open Demo Scanner" : "Open Scanner"} <ChevronDown className="h-3.5 w-3.5" /></>}
+                              {isActive ? <>Close Scanner <X className="h-3.5 w-3.5" /></> : <>{isDemoOnly ? "Open Demo Scanner" : mod.id === "score" ? "View Score Dashboard" : "Open Scanner"} <ChevronDown className="h-3.5 w-3.5" /></>}
                             </Button>
                           ) : isAvailable ? (
                             <Button size="sm" variant="outline" className="w-full gap-1.5" disabled>
@@ -564,8 +569,9 @@ export default function ShieldXWorkspacePage() {
             </div>
 
             {/* ── Scan Panel ── */}
+            <div ref={scanPanelRef} />
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "cicd"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "cicd", "score"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -641,7 +647,7 @@ export default function ShieldXWorkspacePage() {
                         )}
 
                         {/* Standard module input area */}
-                        {activeModule !== "cicd" && !isDemoOnly && (
+                        {activeModule !== "cicd" && activeModule !== "score" && !isDemoOnly && (
                           <div>
                             <label className="text-sm font-medium mb-2 block">{inputCfg.label}</label>
                             {inputCfg.type === "textarea" ? (
@@ -663,10 +669,153 @@ export default function ShieldXWorkspacePage() {
                           </div>
                         )}
 
+                        {/* Security Score Dashboard */}
+                        {activeModule === "score" && (() => {
+                          const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "cicd"];
+                          const byModule = moduleTypes.map((type) => {
+                            const scans = scanHistory.filter((s) => s.scanType === type);
+                            const latest = scans[0]; // already sorted by date desc
+                            const avg = scans.length > 0 ? scans.reduce((a, s) => a + s.overallScore, 0) / scans.length : null;
+                            return { type, name: MODULES.find((m) => m.id === type)?.name || type, scans: scans.length, latest, avg };
+                          }).filter((m) => m.scans > 0);
+
+                          const allScores = scanHistory.map((s) => s.overallScore);
+                          const compositeScore = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : null;
+                          const totalFindings = scanHistory.reduce((a, s) => a + s.counts.findingsTotal, 0);
+                          const totalCritical = scanHistory.reduce((a, s) => a + s.counts.critical, 0);
+                          const totalHigh = scanHistory.reduce((a, s) => a + s.counts.high, 0);
+                          const totalMedium = scanHistory.reduce((a, s) => a + s.counts.medium, 0);
+                          const totalLow = scanHistory.reduce((a, s) => a + s.counts.low, 0);
+
+                          // Trend: compare first half vs second half of scans
+                          let trend: "improving" | "declining" | "stable" | "none" = "none";
+                          if (allScores.length >= 4) {
+                            const mid = Math.floor(allScores.length / 2);
+                            const olderAvg = allScores.slice(mid).reduce((a, b) => a + b, 0) / (allScores.length - mid);
+                            const newerAvg = allScores.slice(0, mid).reduce((a, b) => a + b, 0) / mid;
+                            if (newerAvg - olderAvg > 0.5) trend = "improving";
+                            else if (olderAvg - newerAvg > 0.5) trend = "declining";
+                            else trend = "stable";
+                          }
+
+                          const scoreColor = (s: number) => s >= 7 ? "text-emerald-500" : s >= 4 ? "text-amber-500" : "text-red-500";
+                          const scoreBg = (s: number) => s >= 7 ? "border-emerald-500/20 bg-emerald-500/5" : s >= 4 ? "border-amber-500/20 bg-amber-500/5" : "border-red-500/20 bg-red-500/5";
+
+                          if (!isPaid) {
+                            return (
+                              <div className="text-center py-8">
+                                <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                                <p className="text-sm font-medium">Security Score requires a Pro or Enterprise plan</p>
+                                <p className="text-xs text-muted-foreground mt-1">Run scans on a paid plan to see your composite security score with real data.</p>
+                              </div>
+                            );
+                          }
+
+                          if (scanHistory.length === 0) {
+                            return (
+                              <div className="text-center py-8">
+                                <BarChart3 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                                <p className="text-sm font-medium">No scan data yet</p>
+                                <p className="text-xs text-muted-foreground mt-1">Run your first scan using any module above. Your security score will be calculated from real scan results.</p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-6">
+                              {/* Composite Score */}
+                              <div className="flex items-center gap-6">
+                                <div className={`rounded-2xl border-2 p-6 text-center min-w-[120px] ${scoreBg(compositeScore!)}`}>
+                                  <div className={`text-4xl font-extrabold ${scoreColor(compositeScore!)}`}>{compositeScore!.toFixed(1)}</div>
+                                  <div className="text-xs text-muted-foreground mt-1 font-medium">out of 10</div>
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                  <h3 className="text-lg font-semibold">Composite Security Score</h3>
+                                  <p className="text-sm text-muted-foreground">Weighted average across {scanHistory.length} scan{scanHistory.length !== 1 ? "s" : ""} from {byModule.length} module{byModule.length !== 1 ? "s" : ""}.</p>
+                                  {trend !== "none" && (
+                                    <div className={`flex items-center gap-1.5 text-sm ${trend === "improving" ? "text-emerald-600" : trend === "declining" ? "text-red-600" : "text-muted-foreground"}`}>
+                                      <TrendingUp className={`h-4 w-4 ${trend === "declining" ? "rotate-180" : ""}`} />
+                                      {trend === "improving" ? "Score is improving" : trend === "declining" ? "Score is declining" : "Score is stable"}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Severity Breakdown */}
+                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                <div className="rounded-lg border p-3 text-center">
+                                  <div className="text-2xl font-bold">{totalFindings}</div>
+                                  <div className="text-xs text-muted-foreground">Total Findings</div>
+                                </div>
+                                <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                  <div className="text-2xl font-bold text-red-500">{totalCritical}</div>
+                                  <div className="text-xs text-muted-foreground">Critical</div>
+                                </div>
+                                <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                  <div className="text-2xl font-bold text-orange-500">{totalHigh}</div>
+                                  <div className="text-xs text-muted-foreground">High</div>
+                                </div>
+                                <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                  <div className="text-2xl font-bold text-amber-500">{totalMedium}</div>
+                                  <div className="text-xs text-muted-foreground">Medium</div>
+                                </div>
+                                <div className="rounded-lg border p-3 text-center border-blue-500/20">
+                                  <div className="text-2xl font-bold text-blue-500">{totalLow}</div>
+                                  <div className="text-xs text-muted-foreground">Low</div>
+                                </div>
+                              </div>
+
+                              {/* Per-Module Breakdown */}
+                              <div>
+                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" /> Score by Module</h4>
+                                <div className="space-y-2">
+                                  {byModule.map((m) => {
+                                    const ModIcon = MODULES.find((mod) => mod.id === m.type)?.icon || Shield;
+                                    return (
+                                      <div key={m.type} className="flex items-center justify-between border rounded-lg px-4 py-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <ModIcon className="h-4 w-4 text-primary shrink-0" />
+                                          <div className="min-w-0">
+                                            <span className="text-sm font-medium block">{m.name}</span>
+                                            <span className="text-xs text-muted-foreground">{m.scans} scan{m.scans !== 1 ? "s" : ""} • Last: {m.latest ? new Date(m.latest.createdAt).toLocaleDateString() : "—"}</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                          {m.latest && (
+                                            <div className="text-right">
+                                              <div className={`text-sm font-bold ${scoreColor(m.latest.overallScore)}`}>{m.latest.overallScore.toFixed(1)}</div>
+                                              <div className="text-[10px] text-muted-foreground">latest</div>
+                                            </div>
+                                          )}
+                                          {m.avg !== null && m.scans > 1 && (
+                                            <div className="text-right">
+                                              <div className="text-sm font-medium text-muted-foreground">{m.avg.toFixed(1)}</div>
+                                              <div className="text-[10px] text-muted-foreground">avg</div>
+                                            </div>
+                                          )}
+                                          {m.latest && m.latest.counts.findingsTotal > 0 && (
+                                            <Badge variant={m.latest.counts.critical > 0 ? "destructive" : "secondary"} className="text-[10px]">
+                                              {m.latest.counts.findingsTotal} findings
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-muted-foreground">Score is calculated from real scan history data. Run more scans across modules for a comprehensive assessment.</p>
+                            </div>
+                          );
+                        })()}
+
                         <div className="flex gap-3">
+                          {activeModule !== "score" && (
                           <Button onClick={runScan} disabled={scanning || (activeModule === "cicd" ? (cicdScanType !== "dependencies" && !scanInput.trim() && cicdScanType !== "secrets") || (cicdScanType !== "secrets" && !cicdDepsInput.trim() && cicdScanType !== "dependencies") : (!isDemoOnly && !scanInput.trim()))} className="gap-2">
                             {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : activeModule === "cicd" ? "Run Pipeline Gate" : "Run Scan"}</>}
                           </Button>
+                          )}
                           {scanResults && (
                             <Button variant="outline" onClick={() => { setScanResults(null); setScanError(null); }} className="gap-1.5">
                               Clear Results
