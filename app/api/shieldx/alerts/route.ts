@@ -90,6 +90,13 @@ function normalizeRules(input: unknown) {
 }
 
 export async function GET(request: NextRequest) {
+  return NextResponse.json(
+    { error: "Alert system is coming soon. This feature is under active development." },
+    { status: 501 }
+  );
+}
+
+export async function _GET_DISABLED(request: NextRequest) {
   const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -129,77 +136,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const sessionUser = await getShieldXSessionUser(request);
-  if (!sessionUser) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!hasShieldXAccess(sessionUser, "pro")) {
-    return NextResponse.json(
-      { error: "ShieldX Pro or Enterprise is required" },
-      { status: 403 }
-    );
-  }
-
-  try {
-    const body = await request.json();
-    const email = String(body?.email || "").trim().toLowerCase();
-    const slackWebhook = String(body?.slackWebhook || "").trim();
-    const customWebhook = String(body?.customWebhook || "").trim();
-    const threshold = String(body?.threshold || "critical");
-
-    if (!["critical", "high", "all"].includes(threshold)) {
-      return NextResponse.json(
-        { error: "Invalid alert threshold" },
-        { status: 400 }
-      );
-    }
-
-    // Validate webhook URLs (SSRF prevention)
-    for (const [label, url] of [["Slack webhook", slackWebhook], ["Custom webhook", customWebhook]] as const) {
-      if (!url) continue;
-      try {
-        const parsed = new URL(url);
-        if (parsed.protocol !== "https:") {
-          return NextResponse.json({ error: `${label} must use HTTPS` }, { status: 400 });
-        }
-        const hostname = parsed.hostname.toLowerCase();
-        const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1", "169.254.169.254", "metadata.google.internal"];
-        const blockedPrefixes = ["10.", "192.168.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.", "169.254."];
-        if (blocked.includes(hostname) || blockedPrefixes.some((p) => hostname.startsWith(p))) {
-          return NextResponse.json({ error: `${label} URL points to a blocked address` }, { status: 400 });
-        }
-      } catch {
-        return NextResponse.json({ error: `${label} URL is invalid` }, { status: 400 });
-      }
-    }
-
-    await dbConnect();
-
-    const config = await ShieldXAlertConfig.findOneAndUpdate(
-      { userId: sessionUser.id },
-      {
-        userId: sessionUser.id,
-        email,
-        slackWebhook,
-        customWebhook,
-        threshold,
-        rules: normalizeRules(body?.rules),
-      },
-      {
-        upsert: true,
-        new: true,
-        setDefaultsOnInsert: true,
-      }
-    );
-
-    return NextResponse.json({ success: true, config });
-  } catch (error) {
-    console.error("Failed to save ShieldX alerts:", error);
-    return NextResponse.json(
-      { error: "Failed to save alert configuration" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { error: "Alert system is coming soon. This feature is under active development." },
+    { status: 501 }
+  );
 }
 

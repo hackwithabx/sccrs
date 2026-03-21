@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import ShieldXScan from "@/models/ShieldXScan";
 import { findUserByShieldXApiKey, readShieldXApiKeyFromRequest } from "@/lib/shieldx-api-key";
+import { enforceShieldXFeatureAccess } from "@/lib/shieldx-route-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,14 @@ export async function POST(request: NextRequest) {
         { error: "Invalid API key." },
         { status: 401 }
       );
+    }
+
+    // CI/CD gate is an enterprise feature
+    try {
+      enforceShieldXFeatureAccess(apiKeyUser, "cicd-integrations");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Access denied";
+      return NextResponse.json({ error: message }, { status: 403 });
     }
 
     const body = await request.json();

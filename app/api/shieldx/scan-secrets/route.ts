@@ -241,6 +241,14 @@ export async function POST(request: NextRequest) {
         });
       }
       // Free users can scan secrets but with limits
+      try {
+        enforceShieldXFeatureAccess(freeUser, "secrets-scan");
+        enforceShieldXScanLimit(freeUser, 1);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Access denied";
+        return NextResponse.json({ error: message }, { status: 403 });
+      }
+
       const code = body?.code;
       if (!code || typeof code !== "string" || code.trim().length < 5) {
         return NextResponse.json({ error: "Provide source code to scan (minimum 5 characters)." }, { status: 400 });
@@ -249,6 +257,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Input too large. Maximum 50,000 characters for free plan." }, { status: 400 });
       }
       const findings = scanCode(code);
+
+      // Increment scan count for free users
+      await dbConnect();
+      await User.findByIdAndUpdate(freeUser.id, { $inc: { shieldxScanCount: 1 } });
+
       return NextResponse.json({
         mode: "free",
         totalLines: code.split("\n").length,
