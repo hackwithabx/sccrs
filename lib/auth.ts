@@ -60,7 +60,7 @@ export const authOptions: NextAuthOptions = {
         const user = await User.findOne({
           email: credentials.email.toLowerCase(),
         }).select(
-          "+password role shieldxPlan shieldxPlanSource shieldxExpiry shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId"
+          "+password email name role shieldxPlan shieldxPlanSource shieldxExpiry shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId"
           + " passwordResetRequired"
         );
 
