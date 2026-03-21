@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting: 5 login attempts per 15 minutes per IP
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`admin-auth:${clientIP}`, {
+    const rateLimitResult = await rateLimit(`admin-auth:${clientIP}`, {
       maxRequests: 5,
       windowSeconds: 900,
     });
@@ -57,8 +57,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a cryptographically signed session token
+    const adminEmail = process.env.ADMIN_EMAIL || "admin";
     const token = signAdminToken({
       authenticated: true,
+      email: adminEmail,
       timestamp: Date.now(),
       expiresAt: Date.now() + 4 * 60 * 60 * 1000,
     });

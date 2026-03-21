@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import {
   getShieldXSessionUser,
+  getEffectiveShieldXPlan,
   hasShieldXAccess,
   type ShieldXPlan,
   type ShieldXSessionUser,
@@ -10,24 +11,6 @@ import {
   readShieldXApiKeyFromRequest,
 } from "@/lib/shieldx-api-key";
 import { isFeatureEnabled, getScanLimit, normalizePlan } from "@/lib/feature-flags";
-
-function getEffectiveShieldXPlan(user: {
-  shieldxPlan?: ShieldXPlan;
-  shieldxExpiry?: Date | string | null;
-}): ShieldXPlan {
-  const plan = user.shieldxPlan || "free";
-
-  if (plan === "free" || !user.shieldxExpiry) {
-    return plan;
-  }
-
-  const expiry = new Date(user.shieldxExpiry);
-  if (Number.isNaN(expiry.getTime()) || expiry.getTime() > Date.now()) {
-    return plan;
-  }
-
-  return "free";
-}
 
 interface ShieldXUserLike {
   planTier?: string;

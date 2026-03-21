@@ -61,7 +61,7 @@ function inferPlan(subject: string, message: string): SubscriptionPlan | null {
 export async function POST(request: Request) {
   try {
     const clientIP = getClientIP(request);
-    const rateLimitResult = rateLimit(`contact:${clientIP}`, {
+    const rateLimitResult = await rateLimit(`contact:${clientIP}`, {
       maxRequests: 5,
       windowSeconds: 600,
     });

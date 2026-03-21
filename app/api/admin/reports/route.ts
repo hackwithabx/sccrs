@@ -70,6 +70,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
+    if (!/^[a-f0-9]{24}$/i.test(id)) {
+      return NextResponse.json({ error: "Invalid id format" }, { status: 400 });
+    }
+
     const deleted = await Report.findByIdAndDelete(id);
 
     if (!deleted) {

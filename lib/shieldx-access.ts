@@ -28,6 +28,25 @@ const PLAN_LEVEL: Record<ShieldXPlan, number> = {
   enterprise: 2,
 };
 
+/** Resolve effective plan, downgrading expired paid plans to free. */
+export function getEffectiveShieldXPlan(user: {
+  shieldxPlan?: ShieldXPlan;
+  shieldxExpiry?: Date | string | null;
+}): ShieldXPlan {
+  const plan = user.shieldxPlan || "free";
+
+  if (plan === "free" || !user.shieldxExpiry) {
+    return plan;
+  }
+
+  const expiry = new Date(user.shieldxExpiry);
+  if (Number.isNaN(expiry.getTime()) || expiry.getTime() > Date.now()) {
+    return plan;
+  }
+
+  return "free";
+}
+
 /**
  * Build a ShieldXSessionUser from a raw token/user-like object.
  */

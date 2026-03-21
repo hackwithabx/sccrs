@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: NextRequest) {
   const clientIP = getClientIP(request);
-  const { allowed } = rateLimit(`promote-admin:${clientIP}`, {
+  const { allowed } = await rateLimit(`promote-admin:${clientIP}`, {
     maxRequests: 3,
     windowSeconds: 900,
   });

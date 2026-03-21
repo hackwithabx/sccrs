@@ -9,7 +9,14 @@ import { rateLimit } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
 function isStrongEnough(password: string): boolean {
-  return password.length >= 10 && password.length <= 128;
+  return (
+    password.length >= 10 &&
+    password.length <= 128 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -20,7 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const limit = rateLimit(`change-password:${userId}`, {
+  const limit = await rateLimit(`change-password:${userId}`, {
     maxRequests: 5,
     windowSeconds: 900,
   });
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     if (!isStrongEnough(newPassword)) {
       return NextResponse.json(
-        { error: "New password must be between 10 and 128 characters" },
+        { error: "Password must be 10-128 characters with uppercase, lowercase, number, and special character" },
         { status: 400 }
       );
     }

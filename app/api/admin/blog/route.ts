@@ -69,6 +69,10 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    if (!/^[a-f0-9]{24}$/i.test(postId)) {
+      return NextResponse.json({ error: "Invalid postId format" }, { status: 400 });
+    }
+
     const post = await BlogPost.findById(postId);
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -128,6 +132,10 @@ export async function DELETE(request: NextRequest) {
         { error: "Post ID is required" },
         { status: 400 }
       );
+    }
+
+    if (!/^[a-f0-9]{24}$/i.test(postId)) {
+      return NextResponse.json({ error: "Invalid Post ID format" }, { status: 400 });
     }
 
     const post = await BlogPost.findByIdAndDelete(postId);

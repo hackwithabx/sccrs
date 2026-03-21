@@ -4,33 +4,13 @@ import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { rateLimit } from "@/lib/rate-limit";
-
-type ShieldXPlan = "free" | "pro" | "enterprise";
-type ShieldXPlanSource = "free" | "admin" | "billing" | "team";
+import { getEffectiveShieldXPlan, type ShieldXPlan, type ShieldXPlanSource } from "@/lib/shieldx-access";
 
 const ADMIN_EMAILS = [
   "scr@securecodereviews.com",
   "support@securecodereviews.com",
   process.env.ADMIN_EMAIL?.toLowerCase(),
 ].filter(Boolean) as string[];
-
-function getEffectiveShieldXPlan(user: {
-  shieldxPlan?: ShieldXPlan;
-  shieldxExpiry?: Date | string | null;
-}): ShieldXPlan {
-  const plan = user.shieldxPlan || "free";
-
-  if (plan === "free" || !user.shieldxExpiry) {
-    return plan;
-  }
-
-  const expiry = new Date(user.shieldxExpiry);
-  if (Number.isNaN(expiry.getTime()) || expiry.getTime() > Date.now()) {
-    return plan;
-  }
-
-  return "free";
-}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -46,7 +26,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Rate limit login attempts by email
-        const rateLimitResult = rateLimit(`login:${credentials.email.toLowerCase()}`, {
+        const rateLimitResult = await rateLimit(`login:${credentials.email.toLowerCase()}`, {
           maxRequests: 5,
           windowSeconds: 900,
         });

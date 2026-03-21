@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
+import { escapeRegex } from "@/lib/utils";
 import {
   detachUserFromEnterpriseTeam,
   teardownEnterpriseWorkspace,
@@ -45,9 +46,10 @@ export async function GET(request: NextRequest) {
       filter.shieldxPlan = plan;
     }
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { name: { $regex: escaped, $options: "i" } },
+        { email: { $regex: escaped, $options: "i" } },
       ];
     }
 
@@ -85,6 +87,10 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    if (!/^[a-f0-9]{24}$/i.test(id)) {
+      return NextResponse.json({ error: "Invalid id format" }, { status: 400 });
     }
 
     const existingUser = await User.findById(id).select(
@@ -141,7 +147,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { id, role, shieldxPlan, resetPassword, temporaryPassword } = body;
 
-    if (!id) {
+    if (!id || typeof id !== "string" || !/^[a-f0-9]{24}$/i.test(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 

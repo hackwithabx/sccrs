@@ -3,6 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import ShieldXScan from "@/models/ShieldXScan";
 import { findUserByShieldXApiKey, readShieldXApiKeyFromRequest } from "@/lib/shieldx-api-key";
 import { enforceShieldXFeatureAccess } from "@/lib/shieldx-route-auth";
+import { escapeRegex } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Find the most recent scan for this repo, scoped to the user's scans
     const query: Record<string, unknown> = {
       userId: apiKeyUser.id,
-      target: { $regex: repo, $options: "i" },
+      target: { $regex: escapeRegex(repo), $options: "i" },
       source: "github-webhook",
     };
     if (sha) {

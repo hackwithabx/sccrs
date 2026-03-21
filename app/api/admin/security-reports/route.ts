@@ -73,6 +73,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+    if (!/^[a-f0-9]{24}$/i.test(id)) return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     
     await SecurityReport.findByIdAndDelete(id);
     return NextResponse.json({ message: "Report deleted" });

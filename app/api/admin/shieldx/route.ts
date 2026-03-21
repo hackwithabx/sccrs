@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import ShieldXScan from "@/models/ShieldXScan";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
+import { escapeRegex } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -115,9 +116,10 @@ export async function GET(request: NextRequest) {
         filter.shieldxPlan = plan;
       }
       if (search) {
+        const escaped = escapeRegex(search);
         filter.$or = [
-          { name: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
+          { name: { $regex: escaped, $options: "i" } },
+          { email: { $regex: escaped, $options: "i" } },
         ];
       }
 
@@ -205,10 +207,11 @@ export async function GET(request: NextRequest) {
         filter.scanType = scanType;
       }
       if (search) {
+        const escaped = escapeRegex(search);
         filter.$or = [
-          { userName: { $regex: search, $options: "i" } },
-          { userEmail: { $regex: search, $options: "i" } },
-          { title: { $regex: search, $options: "i" } },
+          { userName: { $regex: escaped, $options: "i" } },
+          { userEmail: { $regex: escaped, $options: "i" } },
+          { title: { $regex: escaped, $options: "i" } },
         ];
       }
 

@@ -1,22 +1,8 @@
-// Simple in-memory rate limiter for API routes
-// For production at scale, use Redis (Upstash) or Vercel KV instead
+// Rate limiter using Upstash Redis (serverless-safe)
+// Falls back to in-memory for local development when Upstash is not configured
 
-interface RateLimitEntry {
-  count: number;
-  resetTime: number;
-}
-
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (now > entry.resetTime) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 interface RateLimitOptions {
   /** Maximum number of requests allowed in the window */
@@ -31,17 +17,56 @@ interface RateLimitResult {
   resetIn: number; // seconds until reset
 }
 
-export function rateLimit(
+// --- Upstash Redis backend (production) ---
+
+function getUpstashRedis(): Redis | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
+
+const redisInstance = getUpstashRedis();
+
+// Cache Ratelimit instances by window config to reuse across requests
+const limiters = new Map<string, Ratelimit>();
+
+function getUpstashLimiter(options: RateLimitOptions): Ratelimit | null {
+  if (!redisInstance) return null;
+  const key = `${options.maxRequests}:${options.windowSeconds}`;
+  let limiter = limiters.get(key);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: redisInstance,
+      limiter: Ratelimit.slidingWindow(
+        options.maxRequests,
+        `${options.windowSeconds} s`
+      ),
+      prefix: "scr-rl",
+    });
+    limiters.set(key, limiter);
+  }
+  return limiter;
+}
+
+// --- In-memory fallback (development only) ---
+
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
+const memoryStore = new Map<string, RateLimitEntry>();
+
+function memoryRateLimit(
   identifier: string,
   options: RateLimitOptions
 ): RateLimitResult {
   const now = Date.now();
-  const key = identifier;
-  const entry = rateLimitStore.get(key);
+  const entry = memoryStore.get(identifier);
 
   if (!entry || now > entry.resetTime) {
-    // New window
-    rateLimitStore.set(key, {
+    memoryStore.set(identifier, {
       count: 1,
       resetTime: now + options.windowSeconds * 1000,
     });
@@ -66,6 +91,26 @@ export function rateLimit(
     remaining: options.maxRequests - entry.count,
     resetIn: Math.ceil((entry.resetTime - now) / 1000),
   };
+}
+
+// --- Public API (same signature for all callers) ---
+
+export async function rateLimit(
+  identifier: string,
+  options: RateLimitOptions
+): Promise<RateLimitResult> {
+  const upstash = getUpstashLimiter(options);
+  if (upstash) {
+    const result = await upstash.limit(identifier);
+    return {
+      allowed: result.success,
+      remaining: result.remaining,
+      resetIn: Math.max(0, Math.ceil((result.reset - Date.now()) / 1000)),
+    };
+  }
+
+  // Fallback: in-memory (logged once per cold start)
+  return memoryRateLimit(identifier, options);
 }
 
 /**

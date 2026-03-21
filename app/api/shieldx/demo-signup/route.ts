@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   // Rate limit: 5 demo signups per hour per IP
   const ip = getClientIP(request);
-  const rl = rateLimit(`demo-signup:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+  const rl = await rateLimit(`demo-signup:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },

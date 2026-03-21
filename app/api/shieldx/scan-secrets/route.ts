@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     if (isDemo) {
       // Rate limit demo scans
       const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      const rl = rateLimit(`scan-secrets-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+      const rl = await rateLimit(`scan-secrets-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
       if (!rl.allowed) {
         return NextResponse.json(
           { error: "Demo rate limit reached (5 scans/hour). Sign up for unlimited access." },
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
       if (!freeUser) {
         // No valid session — fall back to demo mode (user may have stale client session)
         const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-        const rl = rateLimit(`scan-secrets-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
+        const rl = await rateLimit(`scan-secrets-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
         if (!rl.allowed) {
           return NextResponse.json(
             { error: "Demo rate limit reached (5 scans/hour). Sign in for more scans." },

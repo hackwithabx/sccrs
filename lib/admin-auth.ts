@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 interface AdminTokenPayload {
   authenticated: boolean;
   expiresAt: number;
+  email: string;
   timestamp?: number;
 }
 

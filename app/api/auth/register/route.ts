@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   try {
     // Rate limiting: 3 registration attempts per 15 minutes per IP
     const clientIP = getClientIP(req);
-    const rateLimitResult = rateLimit(`register:${clientIP}`, {
+    const rateLimitResult = await rateLimit(`register:${clientIP}`, {
       maxRequests: 3,
       windowSeconds: 900,
     });

@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limit: 20 requests per minute per IP
     const ip = getClientIP(request);
-    const limit = rateLimit(`header-analyzer:${ip}`, {
+    const limit = await rateLimit(`header-analyzer:${ip}`, {
       maxRequests: 20,
       windowSeconds: 60,
     });
