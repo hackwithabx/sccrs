@@ -3,6 +3,8 @@ import connectDB from "@/lib/mongodb";
 import Contact from "@/models/Contact";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 // GET - Fetch all contact submissions
 export async function GET(request: NextRequest) {
   if (!isAuthorizedAdminRequest(request)) {

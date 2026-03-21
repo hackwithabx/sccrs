@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import SecurityReport from "@/models/SecurityReport";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/security-reports — public endpoint for published reports
 export async function GET(request: NextRequest) {
   try {

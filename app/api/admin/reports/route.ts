@@ -3,6 +3,8 @@ import connectDB from "@/lib/mongodb";
 import Report from "@/models/Report";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 // GET - Fetch all generated reports
 export async function GET(request: NextRequest) {
   if (!isAuthorizedAdminRequest(request)) {

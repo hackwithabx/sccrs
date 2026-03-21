@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
+import { getShieldXAuthorizedUser, enforceShieldXFeatureAccess, enforceShieldXScanLimit } from "@/lib/shieldx-route-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
@@ -401,6 +401,15 @@ export async function POST(request: NextRequest) {
     }
     if (config.length > 500_000) {
       return NextResponse.json({ error: "Input too large. Maximum 500,000 characters." }, { status: 400 });
+    }
+
+    // Enforce feature access and scan limits for paid users
+    try {
+      enforceShieldXFeatureAccess(user, "cloud-security");
+      enforceShieldXScanLimit(user, 1);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Access denied";
+      return NextResponse.json({ error: message }, { status: 403 });
     }
 
     const audit = runCloudAudit(config);

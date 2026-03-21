@@ -55,11 +55,16 @@ export async function findUserByShieldXApiKey(
     shieldxApiKeyHash: hashShieldXApiKey(apiKey),
   })
     .select(
-      "email name role shieldxPlan shieldxExpiry shieldxPlanSource shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId"
+      "email name role shieldxPlan shieldxExpiry shieldxPlanSource shieldxBillingProvider shieldxBillingStatus shieldxCancelAtPeriodEnd shieldxSeatRole shieldxTeamOwnerId shieldxApiKeyExpiresAt"
     )
     .lean();
 
   if (!user) {
+    return null;
+  }
+
+  // Check API key expiry
+  if (user.shieldxApiKeyExpiresAt && new Date(user.shieldxApiKeyExpiresAt) < new Date()) {
     return null;
   }
 

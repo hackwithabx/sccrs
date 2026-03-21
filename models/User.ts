@@ -95,6 +95,10 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    shieldxApiKeyExpiresAt: {
+      type: Date,
+      default: null,
+    },
     shieldxScanCount: {
       type: Number,
       default: 0,

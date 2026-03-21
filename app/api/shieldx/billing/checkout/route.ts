@@ -13,6 +13,7 @@ import {
   type ShieldXPaidPlan,
 } from "@/lib/razorpay";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const TERMINAL_STATUSES = new Set(["cancelled", "completed", "expired"]);

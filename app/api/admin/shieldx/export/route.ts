@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import ShieldXScan from "@/models/ShieldXScan";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 function escapeCsv(value: unknown): string {

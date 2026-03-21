@@ -4,6 +4,8 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 const ADMIN_EMAILS = [
   "scr@securecodereviews.com",
   "support@securecodereviews.com",

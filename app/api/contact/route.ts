@@ -4,6 +4,8 @@ import connectDB from "@/lib/mongodb";
 import Contact from "@/models/Contact";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 type SubscriptionPlan = "pro" | "enterprise";
 
 const isMongoConfigured = !!process.env.MONGODB_URI;

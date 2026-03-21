@@ -7,6 +7,7 @@ import {
 } from "@/lib/shieldx-access";
 import { sendShieldXScanAlerts } from "@/lib/shieldx-alerts";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type FindingSeverity = "Critical" | "High" | "Medium" | "Low" | "Info";

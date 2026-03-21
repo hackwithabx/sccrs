@@ -36,12 +36,20 @@ function buildSessionUser(raw: Record<string, unknown>): ShieldXSessionUser | nu
   const email = raw.email as string | undefined;
   if (!id || !email) return null;
 
+  let plan = (raw.shieldxPlan as ShieldXPlan) || "free";
+  const expiry = raw.shieldxExpiry as string | null | undefined;
+
+  // Downgrade expired plans to free
+  if (expiry && plan !== "free" && new Date(expiry) < new Date()) {
+    plan = "free";
+  }
+
   return {
     id,
     email,
     name: (raw.name as string) || "ShieldX User",
     role: (raw.role as string) || "user",
-    shieldxPlan: (raw.shieldxPlan as ShieldXPlan) || "free",
+    shieldxPlan: plan,
     shieldxPlanSource: (raw.shieldxPlanSource as ShieldXPlanSource) || "free",
     shieldxBillingProvider: (raw.shieldxBillingProvider as string | null) || null,
     shieldxBillingStatus: (raw.shieldxBillingStatus as string) || "inactive",

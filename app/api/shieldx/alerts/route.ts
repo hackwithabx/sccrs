@@ -6,6 +6,8 @@ import {
   hasShieldXAccess,
 } from "@/lib/shieldx-access";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_ALERT_RULES = [
   {
     id: "critical-secrets",

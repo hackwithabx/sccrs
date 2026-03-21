@@ -3,6 +3,8 @@ import dbConnect from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/blog — list all blog posts with any status (admin only)
 export async function GET(request: NextRequest) {
   if (!isAuthorizedAdminRequest(request)) {

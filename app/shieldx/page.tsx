@@ -67,7 +67,7 @@ const MODULES = [
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "AI-powered log analysis to detect brute-force attacks, injection attempts, and anomalous patterns.", icon: Brain, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
-  { id: "alerts", name: "Alert System", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected in your scans.", icon: Bell, plans: ["pro", "enterprise"] },
+  { id: "alerts", name: "Alert System (Coming Soon)", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected. Coming soon.", icon: Bell, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
 ];
 
@@ -882,113 +882,15 @@ export default function ShieldXWorkspacePage() {
                         {/* Alert Configuration UI */}
                         {activeModule === "alerts" && (
                           <div className="space-y-5">
-                            {alertLoading ? (
-                              <div className="flex items-center justify-center py-8 gap-2">
-                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                                <span className="text-sm text-muted-foreground">Loading alert configuration...</span>
-                              </div>
-                            ) : !isPaid ? (
-                              <Card className="border-amber-500/20 bg-amber-500/5">
-                                <CardContent className="p-4 flex items-center gap-3">
-                                  <Lock className="h-5 w-5 text-amber-500" />
-                                  <p className="text-sm">Alert system requires Pro or Enterprise plan.</p>
-                                </CardContent>
-                              </Card>
-                            ) : alertConfig ? (
-                              <>
-                                {/* Notification Channels */}
-                                <div>
-                                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><Bell className="h-4 w-4 text-primary" /> Notification Channels</h4>
-                                  <div className="space-y-3">
-                                    <div>
-                                      <label className="text-xs font-medium mb-1 block">Email Address</label>
-                                      <input type="email" className="w-full rounded-lg border bg-muted/30 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                        placeholder="your@email.com" value={alertConfig.email || ""}
-                                        onChange={(e) => setAlertConfig({ ...alertConfig, email: e.target.value })} />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs font-medium mb-1 block">Slack Webhook URL</label>
-                                      <input type="url" className="w-full rounded-lg border bg-muted/30 p-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                        placeholder="https://hooks.slack.com/services/..." value={alertConfig.slackWebhook || ""}
-                                        onChange={(e) => setAlertConfig({ ...alertConfig, slackWebhook: e.target.value })} />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs font-medium mb-1 block">Custom Webhook URL</label>
-                                      <input type="url" className="w-full rounded-lg border bg-muted/30 p-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-                                        placeholder="https://your-server.com/webhook" value={alertConfig.customWebhook || ""}
-                                        onChange={(e) => setAlertConfig({ ...alertConfig, customWebhook: e.target.value })} />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Alert Threshold */}
-                                <div>
-                                  <h4 className="text-sm font-semibold mb-3">Alert Threshold</h4>
-                                  <div className="flex gap-2 flex-wrap">
-                                    {([["critical", "Critical Only"], ["high", "High & Critical"], ["all", "All Severities"]] as const).map(([val, label]) => (
-                                      <Button key={val} size="sm" variant={alertConfig.threshold === val ? "default" : "outline"} className="text-xs"
-                                        onClick={() => setAlertConfig({ ...alertConfig, threshold: val })}>
-                                        {label}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Alert Rules */}
-                                <div>
-                                  <h4 className="text-sm font-semibold mb-3">Alert Rules</h4>
-                                  <div className="space-y-2">
-                                    {(alertConfig.rules || []).map((rule: any, idx: number) => (
-                                      <div key={rule.id || idx} className="flex items-center justify-between border rounded-lg px-3 py-2.5">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                          <button className={`w-9 h-5 rounded-full transition-colors relative ${rule.enabled ? "bg-primary" : "bg-muted"}`}
-                                            onClick={() => {
-                                              const newRules = [...alertConfig.rules];
-                                              newRules[idx] = { ...rule, enabled: !rule.enabled };
-                                              setAlertConfig({ ...alertConfig, rules: newRules });
-                                            }}>
-                                            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${rule.enabled ? "left-[18px]" : "left-0.5"}`} />
-                                          </button>
-                                          <div className="min-w-0">
-                                            <span className="text-sm font-medium block">{rule.name}</span>
-                                            <span className="text-xs text-muted-foreground block truncate">{rule.description}</span>
-                                          </div>
-                                        </div>
-                                        <Badge variant={rule.severity === "critical" ? "destructive" : "secondary"} className="text-[8px] capitalize shrink-0">{rule.severity}</Badge>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex gap-3 flex-wrap">
-                                  <Button onClick={saveAlertConfig} disabled={alertSaving} className="gap-2">
-                                    {alertSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <>Save Configuration</>}
-                                  </Button>
-                                  <Button variant="outline" onClick={testAlert} disabled={alertTesting} className="gap-2">
-                                    {alertTesting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : <>Send Test Alert</>}
-                                  </Button>
-                                </div>
-
-                                {alertMessage && (
-                                  <Card className={alertMessage.includes("success") || alertMessage.includes("sent") ? "border-emerald-500/30 bg-emerald-500/5" : "border-red-500/30 bg-red-500/5"}>
-                                    <CardContent className="p-3 flex items-center gap-2">
-                                      {alertMessage.includes("success") || alertMessage.includes("sent")
-                                        ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                        : <XCircle className="h-4 w-4 text-red-500" />}
-                                      <p className="text-sm">{alertMessage}</p>
-                                    </CardContent>
-                                  </Card>
-                                )}
-                              </>
-                            ) : (
-                              <Card className="border-amber-500/20 bg-amber-500/5">
-                                <CardContent className="p-4 text-center">
-                                  <p className="text-sm text-muted-foreground">Failed to load alert configuration. Please try again.</p>
-                                  <Button size="sm" variant="outline" className="mt-2" onClick={() => void loadAlertConfig()}>Retry</Button>
-                                </CardContent>
-                              </Card>
-                            )}
+                            <Card className="border-primary/20 bg-primary/5">
+                              <CardContent className="p-6 text-center space-y-3">
+                                <Bell className="h-8 w-8 text-primary mx-auto" />
+                                <h4 className="text-lg font-semibold">Alert System — Coming Soon</h4>
+                                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                                  Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected. This feature is under active development and will be available in an upcoming release.
+                                </p>
+                              </CardContent>
+                            </Card>
                           </div>
                         )}
 

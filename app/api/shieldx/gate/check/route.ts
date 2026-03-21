@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import ShieldXScan from "@/models/ShieldXScan";
+import { findUserByShieldXApiKey, readShieldXApiKeyFromRequest } from "@/lib/shieldx-api-key";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +12,13 @@ export const dynamic = "force-dynamic";
  * ```yaml
  * - name: ShieldX Security Gate
  *   run: |
- *     RESULT=$(curl -s https://securecodereviews.com/api/shieldx/gate/check \
+ *     RESULT=$(curl -s -X POST https://securecodereviews.com/api/shieldx/gate/check \
  *       -H "X-ShieldX-API-Key: ${{ secrets.SHIELDX_API_KEY }}" \
+ *       -H "Content-Type: application/json" \
  *       -d '{"repo": "owner/repo", "sha": "${{ github.sha }}"}')
  *     STATUS=$(echo $RESULT | jq -r '.gate')
- *     if [ "$STATUS" = "FAIL" ]; then
- *       echo "Security gate failed!"
+ *     if [ "$STATUS" != "PASS" ]; then
+ *       echo "Security gate did not pass: $STATUS"
  *       exit 1
  *     fi
  * ```
@@ -24,10 +26,19 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = request.headers.get("x-shieldx-api-key");
+    const apiKey = readShieldXApiKeyFromRequest(request);
     if (!apiKey) {
       return NextResponse.json(
         { error: "API key required. Set X-ShieldX-API-Key header." },
+        { status: 401 }
+      );
+    }
+
+    // Validate API key and check user exists
+    const apiKeyUser = await findUserByShieldXApiKey(apiKey);
+    if (!apiKeyUser) {
+      return NextResponse.json(
+        { error: "Invalid API key." },
         { status: 401 }
       );
     }
@@ -41,8 +52,9 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    // Find the most recent scan for this repo (optionally by sha)
+    // Find the most recent scan for this repo, scoped to the user's scans
     const query: Record<string, unknown> = {
+      userId: apiKeyUser.id,
       target: { $regex: repo, $options: "i" },
       source: "github-webhook",
     };
@@ -55,11 +67,14 @@ export async function POST(request: NextRequest) {
       .lean();
 
     if (!latestScan) {
+      // Default-deny: no scan means FAIL, not UNKNOWN
       return NextResponse.json({
-        gate: "UNKNOWN",
-        message: "No scan found for this repository. Push code or open a PR to trigger a scan.",
+        gate: "FAIL",
+        message: "No scan found for this repository. Push code or open a PR to trigger a scan before deployment.",
         repo,
         sha: sha || null,
+        counts: { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
+        thresholds: { critical: threshold?.critical ?? 0, high: threshold?.high ?? 0 },
       });
     }
 

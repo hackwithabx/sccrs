@@ -9,6 +9,8 @@ import {
 } from "@/lib/shieldx-billing";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 function generateTemporaryPassword(): string {
   const alphabet =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";

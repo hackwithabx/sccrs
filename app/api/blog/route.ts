@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/blog — list published blog posts (public) or user's own posts (authenticated)
 export async function GET(request: NextRequest) {
   try {

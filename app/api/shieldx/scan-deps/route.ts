@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
+import { getShieldXAuthorizedUser, enforceShieldXFeatureAccess, enforceShieldXScanLimit } from "@/lib/shieldx-route-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
@@ -176,6 +176,17 @@ export async function POST(request: NextRequest) {
       const { allowed } = rateLimit(`scan-deps-demo:${ip}`, { maxRequests: 5, windowSeconds: 3600 });
       if (!allowed) {
         return NextResponse.json({ error: "Demo rate limit reached (5 scans/hour). Sign in for unlimited access." }, { status: 429 });
+      }
+    }
+
+    // Enforce feature access and scan limits for paid users
+    if (authorizedUser && !effectiveDemo) {
+      try {
+        enforceShieldXFeatureAccess(authorizedUser, "dependency-audit");
+        enforceShieldXScanLimit(authorizedUser, 1);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Access denied";
+        return NextResponse.json({ error: message }, { status: 403 });
       }
     }
 

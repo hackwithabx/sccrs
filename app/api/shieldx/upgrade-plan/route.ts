@@ -6,6 +6,8 @@ import {
   isShieldXAdmin,
 } from "@/lib/shieldx-access";
 
+export const dynamic = "force-dynamic";
+
 const PLAN_DURATION_DAYS: Record<"pro" | "enterprise", number> = {
   pro: 30,
   enterprise: 30,

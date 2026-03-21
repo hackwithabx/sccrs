@@ -4,6 +4,7 @@ import User from "@/models/User";
 import ShieldXScan from "@/models/ShieldXScan";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 // GET — Fetch ShieldX admin dashboard data (real DB queries)

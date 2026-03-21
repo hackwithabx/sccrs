@@ -5,6 +5,8 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Promote or create an admin user with enterprise plan.
  * Requires the server-side ADMIN_PASSWORD for authorization.

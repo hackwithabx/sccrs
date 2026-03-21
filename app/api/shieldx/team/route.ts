@@ -10,6 +10,8 @@ import {
   type ShieldXSeatRole,
 } from "@/lib/shieldx-access";
 
+export const dynamic = "force-dynamic";
+
 type TeamMemberRole = "owner" | "admin" | "member" | "viewer";
 type InviteRole = "admin" | "member" | "viewer";
 

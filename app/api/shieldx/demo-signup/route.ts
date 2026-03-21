@@ -5,6 +5,8 @@ import User from "@/models/User";
 import { getShieldXSessionUser } from "@/lib/shieldx-access";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   // Rate limit: 5 demo signups per hour per IP
   const ip = getClientIP(request);

@@ -4,6 +4,8 @@ import User from "@/models/User";
 import ShieldXTeam from "@/models/ShieldXTeam";
 import { getShieldXSessionUser } from "@/lib/shieldx-access";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const sessionUser = await getShieldXSessionUser(request);
   if (!sessionUser) {

@@ -6,6 +6,8 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 function isStrongEnough(password: string): boolean {
   return password.length >= 10 && password.length <= 128;
 }

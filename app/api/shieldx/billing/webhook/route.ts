@@ -13,6 +13,7 @@ import {
   teardownEnterpriseWorkspace,
 } from "@/lib/shieldx-billing";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 function readString(value: unknown): string | null {

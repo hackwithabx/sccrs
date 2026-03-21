@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import ShieldXAuditLog from "@/models/ShieldXAuditLog";
 import { getShieldXSessionUser, hasShieldXAccess } from "@/lib/shieldx-access";
 import {
   generateShieldXApiKey,
@@ -8,6 +9,7 @@ import {
   hashShieldXApiKey,
 } from "@/lib/shieldx-api-key";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
     const user = await User.findById(sessionUser.id).select(
-      "shieldxApiKeyPrefix shieldxApiKeyLastCreatedAt"
+      "shieldxApiKeyPrefix shieldxApiKeyLastCreatedAt shieldxApiKeyExpiresAt"
     );
 
     if (!user) {
@@ -39,6 +41,9 @@ export async function GET(request: NextRequest) {
         prefix: user.shieldxApiKeyPrefix || null,
         lastCreatedAt: user.shieldxApiKeyLastCreatedAt
           ? user.shieldxApiKeyLastCreatedAt.toISOString()
+          : null,
+        expiresAt: user.shieldxApiKeyExpiresAt
+          ? user.shieldxApiKeyExpiresAt.toISOString()
           : null,
       },
     });
@@ -68,6 +73,7 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const apiKey = generateShieldXApiKey();
     const prefix = getShieldXApiKeyPrefix(apiKey);
+    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
     const user = await User.findByIdAndUpdate(
       sessionUser.id,
@@ -75,13 +81,21 @@ export async function POST(request: NextRequest) {
         shieldxApiKeyHash: hashShieldXApiKey(apiKey),
         shieldxApiKeyPrefix: prefix,
         shieldxApiKeyLastCreatedAt: new Date(),
+        shieldxApiKeyExpiresAt: expiresAt,
       },
       { new: true }
-    ).select("shieldxApiKeyPrefix shieldxApiKeyLastCreatedAt");
+    ).select("shieldxApiKeyPrefix shieldxApiKeyLastCreatedAt shieldxApiKeyExpiresAt");
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    await ShieldXAuditLog.create({
+      userId: sessionUser.id,
+      action: "api-key-created",
+      metadata: { prefix },
+      ip: request.headers.get("x-forwarded-for") || "unknown",
+    });
 
     return NextResponse.json({
       success: true,
@@ -92,6 +106,9 @@ export async function POST(request: NextRequest) {
         prefix: user.shieldxApiKeyPrefix,
         lastCreatedAt: user.shieldxApiKeyLastCreatedAt
           ? user.shieldxApiKeyLastCreatedAt.toISOString()
+          : null,
+        expiresAt: user.shieldxApiKeyExpiresAt
+          ? user.shieldxApiKeyExpiresAt.toISOString()
           : null,
       },
     });
@@ -116,6 +133,13 @@ export async function DELETE(request: NextRequest) {
       shieldxApiKeyHash: null,
       shieldxApiKeyPrefix: null,
       shieldxApiKeyLastCreatedAt: null,
+      shieldxApiKeyExpiresAt: null,
+    });
+
+    await ShieldXAuditLog.create({
+      userId: sessionUser.id,
+      action: "api-key-revoked",
+      ip: request.headers.get("x-forwarded-for") || "unknown",
     });
 
     return NextResponse.json({

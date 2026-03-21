@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShieldXAuthorizedUser } from "@/lib/shieldx-route-auth";
+import { getShieldXAuthorizedUser, enforceShieldXFeatureAccess, enforceShieldXScanLimit } from "@/lib/shieldx-route-auth";
 import { getShieldXSessionUser } from "@/lib/shieldx-access";
 import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
@@ -265,6 +265,16 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionUser = user || await getShieldXSessionUser(request);
+
+    // Enforce feature access and scan limits for paid users
+    try {
+      enforceShieldXFeatureAccess(sessionUser, "secrets-scan");
+      enforceShieldXScanLimit(sessionUser, 1);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Access denied";
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+
     const code = body?.code;
     if (!code || typeof code !== "string" || code.trim().length < 5) {
       return NextResponse.json({ error: "Provide source code to scan (minimum 5 characters)." }, { status: 400 });

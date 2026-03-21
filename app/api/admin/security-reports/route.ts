@@ -3,6 +3,8 @@ import dbConnect from "@/lib/mongodb";
 import SecurityReport from "@/models/SecurityReport";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/security-reports — list all reports
 export async function GET(request: NextRequest) {
   if (!isAuthorizedAdminRequest(request)) {

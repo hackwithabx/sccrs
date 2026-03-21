@@ -7,6 +7,7 @@ import {
 } from "@/lib/shieldx-access";
 import { sendShieldXTestAlert } from "@/lib/shieldx-alerts";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
