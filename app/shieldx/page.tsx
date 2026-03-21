@@ -1030,6 +1030,23 @@ export default function ShieldXWorkspacePage() {
                                 )}
                                 {scanResults.vulnerabilities?.length > 0 ? (
                                   <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                                    {/* Consolidated upgrade recommendations */}
+                                    {scanResults.recommendedUpgrades?.length > 0 && (
+                                      <Card className="border-blue-500/30 bg-blue-500/5">
+                                        <CardContent className="p-4">
+                                          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2">📦 Recommended Upgrades (covers all CVEs per package)</p>
+                                          <div className="space-y-1.5">
+                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                            {scanResults.recommendedUpgrades.map((u: any, ui: number) => (
+                                              <div key={ui} className="flex items-center justify-between text-xs">
+                                                <span className="font-mono">{u.package}@{u.currentVersion} → <span className="text-emerald-600 font-semibold">{u.upgradeToAtLeast}</span></span>
+                                                <span className="text-muted-foreground">{u.coversVulnerabilities} CVE{u.coversVulnerabilities > 1 ? "s" : ""}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {scanResults.vulnerabilities.map((v: any, idx: number) => (
                                       <Card key={idx} className={`${v.severity === "critical" ? "border-red-500/30" : v.severity === "high" ? "border-orange-500/30" : "border-amber-500/30"}`}>

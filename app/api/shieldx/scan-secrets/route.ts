@@ -43,7 +43,7 @@ const SECRET_PATTERNS: SecretPattern[] = [
 
 const PLACEHOLDER_PATTERNS = [
   /^(your[_-]?|my[_-]?|test[_-]?|example[_-]?|fake[_-]?|dummy[_-]?|sample[_-]?|xxx|placeholder|changeme|TODO|FIXME)/i,
-  /^[A-Za-z0-9]{4,8}$/,
+  /^[A-Za-z0-9]{4,6}$/,
   /^(sk_test_|pk_test_)/,
 ];
 

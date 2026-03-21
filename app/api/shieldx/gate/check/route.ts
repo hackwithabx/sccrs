@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Find the most recent scan for this repo, scoped to the user's scans
     const query: Record<string, unknown> = {
       userId: apiKeyUser.id,
-      target: { $regex: escapeRegex(repo), $options: "i" },
+      target: { $regex: `^${escapeRegex(repo)}$`, $options: "i" },
       source: "github-webhook",
     };
     if (sha) {

@@ -64,6 +64,17 @@ const COMPLIANCE_MAP: Record<string, string[]> = {
   "basic-auth": ["OWASP A07:2021", "SOC2 CC6.1"],
   "high-entropy-hex": ["OWASP A07:2021", "SOC2 CC6.1"],
   "high-entropy-base64": ["OWASP A07:2021", "SOC2 CC6.1"],
+  // Aliases for scanner pattern IDs
+  "db-connection-string": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3"],
+  "generic-password": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3", "CIS 5.2"],
+  "bearer-header": ["OWASP A07:2021", "SOC2 CC6.1"],
+  "github-fine-grained": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3"],
+  "slack-webhook": ["OWASP A07:2021", "SOC2 CC6.1"],
+  "npm-token": ["OWASP A07:2021", "SOC2 CC6.1"],
+  "docker-token": ["OWASP A07:2021", "SOC2 CC6.1"],
+  "mailgun-key": ["OWASP A07:2021", "SOC2 CC6.1"],
+  "aws-secret-key": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3", "CIS 1.4"],
+  "internal-ip": ["OWASP A07:2021"],
 
   // Dependencies
   "dep-critical": ["OWASP A06:2021", "SOC2 CC7.1", "ISO27001 A.12.6.1"],
@@ -104,11 +115,15 @@ const COMPLIANCE_MAP: Record<string, string[]> = {
   // Log Threats
   "brute-force": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.2"],
   "sql-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
-  "xss": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "xss-attempt": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
   "path-traversal": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
   "command-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
   "privilege-escalation": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.9.2.3"],
   "data-exfiltration": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.13.2.1"],
+  "high-frequency-ip": ["OWASP A07:2021", "SOC2 CC7.2"],
+  "off-hours-activity": ["OWASP A07:2021", "SOC2 CC7.2"],
+  "error-spike": ["OWASP A09:2021", "SOC2 CC7.2"],
+  "sensitive-data-exposure": ["OWASP A02:2021", "SOC2 CC6.1", "ISO27001 A.8.2.3", "PCI-DSS 3.4"],
 };
 
 /* ── Secret Fix Templates ── */
@@ -122,8 +137,8 @@ const client = new S3Client({ region: 'us-east-1' }); // Uses IAM role automatic
     effort: "low",
   },
   "github-token": {
-    fix: "Revoke the GitHub token immediately and generate a new one with minimum required permissions.",
-    fixCommand: "gh auth token  # Use GitHub CLI for token management",
+    fix: "Revoke the GitHub token immediately at github.com/settings/tokens and generate a new one with minimum required permissions.",
+    fixCommand: "# Revoke at: https://github.com/settings/tokens\n# Or via API: gh api -X DELETE /applications/{client_id}/token",
     codeExample: `// Use GITHUB_TOKEN environment variable
 const token = process.env.GITHUB_TOKEN;
 if (!token) throw new Error('GITHUB_TOKEN not set');`,
@@ -184,6 +199,83 @@ if (!password) throw new Error('DB_PASSWORD not configured');`,
 const user = process.env.AUTH_USER;
 const pass = process.env.AUTH_PASS;
 const auth = Buffer.from(\`\${user}:\${pass}\`).toString('base64');`,
+    effort: "low",
+  },
+  // Aliases — match scanner pattern IDs to fix templates
+  "db-connection-string": {
+    fix: "Remove database connection string from code. Use environment variables or a secrets manager.",
+    fixCommand: null,
+    codeExample: `// Use environment variable
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) throw new Error('DATABASE_URL not configured');
+mongoose.connect(dbUrl);`,
+    effort: "low",
+  },
+  "generic-password": {
+    fix: "Remove hardcoded password. Use environment variables, secrets manager, or credential vaults.",
+    fixCommand: null,
+    codeExample: `// Load from environment
+const password = process.env.DB_PASSWORD;
+if (!password) throw new Error('DB_PASSWORD not configured');`,
+    effort: "low",
+  },
+  "bearer-header": {
+    fix: "Remove hardcoded authorization headers. Use session tokens or OAuth2 flows with runtime credential injection.",
+    fixCommand: null,
+    codeExample: `// Load token from environment or session
+const token = process.env.API_TOKEN || req.session?.token;
+fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });`,
+    effort: "low",
+  },
+  "github-fine-grained": {
+    fix: "Revoke the fine-grained token at github.com/settings/tokens and regenerate with minimal permissions.",
+    fixCommand: "# Revoke at: https://github.com/settings/tokens?type=beta",
+    codeExample: `// Use GITHUB_TOKEN environment variable
+const token = process.env.GITHUB_TOKEN;
+if (!token) throw new Error('GITHUB_TOKEN not set');`,
+    effort: "low",
+  },
+  "slack-webhook": {
+    fix: "Regenerate the webhook URL in Slack channel settings. Store the URL in environment variables.",
+    fixCommand: null,
+    codeExample: `// Use environment variable
+const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+await fetch(webhookUrl, { method: 'POST', body: JSON.stringify({ text: message }) });`,
+    effort: "low",
+  },
+  "npm-token": {
+    fix: "Revoke the npm token immediately. Use scoped tokens with minimal permissions stored in CI/CD secrets.",
+    fixCommand: "npm token revoke TOKEN_ID",
+    codeExample: `// Use .npmrc with env variable
+//registry.npmjs.org/:_authToken=\${NPM_TOKEN}`,
+    effort: "low",
+  },
+  "docker-token": {
+    fix: "Regenerate the Docker Hub token. Store credentials in CI/CD secrets, never in source code.",
+    fixCommand: null,
+    codeExample: `// In CI: echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin`,
+    effort: "low",
+  },
+  "mailgun-key": {
+    fix: "Rotate the Mailgun API key in the Mailgun dashboard. Use environment variables for key storage.",
+    fixCommand: null,
+    codeExample: `// Use environment variable
+const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });`,
+    effort: "low",
+  },
+  "aws-secret-key": {
+    fix: "Rotate the AWS secret key immediately via IAM console. Use IAM roles or AWS Secrets Manager.",
+    fixCommand: "aws iam create-access-key --user-name USER && aws iam delete-access-key --access-key-id OLD_KEY_ID --user-name USER",
+    codeExample: `// Use AWS SDK with IAM roles (no hardcoded keys)
+const { S3Client } = require('@aws-sdk/client-s3');
+const client = new S3Client({ region: 'us-east-1' }); // Uses IAM role automatically`,
+    effort: "low",
+  },
+  "internal-ip": {
+    fix: "Avoid hardcoding internal IP addresses. Use DNS names, service discovery, or configuration variables.",
+    fixCommand: null,
+    codeExample: `// Use environment variable for service endpoints
+const serviceUrl = process.env.BACKEND_SERVICE_URL || 'http://backend.internal:8080';`,
     effort: "low",
   },
 };
@@ -252,6 +344,30 @@ app.use(cors({
 
 /* ── Log Threat Fixes ── */
 const LOG_FIXES: Record<string, { fix: string; fixCommand: string | null; codeExample: string | null; effort: Effort }> = {
+  "high-frequency-ip": {
+    fix: "Investigate the source IP for malicious activity. Consider rate limiting or blocking if confirmed hostile.",
+    fixCommand: "# Block IP via firewall\niptables -A INPUT -s SUSPICIOUS_IP -j DROP",
+    codeExample: `// Rate limit by IP\nconst rateLimit = require('express-rate-limit');\nconst limiter = rateLimit({ windowMs: 60000, max: 100 });\napp.use(limiter);`,
+    effort: "low",
+  },
+  "off-hours-activity": {
+    fix: "Review off-hours access for legitimacy. Alert the account owner and check for compromised credentials.",
+    fixCommand: null,
+    codeExample: `// Log and alert on off-hours access\nif (hour < 6 || hour > 22) {\n  alertSecurityTeam({ event: 'off-hours-access', user, timestamp });\n}`,
+    effort: "medium",
+  },
+  "error-spike": {
+    fix: "Investigate the error spike root cause — may indicate automated attack, misconfiguration, or service degradation.",
+    fixCommand: null,
+    codeExample: `// Monitor error rates\nconst errorRate = errors / totalRequests;\nif (errorRate > 0.1) alertOps({ message: 'Error rate spike', rate: errorRate });`,
+    effort: "medium",
+  },
+  "sensitive-data-exposure": {
+    fix: "Remove sensitive data from log output. Mask PII fields before logging. Implement structured logging with data classification.",
+    fixCommand: "npm install pino pino-pretty",
+    codeExample: `// Mask sensitive fields before logging\nfunction maskSensitive(data) {\n  const masked = { ...data };\n  ['password', 'ssn', 'creditCard'].forEach(f => {\n    if (masked[f]) masked[f] = '***REDACTED***';\n  });\n  return masked;\n}\nlogger.info(maskSensitive(userData));`,
+    effort: "medium",
+  },
   "brute-force": {
     fix: "Implement account lockout, rate limiting, and CAPTCHA after multiple failed attempts.",
     fixCommand: "npm install express-rate-limit",
@@ -275,7 +391,7 @@ const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
 // const result = await db.query(\`SELECT * FROM users WHERE id = \${userId}\`);`,
     effort: "low",
   },
-  "xss": {
+  "xss-attempt": {
     fix: "Sanitize all user input. Use output encoding. Implement Content Security Policy.",
     fixCommand: "npm install dompurify",
     codeExample: `// Server-side sanitization
@@ -367,7 +483,7 @@ const CONFIDENCE_SCORES: Record<Confidence, number> = {
 const SCAN_EXPOSURE: Record<string, number> = {
   secrets: 30,   // Secrets in code = highly exploitable
   api: 30,       // API = internet-exposed
-  deps: 25,      // Dependencies = supply chain risk
+  deps: 15,      // Dependencies = priority should track CVSS severity
   cloud: 25,     // Cloud misconfig = broad exposure
   logs: 20,      // Log findings = attacks in progress
   cicd: 20,      // CI/CD = pipeline risk

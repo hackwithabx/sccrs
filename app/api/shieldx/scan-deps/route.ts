@@ -47,6 +47,7 @@ interface VulnResult {
   id: string;
   aliases: string[];
   severity: "critical" | "high" | "medium" | "low";
+  severityNote?: string;
   summary: string;
   fixedIn: string | null;
   fixCommand: string | null;
@@ -81,44 +82,90 @@ function getFixedVersion(vuln: OsvVuln, pkgName: string): string | null {
   return null;
 }
 
-function extractSeverity(vuln: OsvVuln): "critical" | "high" | "medium" | "low" {
-  // Try CVSS score first
+// Parse CVSS v3/v4 base score from a vector string (e.g., "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+function parseCvssV3Score(vector: string): number | null {
+  const metrics: Record<string, string> = {};
+  for (const part of vector.split("/")) {
+    const [key, val] = part.split(":");
+    if (key && val) metrics[key] = val;
+  }
+
+  const avValues: Record<string, number> = { N: 0.85, A: 0.62, L: 0.55, P: 0.20 };
+  const acValues: Record<string, number> = { L: 0.77, H: 0.44 };
+  const uiValues: Record<string, number> = { N: 0.85, R: 0.62 };
+  const ciaValues: Record<string, number> = { H: 0.56, L: 0.22, N: 0 };
+
+  const scopeChanged = metrics.S === "C";
+  const prValues: Record<string, number> = scopeChanged
+    ? { N: 0.85, L: 0.68, H: 0.50 }
+    : { N: 0.85, L: 0.62, H: 0.27 };
+
+  const av = avValues[metrics.AV];
+  const ac = acValues[metrics.AC];
+  const pr = prValues[metrics.PR];
+  const ui = uiValues[metrics.UI];
+  const c = ciaValues[metrics.C];
+  const i = ciaValues[metrics.I];
+  const a = ciaValues[metrics.A];
+
+  if ([av, ac, pr, ui, c, i, a].some((v) => v === undefined)) return null;
+
+  const iss = 1 - (1 - c) * (1 - i) * (1 - a);
+  const impact = scopeChanged
+    ? 7.52 * (iss - 0.029) - 3.25 * Math.pow(iss - 0.02, 15)
+    : 6.42 * iss;
+
+  if (impact <= 0) return 0;
+
+  const exploitability = 8.22 * av * ac * pr * ui;
+  const baseScore = scopeChanged
+    ? Math.min(1.08 * (impact + exploitability), 10)
+    : Math.min(impact + exploitability, 10);
+
+  return Math.ceil(baseScore * 10) / 10;
+}
+
+function extractSeverity(vuln: OsvVuln): { severity: "critical" | "high" | "medium" | "low"; estimated: boolean } {
+  // Try CVSS score from severity field
   for (const s of vuln.severity || []) {
     if (s.type === "CVSS_V3" || s.type === "CVSS_V4") {
-      const score = parseFloat(s.score.split("/")[0].replace(/^CVSS:\d\.\d\/AV:.*$/, ""));
-      // If it's a vector string, try to extract score differently
-      if (isNaN(score)) {
-        // Parse from vector: higher complexity = lower severity approximation
-        if (s.score.includes("AV:N") && s.score.includes("AC:L")) return "critical";
-        if (s.score.includes("AV:N")) return "high";
-        return "medium";
-      }
-      return cvssToSeverity(score);
+      // OSV.dev provides CVSS as a vector string — parse it properly
+      const numericScore = parseCvssV3Score(s.score);
+      if (numericScore !== null) return { severity: cvssToSeverity(numericScore), estimated: false };
     }
   }
-  // Fallback: check aliases for severity hints
-  const id = vuln.id?.toUpperCase() || "";
-  if (id.includes("CRITICAL")) return "critical";
-  if (id.includes("HIGH")) return "high";
-  // Default medium for unknown
-  return "medium";
+  // Fallback: check database_specific severity if present
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dbSeverity = (vuln as any).database_specific;
+  if (dbSeverity && typeof dbSeverity === "object" && dbSeverity !== null) {
+    const sev = (dbSeverity as Record<string, unknown>).severity;
+    if (typeof sev === "string") {
+      const lower = sev.toLowerCase();
+      if (lower === "critical" || lower === "high" || lower === "medium" || lower === "low") {
+        return { severity: lower as "critical" | "high" | "medium" | "low", estimated: false };
+      }
+    }
+  }
+  // Default medium for unknown — mark as estimated
+  return { severity: "medium", estimated: true };
 }
 
 // Detect ecosystem from package name or format
 function detectEcosystem(deps: Record<string, string>, rawInput: string): string {
   // Check if it's a package.json
   if (rawInput.includes('"dependencies"') || rawInput.includes('"devDependencies"')) return "npm";
-  // Check for Python markers
-  if (rawInput.includes("==") || rawInput.includes(">=") || rawInput.includes("~=")) {
-    if (rawInput.includes("django") || rawInput.includes("flask") || rawInput.includes("requests")) return "PyPI";
-  }
+  // Check for Python markers — any == or >= with package-like lines
+  if (/^[a-zA-Z][a-zA-Z0-9_-]*[=>~]=?\d/m.test(rawInput)) return "PyPI";
   // Check for Go
   if (rawInput.includes("require (") || rawInput.includes("module ")) return "Go";
   // Check for Maven
   if (rawInput.includes("<dependency>") || rawInput.includes("<groupId>")) return "Maven";
   // Check for Gradle
   if (rawInput.includes("implementation ") || rawInput.includes("compile ")) return "Maven";
-  // Default
+  // If deps were parsed, check for npm-style naming
+  const depNames = Object.keys(deps);
+  if (depNames.some((n) => n.startsWith("@") || n.includes("/"))) return "npm";
+  // Default to npm — most common ecosystem
   return "npm";
 }
 
@@ -230,18 +277,7 @@ export async function POST(request: NextRequest) {
           clearTimeout(timeout);
 
           if (!resp.ok) {
-            // Try alternate ecosystem
-            if (ecosystem === "npm") {
-              const resp2 = await fetch("https://api.osv.dev/v1/query", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ version, package: { name, ecosystem: "PyPI" } }),
-              });
-              if (resp2.ok) {
-                const data = await resp2.json();
-                return { name, version, vulns: data.vulns || [] };
-              }
-            }
+            errors.push(`OSV API returned ${resp.status} for ${name}`);
             return { name, version, vulns: [] };
           }
 
@@ -291,13 +327,13 @@ export async function POST(request: NextRequest) {
             effort = "high";
           }
 
-          const vulnSeverity = extractSeverity(vuln);
+          const { severity: vulnSeverity, estimated: severityEstimated } = extractSeverity(vuln);
           const fixEngineResult = generateFix({
             scanType: "deps",
             id,
             title: `${result.name}@${result.version} — ${vuln.summary || id}`,
             severity: vulnSeverity,
-            confidence: "high",
+            confidence: severityEstimated ? "medium" : "high",
             description: vuln.summary || vuln.details?.slice(0, 200) || "No description available",
             packageName: result.name,
             packageVersion: result.version,
@@ -311,6 +347,7 @@ export async function POST(request: NextRequest) {
             id,
             aliases: vuln.aliases || [],
             severity: vulnSeverity,
+            severityNote: severityEstimated ? "Estimated — no CVSS score available from OSV.dev" : undefined,
             summary: vuln.summary || vuln.details?.slice(0, 200) || "No description available",
             fixedIn,
             fixCommand: fixCommand || fixEngineResult.fixCommand,
@@ -347,6 +384,47 @@ export async function POST(request: NextRequest) {
       low: uniqueVulns.filter((v) => v.severity === "low").length,
     };
 
+    // Build per-package fix summary — recommend the highest fix version across all CVEs
+    const pkgFixMap = new Map<string, { current: string; fixes: string[]; vulnCount: number; highestSeverity: string }>();
+    for (const v of uniqueVulns) {
+      const existing = pkgFixMap.get(v.package);
+      if (!existing) {
+        pkgFixMap.set(v.package, {
+          current: v.version,
+          fixes: v.fixedIn ? [v.fixedIn] : [],
+          vulnCount: 1,
+          highestSeverity: v.severity,
+        });
+      } else {
+        existing.vulnCount++;
+        if (v.fixedIn) existing.fixes.push(v.fixedIn);
+        const order = { critical: 0, high: 1, medium: 2, low: 3 };
+        if ((order[v.severity as keyof typeof order] ?? 3) < (order[existing.highestSeverity as keyof typeof order] ?? 3)) {
+          existing.highestSeverity = v.severity;
+        }
+      }
+    }
+    const recommendedUpgrades = Array.from(pkgFixMap.entries())
+      .filter(([, info]) => info.fixes.length > 0)
+      .map(([pkg, info]) => {
+        // Sort fix versions and pick the highest (last in semver order)
+        const sorted = [...new Set(info.fixes)].sort((a, b) => {
+          const pa = a.split(".").map(Number);
+          const pb = b.split(".").map(Number);
+          for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+            if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
+          }
+          return 0;
+        });
+        return {
+          package: pkg,
+          currentVersion: info.current,
+          upgradeToAtLeast: sorted[sorted.length - 1],
+          coversVulnerabilities: info.vulnCount,
+          highestSeverity: info.highestSeverity,
+        };
+      });
+
     // Increment scan count for authenticated users
     if (authorizedUser && !effectiveDemo) {
       try {
@@ -362,6 +440,7 @@ export async function POST(request: NextRequest) {
       scannedPackages,
       vulnerabilities: uniqueVulns,
       stats,
+      recommendedUpgrades: recommendedUpgrades.length > 0 ? recommendedUpgrades : undefined,
       errors: errors.length > 0 ? errors : undefined,
       scanWarning: errors.length > 0
         ? `${errors.length} package(s) could not be scanned (OSV.dev API timeout or error). Results may be incomplete — vulnerabilities for these packages are unknown, not absent.`

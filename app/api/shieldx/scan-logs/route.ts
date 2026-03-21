@@ -233,22 +233,31 @@ const THREAT_PATTERNS: ThreatPattern[] = [
     id: "privilege-escalation",
     name: "Privilege Escalation Activity",
     category: "Authorization",
-    severity: "critical",
+    severity: "high",
     detect: (lines) => {
-      const privEsc = lines.filter((l) =>
-        /sudo|su\s+-|runas|privilege.?escalat|role.?change.*admin|became\s+root|setuid|chmod\s+[47]/i.test(l) ||
+      // Only flag suspicious patterns — exclude routine sudo usage
+      const suspiciousPrivEsc = lines.filter((l) =>
+        /privilege.?escalat|role.?change.*admin|became\s+root|setuid|chmod\s+[47]/i.test(l) ||
         /access.?denied.*then.*success|forbidden.*then.*allowed/i.test(l)
       );
-      if (privEsc.length > 0) {
+      const sudoLines = lines.filter((l) => /sudo|su\s+-|runas/i.test(l));
+      const allPrivEsc = [...suspiciousPrivEsc, ...sudoLines];
+      if (allPrivEsc.length > 0) {
+        // Confirmed suspicious patterns = high severity; routine sudo = medium
+        const isSuspicious = suspiciousPrivEsc.length > 0;
         return [{
           patternId: "privilege-escalation",
-          name: "Privilege Escalation Activity",
+          name: isSuspicious ? "Suspicious Privilege Escalation" : "Privilege Change Activity",
           category: "Authorization",
-          severity: "critical",
-          evidence: privEsc.slice(0, 5),
-          count: privEsc.length,
-          detail: `${privEsc.length} log entries indicate privilege escalation (sudo, role changes to admin, setuid).`,
-          remediation: "Audit all privilege changes. Implement least-privilege access. Alert on role escalations. Use mandatory access controls.",
+          severity: isSuspicious ? "high" : "medium",
+          evidence: (isSuspicious ? suspiciousPrivEsc : sudoLines).slice(0, 5),
+          count: allPrivEsc.length,
+          detail: isSuspicious
+            ? `${suspiciousPrivEsc.length} entries show suspicious privilege escalation (role changes, setuid, access bypass).`
+            : `${sudoLines.length} sudo/su commands detected — review for legitimacy (may be routine admin operations).`,
+          remediation: isSuspicious
+            ? "Audit all privilege changes. Implement least-privilege access. Alert on role escalations. Use mandatory access controls."
+            : "Review sudo usage. Ensure it aligns with authorized admin activity. Consider implementing just-in-time access.",
         }];
       }
       return [];

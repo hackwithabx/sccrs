@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { generateFix, type Severity } from "@/lib/fix-engine";
+import dns from "dns/promises";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -163,10 +164,17 @@ const API_CHECKS: {
     owasp: "API3:2023",
     severity: "high",
     check: ({ body }) => {
+      // Only flag JSON API responses — HTML/docs/error pages can mention these keywords innocently
+      const isJson = body.trimStart().startsWith("{") || body.trimStart().startsWith("[");
+      if (!isJson) return { status: "pass", message: "Response is not JSON — data exposure check applies to API responses" };
       const lower = body.toLowerCase();
-      const sensitiveFields = ["password", "secret_key", "access_token", "private_key", "ssn", "credit_card", "api_key", "authorization", "token", "credentials", "bank_account"];
-      const found = sensitiveFields.filter((p) => lower.includes(p));
-      if (found.length) return { status: "fail", message: `Sensitive data fields found in response: ${found.join(", ")}` };
+      const sensitiveFields = ["password", "secret_key", "access_token", "private_key", "ssn", "credit_card", "api_key", "credentials", "bank_account"];
+      // Check for actual JSON keys (e.g. "password": ) not just keyword mentions
+      const found = sensitiveFields.filter((p) => {
+        const keyPattern = new RegExp(`["']${p}["']\\s*:`);
+        return keyPattern.test(lower);
+      });
+      if (found.length) return { status: "fail", message: `Sensitive data fields found as JSON keys in response: ${found.join(", ")}` };
       // Check for excessive response size (>50KB might indicate over-fetching)
       if (body.length > 50000) return { status: "warn", message: `Large response (${Math.round(body.length / 1024)}KB) — may indicate excessive data exposure; consider field filtering` };
       return { status: "pass", message: "No obvious sensitive data patterns or excessive data in response" };
@@ -204,8 +212,11 @@ const API_CHECKS: {
     owasp: "API6:2023",
     severity: "medium",
     check: ({ headers }) => {
-      const botProtection = headers["x-robots-tag"] || headers["cf-ray"] || headers["x-amzn-waf-action"] || headers["x-akamai-transformed"];
-      if (botProtection) return { status: "pass", message: "WAF/bot protection indicators detected" };
+      const wafHeaders = ["x-amzn-waf-action", "x-akamai-transformed", "x-sucuri-id", "x-cdn-geo"];
+      const hasWaf = wafHeaders.some((h) => headers[h]);
+      if (hasWaf) return { status: "pass", message: `WAF/bot protection detected via: ${wafHeaders.filter((h) => headers[h]).join(", ")}` };
+      // cf-ray only indicates CloudFlare proxying, not WAF — report as informational
+      if (headers["cf-ray"]) return { status: "warn", message: "CloudFlare-proxied (cf-ray present) but WAF/bot rules not confirmed — verify WAF is enabled in CloudFlare dashboard" };
       return { status: "warn", message: "No WAF/bot protection headers detected — consider implementing bot mitigation" };
     },
   },
@@ -418,6 +429,23 @@ export async function POST(request: NextRequest) {
         { error: "Private and internal URLs cannot be scanned" },
         { status: 400 }
       );
+    }
+
+    // DNS rebinding protection: resolve hostname and check resolved IPs
+    try {
+      const resolved = await dns.resolve4(parsedUrl.hostname).catch(() => []);
+      const resolved6 = await dns.resolve6(parsedUrl.hostname).catch(() => []);
+      const allIps = [...resolved, ...resolved6];
+      for (const ip of allIps) {
+        if (isPrivateOrLocalHost(ip)) {
+          return NextResponse.json(
+            { error: "URL resolves to a private/internal IP address" },
+            { status: 400 }
+          );
+        }
+      }
+    } catch {
+      // DNS resolution failed — hostname may be invalid
     }
 
     // Demo mode: enforce demo scan limits and restrict modules
