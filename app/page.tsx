@@ -146,7 +146,7 @@ const itemVariants = {
 export default function HomePage() {
   return (
     <div className="relative">
-      {/* â•â•â• HERO — ShieldX Showcase â•â•â• */}
+      {/* === HERO — ShieldX Showcase === */}
       <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
         {/* Background effects */}
         <div className="absolute inset-0 -z-10">
@@ -793,7 +793,7 @@ export default function HomePage() {
                       </div>
                       CVE Vulnerability Trends
                     </CardTitle>
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2019â€“2024</span>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2019–2024</span>
                   </div>
                   {/* Mini legend */}
                   <div className="flex flex-wrap gap-3 mt-3">
