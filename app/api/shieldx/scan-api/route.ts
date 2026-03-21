@@ -143,7 +143,7 @@ const API_CHECKS: {
       const hasId = /\/\d+$|\/[a-f0-9-]{36}$|\/[a-f0-9]{24}$/i.test(url);
       if (hasId && status === 200)
         return { status: "warn", message: "Endpoint exposes object by ID — verify authorization checks exist for each object access" };
-      return { status: "pass", message: "No BOLA indicators detected (test with different auth tokens for thorough check)" };
+      return { status: "pass", message: "No object-ID patterns found in URL. Note: This check only examines URL structure — manual testing with different auth tokens is recommended for thorough BOLA verification." };
     },
   },
   // API2:2023 - Broken Authentication

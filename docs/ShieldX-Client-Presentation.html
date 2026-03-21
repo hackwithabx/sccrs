@@ -451,7 +451,7 @@
           <p>Generate an API key from the dashboard. Use cURL or any HTTP client to scan programmatically.</p>
           <code style="font-size:12px;color:var(--primary);display:block;margin-top:8px;background:#f1f5f9;padding:8px;border-radius:6px;">
             curl -X POST https://securecodereviews.com/api/shieldx/scan-secrets \<br>
-            &nbsp; -H "x-shieldx-api-key: shx_prod_..." \<br>
+            &nbsp; -H "x-shieldx-api-key: sx_live_..." \<br>
             &nbsp; -d '{"code": "..."}'
           </code>
         </div>
@@ -544,7 +544,7 @@
   </div>
   <div class="slide-content">
     <h2>📦 Module 2: Dependency Scanner</h2>
-    <p>Real-time CVE vulnerability detection using the OSV.dev open vulnerability database.</p>
+    <p>CVE vulnerability detection using Google's OSV.dev open vulnerability database. Every scan queries live data — results reflect the latest published advisories.</p>
 
     <div class="grid-2" style="margin-top: 20px;">
       <div>
@@ -674,7 +674,7 @@
     </div>
 
     <h3 style="margin-top: 16px;">Score Breakdown</h3>
-    <p>Each check is pass/warn/fail with severity weighting. Critical failures deduct 1.5 points; high failures deduct 1.0; medium deduct 0.5. Score starts at 10.</p>
+    <p>Each check is pass/warn/fail with severity weighting. Confirmed failures (high confidence) deduct full points; unverified warnings (low confidence, based on partial input) have minimal score impact. Score starts at 10.</p>
   </div>
   <div class="slide-footer">
     <span class="copyright">© 2026 SecureCodeReviews. All rights reserved.</span>
@@ -982,8 +982,8 @@
         </ul>
         <h3 style="margin-top: 16px;">Security</h3>
         <ul style="font-size:13px;">
-          <li>Keys use <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px;">shx_prod_</code> prefix for identification</li>
-          <li>Keys are hashed with bcrypt before storage</li>
+          <li>Keys use <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px;">sx_live_</code> prefix for identification</li>
+          <li>Keys are hashed with SHA-256 before storage</li>
           <li>Revocable at any time from the dashboard</li>
           <li>One active key per user</li>
         </ul>
@@ -995,7 +995,7 @@
           curl -X POST \<br>
           &nbsp; https://securecodereviews.com/api/shieldx/scan-secrets \<br>
           &nbsp; -H "Content-Type: application/json" \<br>
-          &nbsp; -H "x-shieldx-api-key: shx_prod_abc123..." \<br>
+          &nbsp; -H "x-shieldx-api-key: sx_live_abc123..." \<br>
           &nbsp; -d '{"code": "AWS_KEY=AKIAIOSFODNN7EXAMPLE"}'
         </div>
         <h3 style="margin-top: 16px;">Available Endpoints</h3>
@@ -1046,6 +1046,7 @@
           <tr><td><strong>Owner</strong></td><td>Full admin access, billing, seat management</td></tr>
           <tr><td><strong>Admin</strong></td><td>Manage team settings and view all scans</td></tr>
           <tr><td><strong>Member</strong></td><td>Run scans, view history, use API keys</td></tr>
+          <tr><td><strong>Viewer</strong></td><td>View scan results and history (read-only)</td></tr>
         </table>
       </div>
       <div>
@@ -1111,7 +1112,7 @@
           <li><strong>Input Validation</strong> — Size limits: 50KB (free), 500KB (paid), 1MB (logs)</li>
           <li><strong>SSRF Protection</strong> — Blocks scans targeting private/internal IPs</li>
           <li><strong>CORS</strong> — Strict same-origin policy</li>
-          <li><strong>bcrypt Hashing</strong> — All passwords and API keys</li>
+          <li><strong>Secure Hashing</strong> — bcrypt for passwords, SHA-256 for API keys</li>
           <li><strong>Webhook Verification</strong> — Razorpay webhooks use timingSafeEqual</li>
         </ul>
       </div>

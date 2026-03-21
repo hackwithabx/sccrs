@@ -363,6 +363,9 @@ export async function POST(request: NextRequest) {
       vulnerabilities: uniqueVulns,
       stats,
       errors: errors.length > 0 ? errors : undefined,
+      scanWarning: errors.length > 0
+        ? `${errors.length} package(s) could not be scanned (OSV.dev API timeout or error). Results may be incomplete — vulnerabilities for these packages are unknown, not absent.`
+        : undefined,
       scannedAt: new Date().toISOString(),
       source: "OSV.dev (Google Open Source Vulnerabilities)",
     });

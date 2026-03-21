@@ -47,7 +47,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     evaluate: (c) =>
       /mfa|multi.?factor|two.?factor|2fa/i.test(c)
         ? { status: "pass", detail: "MFA configuration references found." }
-        : { status: "warn", detail: "No MFA configuration detected. Enable MFA for all IAM users." },
+        : { status: "warn", detail: "MFA configuration not detected in provided input (partial analysis). If your IAM config was not included, this may not apply. Otherwise, enable MFA for all IAM users." },
   },
   // Encryption
   {
@@ -60,7 +60,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
         ? { status: "fail", detail: "Encryption at rest is explicitly disabled. Enable SSE-S3, SSE-KMS, or equivalent." }
         : /encrypt|kms|sse-s3|sse-kms|aes-256|server.?side.?encryption/i.test(c)
           ? { status: "pass", detail: "Encryption at rest references found." }
-          : { status: "warn", detail: "No encryption at rest configuration detected. Verify encryption settings." },
+          : { status: "warn", detail: "Encryption at rest not detected in provided input (partial analysis). If your encryption config was not included, this may not apply. Otherwise, verify encryption settings." },
   },
   {
     id: "enc-in-transit",
@@ -80,7 +80,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     evaluate: (c) =>
       /kms|key.?management|cmk|customer.?managed.?key/i.test(c)
         ? { status: "pass", detail: "KMS / customer-managed key configuration detected." }
-        : { status: "warn", detail: "No KMS key management configuration. Use AWS KMS, Azure Key Vault, or GCP KMS." },
+        : { status: "warn", detail: "KMS key management not detected in provided input (partial analysis). If your KMS config was not included, this may not apply. Otherwise, use AWS KMS, Azure Key Vault, or GCP KMS." },
   },
   // Network
   {
@@ -111,7 +111,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     evaluate: (c) =>
       /flow.?log|vpc.?log|network.?log/i.test(c)
         ? { status: "pass", detail: "VPC flow logging configuration detected." }
-        : { status: "warn", detail: "No VPC flow log configuration found. Enable for network traffic visibility." },
+        : { status: "warn", detail: "VPC flow logs not detected in provided input (partial analysis). If your VPC/networking config was not included, this may not apply. Otherwise, enable flow logs for network traffic visibility." },
   },
   // Logging & Monitoring
   {
@@ -122,7 +122,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     evaluate: (c) =>
       /cloudtrail|activity.?log|audit.?log|cloud.?audit/i.test(c)
         ? { status: "pass", detail: "Audit logging configuration detected." }
-        : { status: "warn", detail: "No audit logging configuration found. Enable CloudTrail or equivalent." },
+        : { status: "warn", detail: "Audit logging (CloudTrail) not detected in provided input (partial analysis). If your logging config was not included, this may not apply. Otherwise, enable CloudTrail or equivalent." },
   },
   {
     id: "log-alarm",
@@ -132,7 +132,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     evaluate: (c) =>
       /alarm|alert|notification|sns|cloudwatch|monitor/i.test(c)
         ? { status: "pass", detail: "Security alerting/monitoring configuration detected." }
-        : { status: "warn", detail: "No alarm/alert configuration found. Set up CloudWatch alarms or similar." },
+        : { status: "warn", detail: "Alarm/alert configuration not detected in provided input (partial analysis). If your monitoring config was not included, this may not apply. Otherwise, set up CloudWatch alarms or similar." },
   },
   // Storage
   {
@@ -155,7 +155,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
         ? { status: "pass", detail: "Object versioning enabled." }
         : /versioning.*disabled|versioning.*false/i.test(c)
           ? { status: "fail", detail: "Object versioning is disabled. Enable for data recovery." }
-          : { status: "warn", detail: "No versioning configuration detected. Enable for data protection." },
+          : { status: "warn", detail: "Versioning configuration not detected in provided input (partial analysis). If your storage config was not included, this may not apply. Otherwise, enable versioning for data protection." },
   },
   // Compute
   {
@@ -168,7 +168,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
         ? { status: "pass", detail: "IMDSv2 enforced." }
         : /HttpTokens.*optional|imdsv1|IMDSv1/i.test(c)
           ? { status: "fail", detail: "IMDSv1 is still allowed. Enforce IMDSv2 to prevent SSRF metadata attacks." }
-          : { status: "warn", detail: "No IMDS configuration found. Enforce IMDSv2 on all EC2 instances." },
+          : { status: "warn", detail: "IMDS configuration not detected in provided input (partial analysis). If your EC2 config was not included, this may not apply. Otherwise, enforce IMDSv2 on all instances." },
   },
   {
     id: "comp-auto-update",
@@ -178,7 +178,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     evaluate: (c) =>
       /auto.?update|patch.?management|ssm.?patch|systems.?manager/i.test(c)
         ? { status: "pass", detail: "Auto-patching / update management configured." }
-        : { status: "warn", detail: "No auto-patching configuration. Use SSM Patch Manager, Azure Update, or equivalent." },
+        : { status: "warn", detail: "Auto-patching configuration not detected in provided input (partial analysis). If your patch management config was not included, this may not apply. Otherwise, use SSM Patch Manager or equivalent." },
   },
   // Misc
   {
@@ -198,7 +198,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     severity: "medium",
     evaluate: (c) =>
       /debug\s*[:=]\s*true|DEBUG_MODE\s*[:=]\s*1|NODE_ENV\s*[:=]\s*['"]?development/i.test(c)
-        ? { status: "warn", detail: "Debug/development mode appears enabled. Disable in production." }
+        ? { status: "warn", detail: "Debug/development mode appears enabled in provided config. Disable in production." }
         : { status: "pass", detail: "No debug/development mode flags detected." },
   },
   {
@@ -209,7 +209,7 @@ const CLOUD_CHECKS: CloudCheck[] = [
     evaluate: (c) =>
       /backup|retention|disaster.?recovery|snapshot/i.test(c)
         ? { status: "pass", detail: "Backup/retention policy references found." }
-        : { status: "warn", detail: "No backup or retention policy detected. Configure regular backups." },
+        : { status: "warn", detail: "Backup/retention policy not detected in provided input (partial analysis). If your backup config was not included, this may not apply. Otherwise, configure regular backups." },
   },
 ];
 
@@ -303,12 +303,17 @@ function runCloudAudit(config: string) {
   const results = CLOUD_CHECKS.map((check) => {
     const result = check.evaluate(config);
     const remediation = CLOUD_REMEDIATION[check.id];
+    // Confidence: "high" for explicit matches (pass/fail), "low" for absence-based warnings
+    const confidence: "high" | "medium" | "low" =
+      result.status === "fail" ? "high" :
+      result.status === "pass" ? "high" :
+      "low"; // warn = absence-based, low confidence
     const fixEngine = result.status !== "pass" ? generateFix({
       scanType: "cloud",
       id: check.id,
       title: check.name,
       severity: check.severity as Severity,
-      confidence: result.status === "fail" ? "high" : "medium",
+      confidence,
       description: result.detail,
       category: check.category,
     }) : null;
@@ -317,6 +322,7 @@ function runCloudAudit(config: string) {
       category: check.category,
       name: check.name,
       severity: check.severity,
+      confidence,
       ...result,
       fix: result.status !== "pass" && remediation ? remediation.fix : null,
       effort: result.status !== "pass" && remediation ? remediation.effort : null,
@@ -331,14 +337,50 @@ function runCloudAudit(config: string) {
   const warnings = results.filter((r) => r.status === "warn").length;
 
   // Score: start at 10, deduct for failures/warnings
+  // Warnings (low-confidence, absence-based) get much smaller deductions
   const deductions = results.reduce((sum, r) => {
     if (r.status === "pass") return sum;
     const weight = { critical: 2.0, high: 1.5, medium: 1.0, low: 0.5 }[r.severity];
-    return sum + (r.status === "fail" ? weight : weight * 0.4);
+    return sum + (r.status === "fail" ? weight : weight * 0.15);
   }, 0);
   const score = Math.max(0, Math.min(10, 10 - deductions));
 
+  // Build prioritized "Fix First" summary — only high-confidence failures
+  const criticalFindings = results
+    .filter((r) => r.status === "fail")
+    .sort((a, b) => {
+      const sevOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      return sevOrder[a.severity] - sevOrder[b.severity];
+    })
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      severity: r.severity,
+      category: r.category,
+      detail: r.detail,
+      fix: r.fix,
+      effort: r.effort,
+    }));
+
+  const lowConfidenceWarnings = results
+    .filter((r) => r.status === "warn")
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      severity: r.severity,
+      category: r.category,
+      detail: r.detail,
+    }));
+
   return {
+    summary: {
+      fixFirst: criticalFindings,
+      unverified: lowConfidenceWarnings,
+      message: criticalFindings.length > 0
+        ? `${criticalFindings.length} confirmed issue(s) found. Fix these first.`
+        : "No confirmed issues found in the provided configuration.",
+      analysisNote: "This scan analyzed only the configuration text provided. Findings marked as 'warn' with low confidence could not be verified from the input — they may already be configured elsewhere in your infrastructure.",
+    },
     checks: results,
     stats: { total: results.length, passed, failed, warnings },
     score: parseFloat(score.toFixed(1)),

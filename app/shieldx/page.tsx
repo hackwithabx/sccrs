@@ -62,10 +62,10 @@ interface ScanHistoryItem {
 /* ── Module definitions ── */
 const MODULES = [
   { id: "secrets", name: "Secrets Scanner", description: "Detect hardcoded API keys, tokens, and credentials using 20+ regex patterns and Shannon entropy analysis.", icon: Key, plans: ["free", "pro", "enterprise"], },
-  { id: "deps", name: "Dependency Scanner", description: "Real-time vulnerability scanning via OSV.dev for npm, pip, Go, and Gradle dependencies.", icon: Package, plans: ["pro", "enterprise"] },
+  { id: "deps", name: "Dependency Scanner", description: "Vulnerability scanning via OSV.dev (Google's open-source CVE database) for npm, pip, Go, and Gradle dependencies.", icon: Package, plans: ["pro", "enterprise"] },
   { id: "api", name: "API Security Scanner", description: "OWASP API Top 10 2023 compliance checks — security headers, CORS, auth, and 15+ automated tests.", icon: Globe, plans: ["pro", "enterprise"] },
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
-  { id: "logs", name: "Threat Log Analyzer", description: "AI-powered log analysis to detect brute-force attacks, injection attempts, and anomalous patterns.", icon: Brain, plans: ["pro", "enterprise"] },
+  { id: "logs", name: "Threat Log Analyzer", description: "Pattern-based log analysis to detect brute-force attacks, injection attempts, privilege escalation, and anomalous traffic.", icon: Brain, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
   { id: "alerts", name: "Alert System (Coming Soon)", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected. Coming soon.", icon: Bell, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
@@ -1023,6 +1023,11 @@ export default function ShieldXWorkspacePage() {
                                   </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground">Ecosystem: {scanResults.ecosystem || "npm"} • {scanResults.mode} mode</p>
+                                {scanResults.scanWarning && (
+                                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+                                    <p className="text-[11px] text-amber-700 dark:text-amber-400">⚠️ {scanResults.scanWarning}</p>
+                                  </div>
+                                )}
                                 {scanResults.vulnerabilities?.length > 0 ? (
                                   <div className="space-y-3 max-h-[500px] overflow-y-auto">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -1085,10 +1090,22 @@ export default function ShieldXWorkspacePage() {
                                     ))}
                                   </div>
                                 ) : (
-                                  <Card className="border-emerald-500/30 bg-emerald-500/5">
-                                    <CardContent className="p-4 flex items-center gap-3">
-                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                                      <p className="text-sm font-medium text-emerald-700">No known vulnerabilities found in your dependencies!</p>
+                                  <Card className={`${scanResults.errors?.length > 0 ? "border-amber-500/30 bg-amber-500/5" : "border-emerald-500/30 bg-emerald-500/5"}`}>
+                                    <CardContent className="p-4">
+                                      {scanResults.errors?.length > 0 ? (
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-3">
+                                            <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                            <p className="text-sm font-medium text-amber-700">No vulnerabilities found, but {scanResults.errors.length} package(s) could not be checked due to API errors.</p>
+                                          </div>
+                                          <p className="text-xs text-amber-600 ml-8">Packages that failed to scan may still have vulnerabilities. Try scanning again later.</p>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-3">
+                                          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                          <p className="text-sm font-medium text-emerald-700">No known vulnerabilities found in your dependencies!</p>
+                                        </div>
+                                      )}
                                     </CardContent>
                                   </Card>
                                 )}
@@ -1285,6 +1302,12 @@ export default function ShieldXWorkspacePage() {
                             {/* Cloud Security results */}
                             {activeModule === "cloud" && (
                               <>
+                                {/* Analysis Note */}
+                                {scanResults.summary?.analysisNote && (
+                                  <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2">
+                                    <p className="text-[11px] text-blue-700 dark:text-blue-400">ℹ️ {scanResults.summary.analysisNote}</p>
+                                  </div>
+                                )}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                   <div className="rounded-lg border p-3 text-center">
                                     <div className={`text-2xl font-bold ${(scanResults.score || 0) >= 7 ? "text-emerald-500" : (scanResults.score || 0) >= 4 ? "text-amber-500" : "text-red-500"}`}>
@@ -1298,14 +1321,42 @@ export default function ShieldXWorkspacePage() {
                                   </div>
                                   <div className="rounded-lg border p-3 text-center border-red-500/20">
                                     <div className="text-2xl font-bold text-red-500">{scanResults.stats?.failed || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Failed</div>
+                                    <div className="text-xs text-muted-foreground">Confirmed Issues</div>
                                   </div>
                                   <div className="rounded-lg border p-3 text-center border-amber-500/20">
                                     <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.warnings || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Warnings</div>
+                                    <div className="text-xs text-muted-foreground">Unverified</div>
                                   </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground">{scanResults.checksPerformed} checks performed • {scanResults.mode} mode</p>
+
+                                {/* Fix First — prioritized critical summary */}
+                                {scanResults.summary?.fixFirst?.length > 0 && (
+                                  <div className="rounded-lg border-2 border-red-500/30 bg-red-500/5 p-3 space-y-2">
+                                    <h4 className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2">🚨 Fix These First ({scanResults.summary.fixFirst.length} confirmed issue{scanResults.summary.fixFirst.length > 1 ? "s" : ""})</h4>
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.summary.fixFirst.map((f: any, idx: number) => (
+                                      <div key={idx} className="text-sm border border-red-500/20 rounded-md px-3 py-2 bg-background">
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-medium">{f.name}</span>
+                                          <div className="flex gap-1.5">
+                                            <Badge variant="secondary" className="text-[8px]">{f.category}</Badge>
+                                            <Badge variant="destructive" className="text-[8px] capitalize">{f.severity}</Badge>
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{f.detail}</p>
+                                        {f.fix && (
+                                          <div className="mt-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 p-2">
+                                            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">⚡ Quick Fix:</p>
+                                            <code className="block text-[11px] font-mono break-all mt-0.5">{f.fix}</code>
+                                            {f.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${f.effort === "low" ? "bg-emerald-100 text-emerald-700" : f.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {f.effort}</Badge>}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
                                 {scanResults.checks?.length > 0 && (
                                   <div className="space-y-2 max-h-[500px] overflow-y-auto">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -1320,6 +1371,7 @@ export default function ShieldXWorkspacePage() {
                                             </div>
                                           </div>
                                           <div className="flex items-center gap-2 shrink-0">
+                                            {c.confidence && <Badge variant="outline" className={`text-[8px] ${c.confidence === "high" ? "border-emerald-500 text-emerald-600" : c.confidence === "low" ? "border-slate-400 text-slate-500" : "border-amber-500 text-amber-600"}`}>{c.confidence} conf.</Badge>}
                                             {c.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {c.riskScore}/100</span>}
                                             {c.priority && <Badge variant="outline" className={`text-[8px] ${c.priority === "CRITICAL" ? "border-red-500 text-red-500" : c.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{c.priority}</Badge>}
                                             <Badge variant="secondary" className="text-[8px]">{c.category}</Badge>
@@ -1328,7 +1380,7 @@ export default function ShieldXWorkspacePage() {
                                         </div>
                                         {c.fix && (
                                           <div className="mt-2 ml-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
-                                            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">🔧 Fix:</p>
+                                            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">⚡ Quick Fix:</p>
                                             <code className="block text-[11px] font-mono break-all mt-0.5">{c.fix}</code>
                                             {c.effort && <Badge variant="secondary" className={`text-[8px] mt-1 ${c.effort === "low" ? "bg-emerald-100 text-emerald-700" : c.effort === "medium" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>Effort: {c.effort}</Badge>}
                                           </div>
