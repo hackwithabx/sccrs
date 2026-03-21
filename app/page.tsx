@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -48,8 +48,8 @@ import {
 
 const shieldxModules = [
   { icon: Key, title: "Secrets Scanner", desc: "Detect 20+ secret patterns with entropy analysis and confidence scoring" },
-  { icon: Package, title: "Dependency Audit", desc: "Live OSV.dev integration â€” find CVEs in your npm, pip, go dependencies" },
-  { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure â€” IAM, storage, network, logging" },
+  { icon: Package, title: "Dependency Audit", desc: "Live OSV.dev integration — find CVEs in your npm, pip, go dependencies" },
+  { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
   { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing for any HTTP endpoint" },
   { icon: Brain, title: "Log Analyzer", desc: "AI-powered pattern detection for brute force, injection, exfiltration" },
   { icon: GitBranch, title: "CI/CD Integration", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates" },
@@ -146,7 +146,7 @@ const itemVariants = {
 export default function HomePage() {
   return (
     <div className="relative">
-      {/* â•â•â• HERO â€” ShieldX Showcase â•â•â• */}
+      {/* â•â•â• HERO — ShieldX Showcase â•â•â• */}
       <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
         {/* Background effects */}
         <div className="absolute inset-0 -z-10">
@@ -578,7 +578,7 @@ export default function HomePage() {
             {[
               {
                 icon: Building2,
-                title: "Fintech Startup â€” API Security Review",
+                title: "Fintech Startup — API Security Review",
                 severity: "Critical",
                 badge: "IDOR + Broken Auth",
                 findings: [
@@ -592,7 +592,7 @@ export default function HomePage() {
               },
               {
                 icon: Cloud,
-                title: "SaaS Platform â€” Cloud Security Audit",
+                title: "SaaS Platform — Cloud Security Audit",
                 severity: "High",
                 badge: "AWS Misconfig",
                 findings: [
@@ -606,17 +606,17 @@ export default function HomePage() {
               },
               {
                 icon: Brain,
-                title: "AI Product â€” LLM Security Assessment",
+                title: "AI Product — LLM Security Assessment",
                 severity: "Critical",
                 badge: "Prompt Injection",
                 findings: [
                   "System prompt extractable via indirect injection",
-                  "No output filtering â€” PII leakage in responses",
+                  "No output filtering — PII leakage in responses",
                   "RAG pipeline allowed document exfiltration",
                   "API keys embedded in LLM context window",
                 ],
                 outcome: "Implemented guardrails, output filtering, and secure RAG architecture. Reduced prompt injection success rate from 67% to under 3%.",
-                stat: "67% â†’ 3% injection rate",
+                stat: "67% → 3% injection rate",
               },
             ].map((study, i) => (
               <motion.div
@@ -869,13 +869,13 @@ export default function HomePage() {
                   {/* Trend insight */}
                   <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
                     <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                    <span>Critical CVEs increased <strong className="text-red-500">197%</strong> from 2019 to 2024 â€” nearly tripling in 5 years.</span>
+                    <span>Critical CVEs increased <strong className="text-red-500">197%</strong> from 2019 to 2024 — nearly tripling in 5 years.</span>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Attack Vectors â€” Donut with Custom Legend */}
+            {/* Attack Vectors — Donut with Custom Legend */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -974,13 +974,13 @@ export default function HomePage() {
                   {/* Insight */}
                   <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-emerald-500/5 border border-emerald-500/10 rounded-lg px-3 py-2">
                     <Shield className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    <span><strong className="text-emerald-500">Injection attacks</strong> remain the top vector â€” affecting over 1 in 4 applications.</span>
+                    <span><strong className="text-emerald-500">Injection attacks</strong> remain the top vector — affecting over 1 in 4 applications.</span>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Breach Cost by Industry â€” Horizontal Bar with gradient bars */}
+            {/* Breach Cost by Industry — Horizontal Bar with gradient bars */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -997,7 +997,7 @@ export default function HomePage() {
                       </div>
                       Average Data Breach Cost by Industry
                     </CardTitle>
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024 â€” IBM Cost of a Data Breach Report</span>
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024 — IBM Cost of a Data Breach Report</span>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4 pb-6">
@@ -1056,7 +1056,7 @@ export default function HomePage() {
                   {/* Insight */}
                   <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
                     <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                    <span>Healthcare breaches cost <strong className="text-red-500">$9.77M on average</strong> â€” nearly double the cross-industry mean of $4.88M.</span>
+                    <span>Healthcare breaches cost <strong className="text-red-500">$9.77M on average</strong> — nearly double the cross-industry mean of $4.88M.</span>
                   </div>
                 </CardContent>
               </Card>
