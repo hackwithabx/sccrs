@@ -22,6 +22,7 @@ import {
   Cloud,
   ArrowRight,
   LogOut,
+  Settings,
   User,
   Clock,
   CheckCircle2,
@@ -192,6 +193,9 @@ export default function DashboardPage() {
   const shieldxPlan =
     (session?.user as { shieldxPlan?: "free" | "pro" | "enterprise" } | undefined)
       ?.shieldxPlan || "free";
+  const userRole =
+    (session?.user as { role?: string } | undefined)?.role || "user";
+  const isAdmin = userRole === "admin";
   const passwordResetRequired = Boolean(
     (session?.user as { passwordResetRequired?: boolean } | undefined)
       ?.passwordResetRequired
@@ -404,6 +408,14 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
+              {isAdmin && (
+                <Link href="/admin">
+                  <Button variant="outline" className="gap-2 w-full sm:w-auto border-amber-500/50 text-amber-600 hover:bg-amber-500/10">
+                    <Settings className="w-4 h-4" />
+                    Admin Panel
+                  </Button>
+                </Link>
+              )}
               {hasShieldXAccess && (
                 <Link href="/shieldx">
                   <Button className="gap-2 w-full sm:w-auto">
