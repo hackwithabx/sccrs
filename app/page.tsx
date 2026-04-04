@@ -30,6 +30,7 @@ import {
   Globe,
   GitBranch,
   Bell,
+  FileCode,
   Rocket,
   ShieldCheck,
 } from "lucide-react";
@@ -51,6 +52,7 @@ const shieldxModules = [
   { icon: Package, title: "Dependency Audit", desc: "Live OSV.dev integration — find CVEs in your npm, pip, go dependencies" },
   { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
   { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing for any HTTP endpoint" },
+  { icon: FileCode, title: "SAST Code Analyzer", desc: "AST-based taint analysis — traces user input to dangerous sinks across 15+ vulnerability classes" },
   { icon: Brain, title: "Log Analyzer", desc: "AI-powered pattern detection for brute force, injection, exfiltration" },
   { icon: GitBranch, title: "CI/CD Integration", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates" },
   { icon: Bell, title: "Alert Rules", desc: "Configurable email, Slack, and webhook alerts on critical findings" },
@@ -238,10 +240,10 @@ export default function HomePage() {
             className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8"
           >
             {[ 
-              { value: "8", label: "Security Modules" },
+              { value: "9", label: "Security Modules" },
               { value: "60s", label: "To First Demo Run" },
-              { value: "$5,988", label: "Pro Per Year" },
-              { value: "88%", label: "Lower Than $50K Stacks" },
+              { value: "$348", label: "Pro Per Year" },
+              { value: "99%", label: "Lower Than $50K Stacks" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-bold text-primary">{stat.value}</div>
@@ -457,13 +459,13 @@ export default function HomePage() {
               {
                 icon: Shield,
                 title: "No Security Team Required",
-                desc: "Run secrets, dependency, API, cloud, log, and CI/CD checks from one ShieldX workspace even if your team is small.",
+                desc: "Run secrets, dependency, SAST, API, cloud, log, and CI/CD checks from one ShieldX workspace even if your team is small.",
                 highlight: "Startup Friendly",
               },
               {
                 icon: Lock,
                 title: "Lower Annual Cost",
-                desc: "ShieldX Pro starts at $5,988 per year and Enterprise at $11,988 per year, compared with traditional security suites that often start above $50K.",
+                desc: "ShieldX Pro starts at $348 per year and Enterprise at $1,188 per year, compared with traditional security suites that often start above $50K.",
                 highlight: "Cheaper Than Legacy",
               },
             ].map((item, i) => (
@@ -497,7 +499,7 @@ export default function HomePage() {
               },
               {
                 label: "Starting annual cost",
-                shieldx: "From $5,988 per year",
+                shieldx: "From $348 per year",
                 traditional: "Often $50,000+ per year",
               },
               {

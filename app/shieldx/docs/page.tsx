@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Shield, Key, Package, Cloud, Globe, Brain, GitBranch, Bell, BarChart3,
+  Shield, Key, Package, Cloud, Globe, Brain, GitBranch, Bell, BarChart3, FileCode,
   ArrowRight, CheckCircle2, Lock, Eye, Zap, BookOpen,
   Search, FileText, Crown, ChevronRight,
 } from "lucide-react";
@@ -143,6 +143,33 @@ const modules = [
     supported: ["Auth logs (failed logins, brute force)", "Web server logs (Apache, Nginx)", "Application logs (error stacks, exceptions)", "Security event logs", "Cloud audit logs (CloudTrail, Stackdriver)"],
   },
   {
+    id: "sast",
+    icon: FileCode,
+    title: "SAST Code Analyzer",
+    description: "AST-based static analysis that parses JavaScript/TypeScript code into an Abstract Syntax Tree to trace tainted data from user inputs to dangerous sinks",
+    color: "text-pink-500",
+    bgColor: "bg-pink-500/10",
+    features: [
+      "Full AST parsing via acorn — not regex-based",
+      "Taint tracking from sources (req.body, req.query, req.params, req.headers, cookies) to sinks",
+      "Detects SQL injection, command injection, XSS, SSRF, path traversal, NoSQL injection, code injection",
+      "Pattern checks for eval(), weak crypto (MD5/SHA1), prototype pollution, hardcoded JWT secrets",
+      "Timing attack detection on password comparisons",
+      "Authentication rate-limiting checks, CORS misconfiguration, ReDoS detection",
+      "Dataflow evidence showing source → sink traces with line numbers",
+      "15+ vulnerability classes with CWE and OWASP mappings",
+    ],
+    howTo: [
+      "Navigate to ShieldX → SAST Code Analyzer tab",
+      "Paste your JavaScript or TypeScript code",
+      "Click 'Run SAST Analysis' to parse and analyze",
+      "Review findings sorted by severity (Critical > High > Medium)",
+      "Expand dataflow traces to see how tainted data flows from source to sink",
+      "Follow the remediation guidance and code examples for each finding",
+    ],
+    supported: ["JavaScript (ES6+)", "TypeScript (annotations stripped automatically)", "JSX / React components", "Express.js route handlers", "Node.js server code"],
+  },
+  {
     id: "cicd",
     icon: GitBranch,
     title: "CI/CD Integration",
@@ -206,13 +233,13 @@ const modules = [
     features: [
       "Composite score from 0-10 across 5 dimensions",
       "Radar chart visualization of security posture",
-      "Individual module scores: Secrets, Dependencies, Cloud, API, Logs",
+      "Individual module scores: Secrets, Dependencies, Cloud, API, Logs, SAST",
       "Penalty-based scoring (findings reduce score)",
       "Score updates automatically as you run scans",
       "Visual color coding (red < 4, yellow < 6, blue < 8, green >= 8)",
     ],
     howTo: [
-      "Run scans across multiple modules (Secrets, Dependencies, Cloud, API, Logs)",
+      "Run scans across multiple modules (Secrets, Dependencies, Cloud, API, Logs, SAST)",
       "Navigate to ShieldX → Security Score tab",
       "View your overall composite score",
       "Analyze the radar chart for weak areas",
