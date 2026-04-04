@@ -625,7 +625,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "cicd", "score", "alerts"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "alerts"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
