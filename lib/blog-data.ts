@@ -8,6 +8,7 @@ import { tier2ArticlesPart1 } from "./articles-tier2-part1";
 import { tier2ArticlesPart2 } from "./articles-tier2-part2";
 import { vulnerabilityDeepDives } from "./articles-vulnerability-deep-dives";
 import { trendingSecurityArticles } from "./articles-trending-security";
+import { axiosVulnerabilityArticles } from "./articles-axios-vulnerability";
 
 export interface BlogPost {
   slug: string;
@@ -3741,4 +3742,6 @@ app.post('/api/refresh', async (req, res) => {
   ...vulnerabilityDeepDives,
   // Trending security articles
   ...trendingSecurityArticles,
+  // Axios supply chain vulnerability analysis
+  ...axiosVulnerabilityArticles,
 ];
