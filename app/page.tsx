@@ -217,7 +217,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + i * 0.06 }}
               >
-                <Card className="h-full border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 group">
+                <Card className="h-full border border-border hover:border-primary/40 hover:shadow-lg transition-all duration-300 group">
                   <CardContent className="p-5">
                     <div className="mb-3 inline-flex rounded-xl bg-primary/10 p-2.5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
                       <mod.icon className="h-5 w-5" />
@@ -274,14 +274,14 @@ export default function HomePage() {
             {/* Browser Frame */}
             <div className="mx-auto max-w-5xl rounded-2xl border border-border/60 shadow-2xl overflow-hidden bg-background">
               {/* Title bar */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-muted/60 border-b border-border/40">
+              <div className="flex items-center gap-2 px-4 py-3 bg-muted border-b border-border">
                 <div className="flex gap-1.5">
                   <div className="h-3 w-3 rounded-full bg-red-400" />
                   <div className="h-3 w-3 rounded-full bg-yellow-400" />
                   <div className="h-3 w-3 rounded-full bg-green-400" />
                 </div>
                 <div className="flex-1 flex justify-center">
-                  <div className="flex items-center gap-2 rounded-lg bg-background/80 border border-border/40 px-4 py-1 text-xs text-muted-foreground font-mono">
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-4 py-1 text-xs text-muted-foreground font-mono">
                     <Lock className="h-3 w-3 text-green-500" />
                     securecodereviews.com/shieldx
                   </div>
@@ -306,7 +306,7 @@ export default function HomePage() {
 
                 {/* Score + Stats row */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <div className="col-span-2 md:col-span-1 rounded-xl border border-border/50 bg-gradient-to-br from-emerald-500/10 to-transparent p-4 text-center">
+                  <div className="col-span-2 md:col-span-1 rounded-xl border border-border bg-gradient-to-br from-emerald-500/10 to-transparent p-4 text-center">
                     <div className="text-3xl font-bold text-emerald-500">8.4</div>
                     <div className="text-xs text-muted-foreground mt-1">Security Score</div>
                   </div>
@@ -316,7 +316,7 @@ export default function HomePage() {
                     { label: "API Issues", value: "1", color: "text-blue-500" },
                     { label: "Cloud Risks", value: "2", color: "text-red-500" },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-xl border border-border/50 p-3 text-center">
+                    <div key={s.label} className="rounded-xl border border-border p-3 text-center">
                       <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">{s.label}</div>
                     </div>
@@ -326,7 +326,7 @@ export default function HomePage() {
                 {/* Simulated scan results */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Secrets Scanner Result */}
-                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                  <div className="rounded-xl border border-border p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <Key className="h-4 w-4 text-emerald-500" />
                       <span className="text-sm font-semibold">Secrets Scanner</span>
@@ -346,7 +346,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Dependency Scan Result */}
-                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                  <div className="rounded-xl border border-border p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <Package className="h-4 w-4 text-amber-500" />
                       <span className="text-sm font-semibold">Dependency Audit</span>
@@ -366,7 +366,7 @@ export default function HomePage() {
                   </div>
 
                   {/* API Scanner Result */}
-                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                  <div className="rounded-xl border border-border p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <Globe className="h-4 w-4 text-blue-500" />
                       <span className="text-sm font-semibold">API Scanner</span>
@@ -386,7 +386,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Cloud Security Result */}
-                  <div className="rounded-xl border border-border/50 p-4 space-y-3">
+                  <div className="rounded-xl border border-border p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <Cloud className="h-4 w-4 text-red-500" />
                       <span className="text-sm font-semibold">Cloud Security</span>
@@ -407,7 +407,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Bottom bar */}
-                <div className="flex items-center justify-between pt-2 border-t border-border/30 text-[11px] text-muted-foreground">
+                <div className="flex items-center justify-between pt-2 border-t border-border text-[11px] text-muted-foreground">
                   <span>Last scan: 2 minutes ago</span>
                   <span className="flex items-center gap-1"><FileSearch className="h-3 w-3" /> 4 modules scanned in 12s</span>
                 </div>
@@ -432,7 +432,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ WHY SHIELDX FOR STARTUPS ═══ */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             badge="For Startups"
@@ -474,7 +474,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <Card className="h-full border border-border shadow-lg hover:shadow-xl transition-shadow">
                   <CardContent className="p-8">
                     <Badge className="mb-4 bg-primary/10 text-primary border-0">{item.highlight}</Badge>
                     <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
@@ -506,7 +506,7 @@ export default function HomePage() {
                 traditional: "Dedicated AppSec or platform owners",
               },
             ].map((item) => (
-              <Card key={item.label} className="border border-border/60 shadow-sm">
+              <Card key={item.label} className="border border-border shadow-sm">
                 <CardContent className="p-6">
                   <p className="text-sm font-semibold text-foreground">{item.label}</p>
                   <div className="mt-4 space-y-3 text-sm">
@@ -531,7 +531,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             badge="Features"
@@ -566,7 +566,7 @@ export default function HomePage() {
       </section>
 
       {/* Case Studies / Sample Reports */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             badge="Case Studies"
@@ -769,7 +769,7 @@ export default function HomePage() {
       </section>
 
       {/* Security Insights Charts */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             badge="Insights"
@@ -784,7 +784,7 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <Card className="overflow-hidden border-0 shadow-lg">
+              <Card className="overflow-hidden border border-border shadow-lg">
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -882,7 +882,7 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="overflow-hidden border-0 shadow-lg h-full">
+              <Card className="overflow-hidden border border-border shadow-lg h-full">
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -988,7 +988,7 @@ export default function HomePage() {
               transition={{ delay: 0.2 }}
               className="lg:col-span-2"
             >
-              <Card className="overflow-hidden border-0 shadow-lg">
+              <Card className="overflow-hidden border border-border shadow-lg">
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <CardTitle className="text-base flex items-center gap-2">

@@ -156,7 +156,7 @@ export default function AboutPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 border-y bg-muted/30">
+      <section className="py-12 border-y bg-muted/50">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
             {stats.map((stat, i) => (
@@ -236,7 +236,7 @@ export default function AboutPage() {
       </section>
 
       {/* Team Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
           <SectionHeading
             badge="Our Team"
@@ -339,7 +339,7 @@ export default function AboutPage() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <SectionHeading

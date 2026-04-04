@@ -131,12 +131,12 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
       </th>
     ),
     td: ({ children }) => (
-      <td className="px-4 py-3 text-muted-foreground border-b border-border/50 text-sm">
+      <td className="px-4 py-3 text-muted-foreground border-b border-border text-sm">
         {children}
       </td>
     ),
     tr: ({ children }) => (
-      <tr className="hover:bg-muted/30 transition-colors">
+      <tr className="hover:bg-muted/50 transition-colors">
         {children}
       </tr>
     ),

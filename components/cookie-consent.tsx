@@ -131,7 +131,7 @@ export function CookieConsent() {
 
             {/* Preferences panel */}
             {showPreferences && (
-              <div className="mt-5 rounded-lg border border-border/60 bg-muted/30 p-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+              <div className="mt-5 rounded-lg border border-border bg-muted/50 p-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
                 <h4 className="text-sm font-semibold text-foreground mb-3">
                   Manage Cookie Preferences
                 </h4>

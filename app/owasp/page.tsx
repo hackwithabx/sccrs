@@ -203,7 +203,7 @@ export default function OwaspPage() {
       </section>
 
       {/* About OWASP Section */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-16 bg-muted/50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <SectionHeading

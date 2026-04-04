@@ -188,7 +188,7 @@ export function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 right-0 z-[140] flex h-[100svh] w-[min(86vw,320px)] flex-col overflow-hidden border-l border-border/50 bg-background/95 shadow-2xl backdrop-blur-lg lg:hidden"
+              className="fixed inset-y-0 right-0 z-[140] flex h-[100svh] w-[min(86vw,320px)] flex-col overflow-hidden border-l border-border bg-background/95 shadow-2xl backdrop-blur-lg lg:hidden"
             >
               {/* Mobile header */}
               <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4 pt-[env(safe-area-inset-top)]">
