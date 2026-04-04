@@ -516,7 +516,6 @@ const PATTERN_CHECKS: PatternCheck[] = [
     id: "cors-misconfiguration", name: "CORS Misconfiguration", cwe: "CWE-942", owasp: "A05:2021",
     severity: "high", category: "Access Control",
     detect: (node: ASTNode, code: string, lines: string[]) => {
-      // cors({ origin: "*", credentials: true }) or cors({ origin: true })
       if (node.type === "CallExpression") {
         const callee = node.callee;
         if (callee.type === "Identifier" && callee.name === "cors" && node.arguments.length > 0) {
@@ -550,6 +549,195 @@ const PATTERN_CHECKS: PatternCheck[] = [
       return null;
     },
     remediation: "Configure CORS with specific origins: cors({ origin: ['https://yourdomain.com'], credentials: true }). Never use wildcard with credentials.",
+  },
+  // Insecure randomness
+  {
+    id: "insecure-random", name: "Insecure Randomness", cwe: "CWE-330", owasp: "A02:2021",
+    severity: "medium", category: "Cryptography",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object;
+        const prop = node.callee.property;
+        if (obj?.name === "Math" && (prop?.name === "random" || prop?.value === "random")) {
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          const securityWords = ["token", "secret", "key", "password", "session", "id", "uuid", "nonce", "salt", "otp", "code", "csrf", "random"];
+          const isSecurityContext = securityWords.some(w => snippet.toLowerCase().includes(w));
+          if (isSecurityContext) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: "Math.random() is not cryptographically secure. Using it for tokens, session IDs, or secrets makes them predictable.",
+              confidence: "high",
+            };
+          }
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: snippet,
+            detail: "Math.random() is not cryptographically secure. If used for any security purpose, it is predictable.",
+            confidence: "low",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use crypto.randomBytes(), crypto.randomUUID(), or crypto.getRandomValues() for security-sensitive random values.",
+  },
+  // Hardcoded credentials in variables
+  {
+    id: "hardcoded-credential", name: "Hardcoded Credential", cwe: "CWE-798", owasp: "A07:2021",
+    severity: "high", category: "Secrets",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "VariableDeclarator" && node.init?.type === "Literal" && typeof node.init.value === "string") {
+        const varName = node.id?.name?.toLowerCase() || "";
+        const val = node.init.value;
+        const secretNames = ["password", "passwd", "secret", "api_key", "apikey", "access_token", "auth_token", "private_key", "db_password", "database_password", "mysql_password", "mongo_uri", "connection_string"];
+        if (secretNames.some(s => varName.includes(s)) && val.length >= 4 && !val.includes("process.env") && val !== "undefined" && val !== "null" && val !== "") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: `Variable "${node.id.name}" contains a hardcoded credential. This secret can be extracted from source code or version control history.`,
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Store credentials in environment variables (process.env.*). Use a secrets manager (AWS Secrets Manager, HashiCorp Vault) for production.",
+  },
+  // XXE via DOMParser or xml2js
+  {
+    id: "xxe-vulnerability", name: "XML External Entity (XXE)", cwe: "CWE-611", owasp: "A05:2021",
+    severity: "high", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "NewExpression") {
+        const name = node.callee?.name;
+        if (name === "DOMParser" || name === "XMLHttpRequest") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: `${name} can be vulnerable to XXE attacks if parsing untrusted XML. External entities may read local files or perform SSRF.`,
+            confidence: "medium",
+          };
+        }
+      }
+      if (node.type === "CallExpression") {
+        const callee = node.callee;
+        if (callee?.type === "MemberExpression") {
+          const objName = callee.object?.name || "";
+          const propName = callee.property?.name || "";
+          if ((objName === "xml2js" || objName === "parser" || objName === "xmlParser") && (propName === "parseString" || propName === "parse")) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "XML parsing without disabling external entities can lead to XXE attacks — file disclosure, SSRF, or denial of service.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Disable external entity processing. For xml2js, set { explicitRoot: true }. For DOMParser, sanitize input. Use libraries like fast-xml-parser with entity expansion disabled.",
+  },
+  // Information exposure via error details
+  {
+    id: "info-exposure", name: "Information Exposure via Error", cwe: "CWE-209", owasp: "A04:2021",
+    severity: "medium", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const prop = node.callee.property?.name || "";
+        if ((obj === "res" || obj === "response") && (prop === "json" || prop === "send")) {
+          for (const arg of node.arguments || []) {
+            if (arg.type === "ObjectExpression") {
+              for (const p of arg.properties || []) {
+                const key = p.key?.name || p.key?.value || "";
+                const keyLower = String(key).toLowerCase();
+                if ((keyLower === "stack" || keyLower === "stacktrace" || keyLower === "trace") && p.value?.type === "MemberExpression") {
+                  const line = getNodeLine(node, code);
+                  return {
+                    line, column: getNodeColumn(node, code),
+                    evidence: getCodeSnippet(lines, line),
+                    detail: "Sending stack traces to clients leaks internal paths, library versions, and code structure to attackers.",
+                    confidence: "high",
+                  };
+                }
+              }
+            }
+            // res.send(err.stack) or res.json(error.message + error.stack)
+            if (arg.type === "MemberExpression") {
+              const propName = arg.property?.name || "";
+              if (propName === "stack" || propName === "stackTrace") {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: "Sending error stack traces to clients exposes internal implementation details.",
+                  confidence: "high",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Never expose stack traces or internal error details to clients. Log them server-side and return a generic error message.",
+  },
+  // Unvalidated redirect
+  {
+    id: "unvalidated-redirect", name: "Unvalidated Redirect", cwe: "CWE-601", owasp: "A01:2021",
+    severity: "medium", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "AssignmentExpression" && node.left?.type === "MemberExpression") {
+        const chain = resolveIdentifierName(node.left);
+        if (chain === "window.location.href" || chain === "window.location" || chain === "document.location" || chain === "document.location.href") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Assigning user-controlled values to window.location can lead to open redirect or JavaScript injection (javascript: URLs).",
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Validate redirect URLs against an allowlist of trusted domains. Reject javascript: and data: URL schemes.",
+  },
+  // Disabled security (e.g., rejectUnauthorized: false)
+  {
+    id: "tls-verification-disabled", name: "TLS Certificate Verification Disabled", cwe: "CWE-295", owasp: "A07:2021",
+    severity: "high", category: "Transport Security",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Property" || node.type === "ObjectProperty") {
+        const key = node.key?.name || node.key?.value;
+        if (key === "rejectUnauthorized" && node.value?.value === false) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "TLS certificate verification is disabled (rejectUnauthorized: false). This allows man-in-the-middle attacks.",
+            confidence: "high",
+          };
+        }
+        if (key === "NODE_TLS_REJECT_UNAUTHORIZED" && node.value?.value === "0") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "NODE_TLS_REJECT_UNAUTHORIZED=0 disables ALL TLS verification globally — critically insecure in production.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Never disable TLS verification in production. Fix certificate issues properly by updating CA bundles or using valid certificates.",
   },
 ];
 

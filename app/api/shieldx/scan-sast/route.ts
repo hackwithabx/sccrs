@@ -6,26 +6,33 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { generateFix, type Severity } from "@/lib/fix-engine";
 import { analyzeCode, SAST_DEMO_CODE, type ASTFinding } from "@/lib/ast-analyzer";
+import { scanCode, JAVA_DEMO_CODE, CPP_DEMO_CODE, CSHARP_DEMO_CODE, type PatternFinding, type Language } from "@/lib/pattern-scanner";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 /* ── Convert AST findings to enriched response findings ── */
 
-interface EnrichedFinding extends ASTFinding {
-  fix: {
-    title: string;
-    fix: string;
-    fixCommand: string | null;
-    codeExample: string | null;
-    effort: string;
-    compliance: string[];
-    riskScore: number;
-    priority: string;
-  };
+interface FixInfo {
+  title: string;
+  fix: string;
+  fixCommand: string | null;
+  codeExample: string | null;
+  effort: string;
+  compliance: string[];
+  riskScore: number;
+  priority: string;
 }
 
-function enrichFindings(findings: ASTFinding[]): EnrichedFinding[] {
+interface EnrichedFinding extends ASTFinding {
+  fix: FixInfo;
+}
+
+interface EnrichedPatternFinding extends PatternFinding {
+  fix: FixInfo;
+}
+
+function enrichFindings(findings: (ASTFinding | PatternFinding)[]): (EnrichedFinding | EnrichedPatternFinding)[] {
   return findings.map((f) => {
     const fixResult = generateFix({
       scanType: "sast",
@@ -55,12 +62,61 @@ function enrichFindings(findings: ASTFinding[]): EnrichedFinding[] {
   });
 }
 
+/* ── Language detection and scanning ── */
+
+const VALID_LANGUAGES = ["javascript", "typescript", "java", "cpp", "csharp"] as const;
+type ScanLanguage = typeof VALID_LANGUAGES[number];
+
+function getDemoCode(lang: ScanLanguage): string {
+  switch (lang) {
+    case "java": return JAVA_DEMO_CODE;
+    case "cpp": return CPP_DEMO_CODE;
+    case "csharp": return CSHARP_DEMO_CODE;
+    default: return SAST_DEMO_CODE;
+  }
+}
+
+function runScan(code: string, lang: ScanLanguage) {
+  if (lang === "java" || lang === "cpp" || lang === "csharp") {
+    const result = scanCode(code, lang as Language);
+    return {
+      findings: result.findings,
+      stats: result.stats,
+      astParsed: false,
+      patternBased: true,
+      linesAnalyzed: result.linesAnalyzed,
+      checksPerformed: result.checksPerformed,
+      language: result.language,
+    };
+  }
+  // JS/TS — AST-based
+  const result = analyzeCode(code);
+  return {
+    findings: result.findings,
+    stats: result.stats,
+    astParsed: result.astParsed,
+    patternBased: false,
+    linesAnalyzed: result.linesAnalyzed,
+    checksPerformed: result.checksPerformed,
+    language: lang,
+  };
+}
+
+function parseLanguage(body: Record<string, unknown> | null): ScanLanguage {
+  const lang = body?.language;
+  if (typeof lang === "string" && VALID_LANGUAGES.includes(lang as ScanLanguage)) {
+    return lang as ScanLanguage;
+  }
+  return "javascript";
+}
+
 /* ── POST endpoint ── */
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null);
     const isDemo = body?.demo === true || body?.mode === "demo";
+    const language = parseLanguage(body);
 
     // Demo mode — no auth needed
     if (isDemo) {
@@ -74,8 +130,8 @@ export async function POST(request: NextRequest) {
       }
 
       const code = body?.code;
-      const codeToScan = (code && typeof code === "string" && code.trim().length >= 5) ? code : SAST_DEMO_CODE;
-      const result = analyzeCode(codeToScan);
+      const codeToScan = (code && typeof code === "string" && code.trim().length >= 5) ? code : getDemoCode(language);
+      const result = runScan(codeToScan, language);
       const enriched = enrichFindings(result.findings);
 
       return NextResponse.json({
@@ -83,8 +139,10 @@ export async function POST(request: NextRequest) {
         findings: enriched,
         stats: result.stats,
         astParsed: result.astParsed,
+        patternBased: result.patternBased,
         linesAnalyzed: result.linesAnalyzed,
         checksPerformed: result.checksPerformed,
+        language: result.language,
         timestamp: new Date().toISOString(),
       });
     }
@@ -106,8 +164,8 @@ export async function POST(request: NextRequest) {
         }
 
         const code = body?.code;
-        const codeToScan = (code && typeof code === "string" && code.trim().length >= 5) ? code : SAST_DEMO_CODE;
-        const result = analyzeCode(codeToScan);
+        const codeToScan = (code && typeof code === "string" && code.trim().length >= 5) ? code : getDemoCode(language);
+        const result = runScan(codeToScan, language);
         const enriched = enrichFindings(result.findings);
 
         return NextResponse.json({
@@ -115,8 +173,10 @@ export async function POST(request: NextRequest) {
           findings: enriched,
           stats: result.stats,
           astParsed: result.astParsed,
+          patternBased: result.patternBased,
           linesAnalyzed: result.linesAnalyzed,
           checksPerformed: result.checksPerformed,
+          language: result.language,
           timestamp: new Date().toISOString(),
         });
       }
@@ -138,7 +198,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Input too large. Maximum 50,000 characters for free plan." }, { status: 400 });
       }
 
-      const result = analyzeCode(code);
+      const result = runScan(code, language);
       const enriched = enrichFindings(result.findings);
 
       await dbConnect();
@@ -149,8 +209,10 @@ export async function POST(request: NextRequest) {
         findings: enriched,
         stats: result.stats,
         astParsed: result.astParsed,
+        patternBased: result.patternBased,
         linesAnalyzed: result.linesAnalyzed,
         checksPerformed: result.checksPerformed,
+        language: result.language,
         timestamp: new Date().toISOString(),
       });
     }
@@ -173,7 +235,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Input too large. Maximum 500,000 characters." }, { status: 400 });
     }
 
-    const result = analyzeCode(code);
+    const result = runScan(code, language);
     const enriched = enrichFindings(result.findings);
 
     await dbConnect();
@@ -184,8 +246,10 @@ export async function POST(request: NextRequest) {
       findings: enriched,
       stats: result.stats,
       astParsed: result.astParsed,
+      patternBased: result.patternBased,
       linesAnalyzed: result.linesAnalyzed,
       checksPerformed: result.checksPerformed,
+      language: result.language,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

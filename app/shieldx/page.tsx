@@ -98,6 +98,7 @@ export default function ShieldXWorkspacePage() {
   const [scanInput, setScanInput] = useState("");
   const [cicdDepsInput, setCicdDepsInput] = useState("");
   const [cicdScanType, setCicdScanType] = useState<"full" | "secrets" | "dependencies">("full");
+  const [sastLanguage, setSastLanguage] = useState<"javascript" | "typescript" | "java" | "cpp" | "csharp">("javascript");
   const [scanning, setScanning] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scanResults, setScanResults] = useState<any>(null);
@@ -264,7 +265,7 @@ export default function ShieldXWorkspacePage() {
           break;
         case "sast":
           endpoint = "/api/shieldx/scan-sast";
-          payload = isDemo ? { demo: true } : { code: scanInput };
+          payload = isDemo ? { demo: true, language: sastLanguage } : { code: scanInput, language: sastLanguage };
           break;
         case "cicd":
           endpoint = "/api/shieldx/ci-scan";
@@ -467,8 +468,17 @@ export default function ShieldXWorkspacePage() {
         return { placeholder: "Paste your Terraform, CloudFormation, or cloud config (JSON/YAML/HCL)...", label: "Cloud Configuration", type: "textarea" as const };
       case "logs":
         return { placeholder: "Paste your server logs, access logs, application logs, or audit logs here...\n\nExample:\n2026-03-20 02:14:33 [INFO] 192.168.1.105 - POST /api/login - 401 Unauthorized - Invalid credentials", label: "Log Data", type: "textarea" as const };
-      case "sast":
-        return { placeholder: "Paste JavaScript or TypeScript code for AST-based security analysis...\n\nThe engine parses your code into an Abstract Syntax Tree, tracks data flow from user inputs (req.body, req.query) to dangerous sinks (db.query, exec, eval), and detects SQL injection, XSS, command injection, SSRF, and 15+ vulnerability classes.", label: "JavaScript / TypeScript Code", type: "textarea" as const };
+      case "sast": {
+        const langLabels: Record<string, string> = { javascript: "JavaScript", typescript: "TypeScript", java: "Java", cpp: "C++", csharp: "C#" };
+        const langPlaceholders: Record<string, string> = {
+          javascript: "Paste JavaScript code for AST-based security analysis...\n\nThe engine parses your code into an Abstract Syntax Tree, tracks data flow from user inputs (req.body, req.query) to dangerous sinks (db.query, exec, eval), and detects SQL injection, XSS, command injection, SSRF, and 15+ vulnerability classes.",
+          typescript: "Paste TypeScript code for security analysis...\n\nType annotations are stripped automatically before AST parsing.",
+          java: "Paste Java code for security analysis...\n\nDetects SQL injection, command injection, XSS, XXE, insecure deserialization, weak crypto, path traversal, SSRF, LDAP injection, CSRF misconfig, hardcoded secrets, and more.",
+          cpp: "Paste C/C++ code for security analysis...\n\nDetects buffer overflows (strcpy, sprintf, gets), format string vulnerabilities, command injection (system, popen), use-after-free, integer overflow, weak crypto, memory leaks, race conditions, and more.",
+          csharp: "Paste C# code for security analysis...\n\nDetects SQL injection, command injection, XSS, insecure deserialization (BinaryFormatter), XXE, weak crypto, path traversal, SSRF, open redirect, CSRF bypass, insecure cookies, and more.",
+        };
+        return { placeholder: langPlaceholders[sastLanguage] || langPlaceholders.javascript, label: `${langLabels[sastLanguage] || "JavaScript"} Code`, type: "textarea" as const };
+      }
       default:
         return { placeholder: "", label: "Input", type: "textarea" as const };
     }
@@ -743,6 +753,28 @@ export default function ShieldXWorkspacePage() {
     exit $(echo "$RESULT" | jq -r '.exitCode')`}</pre>
                               </CardContent>
                             </Card>
+                          </div>
+                        )}
+
+                        {/* SAST Language Selector */}
+                        {activeModule === "sast" && (
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Language</label>
+                            <div className="flex gap-2 flex-wrap">
+                              {(["javascript", "typescript", "java", "cpp", "csharp"] as const).map((lang) => {
+                                const labels: Record<string, string> = { javascript: "JavaScript", typescript: "TypeScript", java: "Java", cpp: "C / C++", csharp: "C#" };
+                                return (
+                                  <Button key={lang} size="sm" variant={sastLanguage === lang ? "default" : "outline"} onClick={() => { setSastLanguage(lang); setScanInput(""); }} className="text-xs">
+                                    {labels[lang]}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1.5">
+                              {sastLanguage === "javascript" || sastLanguage === "typescript"
+                                ? "Full AST parsing with taint tracking and dataflow analysis"
+                                : "Pattern-based analysis with line-by-line taint tracking"}
+                            </p>
                           </div>
                         )}
 
