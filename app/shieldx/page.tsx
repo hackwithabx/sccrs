@@ -1002,7 +1002,7 @@ export default function ShieldXWorkspacePage() {
                               <>
                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                   <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold">{scanResults.totalDependencies || scanResults.stats?.total || 0}</div>
+                                    <div className="text-2xl font-bold">{scanResults.totalDeps || 0}</div>
                                     <div className="text-xs text-muted-foreground">Dependencies</div>
                                   </div>
                                   <div className="rounded-lg border p-3 text-center border-red-500/20">
@@ -1134,13 +1134,13 @@ export default function ShieldXWorkspacePage() {
                               <>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                   <div className="rounded-lg border p-3 text-center">
-                                    <div className={`text-2xl font-bold ${(scanResults.securityScore || 0) >= 7 ? "text-emerald-500" : (scanResults.securityScore || 0) >= 4 ? "text-amber-500" : "text-red-500"}`}>
-                                      {scanResults.securityScore?.toFixed(1) || "—"}/10
+                                    <div className={`text-2xl font-bold ${(scanResults.score || 0) >= 7 ? "text-emerald-500" : (scanResults.score || 0) >= 4 ? "text-amber-500" : "text-red-500"}`}>
+                                      {scanResults.score?.toFixed(1) || "—"}/10
                                     </div>
                                     <div className="text-xs text-muted-foreground">Security Score</div>
                                   </div>
                                   <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold">{scanResults.statusCode || "—"}</div>
+                                    <div className="text-2xl font-bold">{scanResults.status || "—"}</div>
                                     <div className="text-xs text-muted-foreground">HTTP Status</div>
                                   </div>
                                   <div className="rounded-lg border p-3 text-center">
@@ -1149,12 +1149,12 @@ export default function ShieldXWorkspacePage() {
                                   </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground">URL: {scanResults.url} • {scanResults.mode} mode</p>
-                                {scanResults.headerResults?.length > 0 && (
+                                {scanResults.headers?.length > 0 && (
                                   <div>
                                     <h4 className="text-sm font-semibold mb-2">Security Headers</h4>
                                     <div className="space-y-2 max-h-[300px] overflow-y-auto">
                                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                      {scanResults.headerResults.map((h: any, idx: number) => (
+                                      {scanResults.headers.map((h: any, idx: number) => (
                                         <div key={idx} className="text-sm border rounded-lg px-3 py-2">
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
@@ -1495,7 +1495,7 @@ export default function ShieldXWorkspacePage() {
                                     <h4 className="text-sm font-semibold flex items-center gap-2"><Package className="h-4 w-4 text-primary" /> Dependency Scan</h4>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                       <div className="rounded-lg border p-3 text-center">
-                                        <div className="text-xl font-bold">{scanResults.dependencies.totalDependencies || 0}</div>
+                                        <div className="text-xl font-bold">{scanResults.dependencies.totalDeps || 0}</div>
                                         <div className="text-xs text-muted-foreground">Packages</div>
                                       </div>
                                       <div className="rounded-lg border p-3 text-center border-red-500/20">

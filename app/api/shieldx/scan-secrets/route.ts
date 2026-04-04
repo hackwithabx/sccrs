@@ -19,7 +19,7 @@ interface SecretPattern {
 }
 
 const SECRET_PATTERNS: SecretPattern[] = [
-  { id: "aws-access-key", name: "AWS Access Key ID", regex: /(?:^|[^A-Za-z0-9/+=])(?:AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}(?:[^A-Za-z0-9/+=]|$)/gm, confidence: "high", remediation: "Use AWS IAM roles or environment variables. Rotate the exposed key immediately via the AWS console." },
+  { id: "aws-access-key", name: "AWS Access Key ID", regex: /(?:^|[^A-Za-z0-9/+])(?:AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}(?:[^A-Za-z0-9/+=]|$)/gm, confidence: "high", remediation: "Use AWS IAM roles or environment variables. Rotate the exposed key immediately via the AWS console." },
   { id: "aws-secret-key", name: "AWS Secret Access Key", regex: /(?:aws_secret_access_key|aws_secret|secret_key)\s*[:=]\s*['"]?([A-Za-z0-9/+=]{40})['"]?/gi, confidence: "high", remediation: "Rotate the key in AWS IAM immediately. Use AWS Secrets Manager or env variables." },
   { id: "github-token", name: "GitHub Token", regex: /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36,255}\b/g, confidence: "high", remediation: "Revoke the token at github.com/settings/tokens and generate a new one with minimal scopes." },
   { id: "github-fine-grained", name: "GitHub Fine-Grained Token", regex: /\bgithub_pat_[A-Za-z0-9_]{22,255}\b/g, confidence: "high", remediation: "Revoke the fine-grained token at github.com/settings/tokens and regenerate with minimal permissions." },
@@ -42,7 +42,7 @@ const SECRET_PATTERNS: SecretPattern[] = [
 ];
 
 const PLACEHOLDER_PATTERNS = [
-  /^(your[_-]?|my[_-]?|test[_-]?|example[_-]?|fake[_-]?|dummy[_-]?|sample[_-]?|xxx|placeholder|changeme|TODO|FIXME)/i,
+  /^(your[_-]?|my[_-]|test[_-]?|example[_-]?|fake[_-]?|dummy[_-]?|sample[_-]?|xxx|placeholder|changeme|TODO|FIXME)/i,
   /^[A-Za-z0-9]{4,6}$/,
   /^(sk_test_|pk_test_)/,
 ];
@@ -165,7 +165,7 @@ const DEMO_CODE = `# .env file
 AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
 AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 STRIPE_SECRET_KEY=sk_live_51HG8Y2CjPBYyh0V3abcdefghijklmnopqrstuv
-GITHUB_TOKEN=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
+GITHUB_TOKEN=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij
 DATABASE_URL=mongodb+srv://admin:SuperSecret123@cluster0.abc.mongodb.net/mydb
 SENDGRID_API_KEY=SG.abcdefghijklmnopqrstuv.wxyz1234567890ABCDEFGHIJ
 password = "MyS3cur3P@ssw0rd!"
