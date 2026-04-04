@@ -25,6 +25,7 @@ import {
   Zap,
   Crown,
   FileText,
+  FileCode,
   Clock,
   TrendingUp,
   XCircle,
@@ -66,6 +67,7 @@ const MODULES = [
   { id: "api", name: "API Security Scanner", description: "OWASP API Top 10 2023 compliance checks — security headers, CORS, auth, and 15+ automated tests.", icon: Globe, plans: ["pro", "enterprise"] },
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "Pattern-based log analysis to detect brute-force attacks, injection attempts, privilege escalation, and anomalous traffic.", icon: Brain, plans: ["pro", "enterprise"] },
+  { id: "sast", name: "SAST Code Analyzer", description: "AST-based static analysis — parses code into an Abstract Syntax Tree to trace tainted data from user inputs to dangerous sinks. Detects SQL injection, XSS, command injection, SSRF, and 15+ vulnerability classes with dataflow evidence.", icon: FileCode, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
   { id: "alerts", name: "Alert System (Coming Soon)", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected. Coming soon.", icon: Bell, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
@@ -260,6 +262,10 @@ export default function ShieldXWorkspacePage() {
           endpoint = "/api/shieldx/scan-logs";
           payload = isDemo ? { demo: true } : { logs: scanInput };
           break;
+        case "sast":
+          endpoint = "/api/shieldx/scan-sast";
+          payload = isDemo ? { demo: true } : { code: scanInput };
+          break;
         case "cicd":
           endpoint = "/api/shieldx/ci-scan";
           payload = {
@@ -409,6 +415,20 @@ export default function ShieldXWorkspacePage() {
           findings,
         };
       }
+      case "sast": {
+        const findings = (data.findings || []).map((f: any) => ({
+          category: f.category || "SAST", status: f.severity === "critical" || f.severity === "high" ? "fail" : "warn",
+          finding: `${f.name}: ${f.detail}`, recommendation: f.remediation,
+          severity: f.severity,
+        }));
+        return {
+          scanType: "sast", title, source: "manual", status: "completed", target,
+          overallScore: Math.max(0, 10 - (data.stats?.critical || 0) * 3 - (data.stats?.high || 0) * 2 - (data.stats?.medium || 0)),
+          summary: `AST analysis of ${data.linesAnalyzed || 0} lines. ${data.stats?.total || 0} vulnerabilities found via ${data.checksPerformed || 0} checks.`,
+          counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.stats?.total || 0 },
+          findings,
+        };
+      }
       case "cicd": {
         const secretsFindings = (data.secrets?.findings || []).map((f: any) => ({
           category: "Secrets", status: f.severity === "critical" ? "fail" : "warn",
@@ -447,6 +467,8 @@ export default function ShieldXWorkspacePage() {
         return { placeholder: "Paste your Terraform, CloudFormation, or cloud config (JSON/YAML/HCL)...", label: "Cloud Configuration", type: "textarea" as const };
       case "logs":
         return { placeholder: "Paste your server logs, access logs, application logs, or audit logs here...\n\nExample:\n2026-03-20 02:14:33 [INFO] 192.168.1.105 - POST /api/login - 401 Unauthorized - Invalid credentials", label: "Log Data", type: "textarea" as const };
+      case "sast":
+        return { placeholder: "Paste JavaScript or TypeScript code for AST-based security analysis...\n\nThe engine parses your code into an Abstract Syntax Tree, tracks data flow from user inputs (req.body, req.query) to dangerous sinks (db.query, exec, eval), and detects SQL injection, XSS, command injection, SSRF, and 15+ vulnerability classes.", label: "JavaScript / TypeScript Code", type: "textarea" as const };
       default:
         return { placeholder: "", label: "Input", type: "textarea" as const };
     }
@@ -649,7 +671,7 @@ export default function ShieldXWorkspacePage() {
             {/* ── Scan Panel ── */}
             <div ref={scanPanelRef} />
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "cicd", "score", "alerts"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "alerts"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -1412,6 +1434,108 @@ export default function ShieldXWorkspacePage() {
                                       </div>
                                     ))}
                                   </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* SAST Code Analysis results */}
+                            {activeModule === "sast" && (
+                              <>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Total Findings</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Critical</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                    <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                    <div className="text-xs text-muted-foreground">High</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Medium</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Low</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span>{scanResults.checksPerformed || 0} AST checks across {scanResults.linesAnalyzed || 0} lines</span>
+                                  <Badge variant={scanResults.astParsed ? "secondary" : "destructive"} className="text-[9px]">{scanResults.astParsed ? "AST parsed" : "Parse failed"}</Badge>
+                                  <span>{scanResults.mode} mode</span>
+                                </div>
+                                {scanResults.findings?.length > 0 ? (
+                                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.findings.map((f: any, idx: number) => (
+                                      <Card key={idx} className={`${f.severity === "critical" ? "border-red-500/30" : f.severity === "high" ? "border-orange-500/30" : f.severity === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`}>
+                                        <CardContent className="p-4">
+                                          <div className="flex items-start justify-between gap-3 mb-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <Badge variant={f.severity === "critical" ? "destructive" : f.severity === "high" ? "destructive" : "secondary"} className="text-[10px] capitalize">{f.severity}</Badge>
+                                              <Badge variant="outline" className={`text-[9px] ${f.confidence === "high" ? "border-emerald-500 text-emerald-600" : "border-amber-500 text-amber-600"}`}>{f.confidence} conf.</Badge>
+                                              <span className="font-medium text-sm">{f.name}</span>
+                                              <Badge variant="outline" className="text-[9px]">{f.category}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              {f.fix?.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {f.fix.riskScore}/100</span>}
+                                              <span className="text-xs text-muted-foreground">Line {f.line}</span>
+                                            </div>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground mb-2">{f.detail}</p>
+                                          {f.evidence && <code className="block text-xs bg-muted/50 rounded p-2 font-mono break-all mb-2">{f.evidence}</code>}
+                                          {/* Dataflow trace */}
+                                          {f.dataflow?.length > 1 && (
+                                            <div className="mb-2 p-2 rounded bg-blue-500/5 border border-blue-500/20">
+                                              <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 mb-1">📊 Dataflow Trace</p>
+                                              <div className="space-y-1">
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                                {f.dataflow.map((step: any, si: number) => (
+                                                  <div key={si} className="flex items-center gap-2 text-[11px]">
+                                                    <span className="text-blue-600 font-mono shrink-0">L{step.line}</span>
+                                                    <span className="text-muted-foreground">{step.label}</span>
+                                                    <code className="font-mono text-[10px] bg-muted/50 rounded px-1 truncate">{step.code}</code>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {/* CWE/OWASP badges */}
+                                          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                                            {f.cwe && <Badge variant="outline" className="text-[8px] font-normal">{f.cwe}</Badge>}
+                                            {f.owasp && <Badge variant="outline" className="text-[8px] font-normal">{f.owasp}</Badge>}
+                                            {f.fix?.priority && <Badge variant="outline" className={`text-[8px] ${f.fix.priority === "CRITICAL" ? "border-red-500 text-red-500" : f.fix.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{f.fix.priority}</Badge>}
+                                          </div>
+                                          {/* Fix guidance */}
+                                          {f.fix && (
+                                            <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                                              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">🔧 Fix:</p>
+                                              <p className="text-xs text-emerald-600 dark:text-emerald-300">{f.fix.fix || f.remediation}</p>
+                                              {f.fix.codeExample && <pre className="text-xs font-mono bg-muted/50 rounded px-2 py-1 mt-1 overflow-x-auto whitespace-pre-wrap">{f.fix.codeExample}</pre>}
+                                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                {f.fix.effort && <Badge variant="secondary" className={`text-[9px] ${f.fix.effort === "low" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : f.fix.effort === "medium" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>Effort: {f.fix.effort}</Badge>}
+                                                {f.fix.compliance?.map((c: string, ci: number) => (
+                                                  <Badge key={ci} variant="outline" className="text-[8px] font-normal">{c}</Badge>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {!f.fix && f.remediation && <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>}
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card className="border-emerald-500/30 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">No vulnerabilities detected — your code looks secure!</p>
+                                    </CardContent>
+                                  </Card>
                                 )}
                               </>
                             )}

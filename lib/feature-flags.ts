@@ -23,6 +23,7 @@ export const planFeatures: Record<PlanTier, string[]> = {
     "secrets-scan",
     "cloud-security",
     "log-analyzer",
+    "sast-analysis",
     "alerts",
     "higher-scan-limit",
     "advanced-reports",
@@ -52,10 +53,10 @@ export const planScanLimits: Record<PlanTier, number> = {
 };
 
 export const planPricing: Record<Exclude<PlanTier, "demo">, { price: number; label: string; description: string }> = {
-  free: { price: 0, label: "Free", description: "1 repo, basic scans, limited modules" },
-  starter: { price: 49, label: "Starter — $49/mo", description: "Individuals, secrets + deps + API scanning" },
-  growth: { price: 199, label: "Growth — $199/mo", description: "Teams, all scanners, alerts, advanced reports" },
-  enterprise: { price: 699, label: "Enterprise — $699/mo", description: "Unlimited scans, CI/CD, SLA, team management" },
+  free: { price: 0, label: "Free", description: "Demo mode, basic secrets scanner" },
+  starter: { price: 29, label: "Pro — $29/mo", description: "All scanners incl. AST-based SAST, unlimited scans" },
+  growth: { price: 29, label: "Pro — $29/mo", description: "All scanners incl. AST-based SAST, unlimited scans" },
+  enterprise: { price: 99, label: "Enterprise — $99/mo", description: "Team seats, CI/CD gate, SLA, priority support" },
 };
 
 export function isFeatureEnabled(plan: PlanTier, feature: string): boolean {

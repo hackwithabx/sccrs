@@ -66,7 +66,7 @@ export default function ShieldXLayout({
       url: "https://securecodereviews.com",
     },
     description:
-      "ShieldX is a web-based security scanning platform for secrets, dependencies, APIs, cloud posture, logs, and CI/CD workflows.",
+      "ShieldX is a web-based security scanning platform with AST-based SAST analysis, secrets scanning, dependency auditing, API security, cloud posture checks, log analysis, and CI/CD pipeline gates.",
     offers: [
       {
         "@type": "Offer",
@@ -74,16 +74,27 @@ export default function ShieldXLayout({
         price: "0",
         priceCurrency: "USD",
       },
-      // Pro and Enterprise offers hidden until billing integration is live
+      {
+        "@type": "Offer",
+        name: "ShieldX Pro",
+        price: "29",
+        priceCurrency: "USD",
+      },
+      {
+        "@type": "Offer",
+        name: "ShieldX Enterprise",
+        price: "99",
+        priceCurrency: "USD",
+      },
     ],
     featureList: [
+      "AST-based SAST code analysis with dataflow tracing",
       "Secrets scanner",
       "Dependency vulnerability scanning",
       "API security scanning",
       "Cloud security assessment",
       "Threat log analysis",
       "CI/CD integration",
-      // "Alerts and notifications",  // Hidden — re-enable when alerts are live
       "Security score dashboard",
     ],
   };

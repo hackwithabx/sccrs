@@ -26,7 +26,7 @@ export interface FixResult {
 }
 
 export interface FindingInput {
-  scanType: "secrets" | "deps" | "api" | "cloud" | "logs" | "cicd";
+  scanType: "secrets" | "deps" | "api" | "cloud" | "logs" | "cicd" | "sast";
   id: string;
   title: string;
   severity: Severity;
@@ -111,6 +111,28 @@ const COMPLIANCE_MAP: Record<string, string[]> = {
   "stor-bucket-public": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.8.2.3", "CIS 2.1.2"],
   "misc-hardcoded-creds": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3"],
   "log-cloudtrail": ["OWASP A09:2021", "SOC2 CC7.2", "ISO27001 A.12.4.1", "CIS 2.1"],
+
+  // SAST — AST-based code analysis
+  "sql-injection-sast": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
+  "command-injection-sast": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "xss-reflected-sast": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "path-traversal-sast": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "ssrf-sast": ["OWASP A10:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "eval-injection-sast": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "eval-usage": ["OWASP A03:2021", "SOC2 CC6.1"],
+  "weak-crypto": ["OWASP A02:2021", "SOC2 CC6.7", "ISO27001 A.10.1.1"],
+  "hardcoded-jwt-secret": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3"],
+  "prototype-pollution": ["OWASP A03:2021", "SOC2 CC6.1"],
+  "dangerous-innerhtml": ["OWASP A03:2021", "SOC2 CC6.1"],
+  "insecure-cookie": ["OWASP A05:2021", "SOC2 CC6.1", "ISO27001 A.14.1.3"],
+  "timing-attack": ["OWASP A02:2021", "SOC2 CC6.1"],
+  "no-rate-limit": ["OWASP A07:2021", "SOC2 CC6.1"],
+  "regex-dos": ["OWASP A06:2021", "SOC2 CC7.1"],
+  "cors-misconfiguration": ["OWASP A05:2021", "SOC2 CC6.1"],
+  "nosql-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "unsafe-deserialization": ["OWASP A08:2021", "SOC2 CC6.1"],
+  "log-injection": ["OWASP A09:2021", "SOC2 CC7.2"],
+  "open-redirect": ["OWASP A01:2021", "SOC2 CC6.1"],
 
   // Log Threats
   "brute-force": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.2"],
@@ -465,6 +487,293 @@ app.use((req, res, next) => {
 };
 
 /* ── Risk Scoring ── */
+
+/* ── SAST Fix Templates ── */
+const SAST_FIXES: Record<string, { fix: string; fixCommand: string | null; codeExample: string | null; effort: Effort }> = {
+  "sql-injection": {
+    fix: "Use parameterized queries or prepared statements. Never concatenate user input into SQL strings.",
+    fixCommand: null,
+    codeExample: `// SAFE — parameterized query
+const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+
+// UNSAFE — SQL injection
+// const result = await db.query("SELECT * FROM users WHERE id = " + userId);`,
+    effort: "low",
+  },
+  "command-injection": {
+    fix: "Use child_process.execFile() with an arguments array. Never pass user input to shell commands via exec().",
+    fixCommand: null,
+    codeExample: `const { execFile } = require('child_process');
+
+// SAFE — arguments as array, no shell interpretation
+execFile('ping', ['-c', '1', sanitizedHost], (err, stdout) => {
+  // handle result
+});
+
+// UNSAFE — shell injection
+// exec("ping -c 1 " + host);`,
+    effort: "medium",
+  },
+  "xss-reflected": {
+    fix: "Sanitize all user input before including in HTML responses. Use a templating engine with auto-escaping or DOMPurify.",
+    fixCommand: "npm install dompurify",
+    codeExample: `// Server-side: use a template engine with auto-escaping
+res.render('search', { query: sanitize(req.query.q) });
+
+// Or sanitize with DOMPurify
+const DOMPurify = require('dompurify');
+const clean = DOMPurify.sanitize(userInput);
+res.send(\`<h1>Results for: \${clean}</h1>\`);`,
+    effort: "low",
+  },
+  "path-traversal": {
+    fix: "Validate and sanitize file paths. Use path.resolve() and verify the resolved path stays within the allowed base directory.",
+    fixCommand: null,
+    codeExample: `const path = require('path');
+const BASE_DIR = '/uploads';
+
+function safePath(userInput) {
+  const resolved = path.resolve(BASE_DIR, userInput);
+  if (!resolved.startsWith(BASE_DIR)) {
+    throw new Error('Path traversal attempt blocked');
+  }
+  return resolved;
+}`,
+    effort: "low",
+  },
+  "ssrf": {
+    fix: "Validate and allowlist URLs before making server-side requests. Block private IP ranges and cloud metadata endpoints.",
+    fixCommand: null,
+    codeExample: `// Validate URL before fetching
+const ALLOWED_HOSTS = ['api.example.com', 'cdn.example.com'];
+
+function safeFetch(url) {
+  const parsed = new URL(url);
+  if (!ALLOWED_HOSTS.includes(parsed.hostname)) {
+    throw new Error('Blocked: disallowed host');
+  }
+  // Block private IPs
+  if (/^(10\\.|172\\.(1[6-9]|2|3[01])\\.|192\\.168\\.|127\\.|0\\.)/.test(parsed.hostname)) {
+    throw new Error('Blocked: private IP');
+  }
+  return fetch(url);
+}`,
+    effort: "medium",
+  },
+  "eval-injection": {
+    fix: "Never pass user-controlled data to eval(), new Function(), setTimeout(string), or setInterval(string).",
+    fixCommand: null,
+    codeExample: `// SAFE — use JSON.parse for data
+const data = JSON.parse(userInput);
+
+// SAFE — for math expressions, use a safe evaluator
+const { evaluate } = require('mathjs');
+const result = evaluate(expression); // safe, sandboxed
+
+// UNSAFE
+// const result = eval(userInput);`,
+    effort: "medium",
+  },
+  "eval-usage": {
+    fix: "Remove eval(). Use JSON.parse() for data, safe expression evaluators for math, or sandboxed VMs if dynamic code is truly needed.",
+    fixCommand: null,
+    codeExample: `// Instead of eval(jsonString)
+const data = JSON.parse(jsonString);
+
+// Instead of eval(mathExpr)
+const { evaluate } = require('mathjs');
+const result = evaluate(mathExpr);`,
+    effort: "medium",
+  },
+  "weak-crypto": {
+    fix: "Use SHA-256 or SHA-3 for hashing. For passwords, use bcrypt, scrypt, or Argon2. Never use MD5 or SHA-1 for security.",
+    fixCommand: "npm install bcrypt",
+    codeExample: `const crypto = require('crypto');
+
+// SAFE — SHA-256 for hashing
+const hash = crypto.createHash('sha256').update(data).digest('hex');
+
+// For passwords — use bcrypt
+const bcrypt = require('bcrypt');
+const hashed = await bcrypt.hash(password, 12);
+const valid = await bcrypt.compare(password, hashed);`,
+    effort: "low",
+  },
+  "hardcoded-jwt-secret": {
+    fix: "Store JWT secrets in environment variables. Rotate secrets periodically. Use asymmetric keys (RS256) for production.",
+    fixCommand: null,
+    codeExample: `// SAFE — load from environment
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET not configured');
+const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '1h' });
+
+// Even better — use asymmetric keys
+const privateKey = fs.readFileSync(process.env.JWT_PRIVATE_KEY_PATH);
+const token = jwt.sign({ userId }, privateKey, { algorithm: 'RS256', expiresIn: '1h' });`,
+    effort: "low",
+  },
+  "prototype-pollution": {
+    fix: "Use Object.create(null) as base objects. Validate input keys — reject __proto__, constructor, prototype.",
+    fixCommand: null,
+    codeExample: `// SAFE — sanitize keys before merging
+function safeMerge(target, source) {
+  const BLOCKED = new Set(['__proto__', 'constructor', 'prototype']);
+  for (const key of Object.keys(source)) {
+    if (BLOCKED.has(key)) continue;
+    target[key] = source[key];
+  }
+  return target;
+}
+
+// Or use a safe merge library
+const deepmerge = require('deepmerge');`,
+    effort: "medium",
+  },
+  "dangerous-innerhtml": {
+    fix: "Use textContent instead of innerHTML. In React, use JSX auto-escaping. If raw HTML is required, sanitize with DOMPurify.",
+    fixCommand: "npm install dompurify",
+    codeExample: `// React — SAFE: JSX auto-escapes
+return <div>{userContent}</div>;
+
+// If raw HTML is needed, sanitize first
+import DOMPurify from 'dompurify';
+return <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />;
+
+// Vanilla JS — use textContent
+element.textContent = userInput; // SAFE — no HTML parsing`,
+    effort: "low",
+  },
+  "insecure-cookie": {
+    fix: "Set cookies with: { secure: true, httpOnly: true, sameSite: 'strict' }.",
+    fixCommand: null,
+    codeExample: `res.cookie('session', token, {
+  httpOnly: true,  // Prevents XSS-based theft
+  secure: true,    // HTTPS only
+  sameSite: 'strict', // CSRF protection
+  maxAge: 3600000, // 1 hour
+});`,
+    effort: "low",
+  },
+  "timing-attack": {
+    fix: "Use crypto.timingSafeEqual() for comparing secrets, tokens, HMACs, and API keys.",
+    fixCommand: null,
+    codeExample: `const crypto = require('crypto');
+
+// SAFE — constant-time comparison
+function safeCompare(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+if (safeCompare(providedToken, storedToken)) {
+  // Authenticated
+}`,
+    effort: "low",
+  },
+  "no-rate-limit": {
+    fix: "Add rate limiting middleware to authentication endpoints to prevent brute-force attacks.",
+    fixCommand: "npm install express-rate-limit",
+    codeExample: `const rateLimit = require('express-rate-limit');
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: 'Too many login attempts. Try again later.',
+});
+
+app.post('/login', loginLimiter, loginHandler);`,
+    effort: "low",
+  },
+  "regex-dos": {
+    fix: "Never create RegExp from user input. Use a safe regex library like 're2' (linear-time engine).",
+    fixCommand: "npm install re2",
+    codeExample: `// SAFE — use RE2 for user-provided patterns
+const RE2 = require('re2');
+
+function safeRegex(pattern) {
+  try {
+    return new RE2(pattern);
+  } catch {
+    throw new Error('Invalid regex pattern');
+  }
+}`,
+    effort: "medium",
+  },
+  "cors-misconfiguration": {
+    fix: "Configure CORS with specific trusted origins. Never use wildcard with credentials.",
+    fixCommand: null,
+    codeExample: `const cors = require('cors');
+
+app.use(cors({
+  origin: ['https://yourdomain.com', 'https://app.yourdomain.com'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));`,
+    effort: "low",
+  },
+  "nosql-injection": {
+    fix: "Sanitize user input before using in MongoDB queries. Use schema validation. Reject objects with $ operators.",
+    fixCommand: "npm install mongo-sanitize",
+    codeExample: `const sanitize = require('mongo-sanitize');
+
+// Sanitize input — strips $ operators
+const cleanFilter = sanitize(req.query.filter);
+const user = await User.findOne(cleanFilter);
+
+// Or validate explicitly
+if (typeof filter !== 'string') {
+  return res.status(400).json({ error: 'Invalid filter' });
+}`,
+    effort: "low",
+  },
+  "unsafe-deserialization": {
+    fix: "Validate and schema-check deserialized data. Use JSON Schema validation. Avoid yaml.load() on untrusted input.",
+    fixCommand: null,
+    codeExample: `// Validate after parsing
+const Ajv = require('ajv');
+const ajv = new Ajv();
+const schema = { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] };
+const data = JSON.parse(userInput);
+if (!ajv.validate(schema, data)) {
+  throw new Error('Invalid data format');
+}`,
+    effort: "medium",
+  },
+  "log-injection": {
+    fix: "Sanitize user input before logging. Strip newlines and control characters to prevent log forging.",
+    fixCommand: null,
+    codeExample: `// Sanitize before logging
+function safeLog(input) {
+  return String(input).replace(/[\\r\\n\\t]/g, ' ').slice(0, 500);
+}
+
+console.log('User search:', safeLog(req.query.q));`,
+    effort: "low",
+  },
+  "open-redirect": {
+    fix: "Validate redirect URLs against an allowlist. Reject absolute URLs with different domains.",
+    fixCommand: null,
+    codeExample: `// SAFE — validate redirect URL
+function safeRedirect(res, url) {
+  // Only allow relative paths
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    return res.redirect(url);
+  }
+  // Or check against allowlist
+  const allowed = ['https://yourdomain.com'];
+  const parsed = new URL(url, 'https://yourdomain.com');
+  if (allowed.includes(parsed.origin)) {
+    return res.redirect(url);
+  }
+  return res.redirect('/');
+}`,
+    effort: "low",
+  },
+};
+
+/* ── Risk Scoring ── */
 const SEVERITY_SCORES: Record<Severity, number> = {
   critical: 40,
   high: 30,
@@ -487,6 +796,7 @@ const SCAN_EXPOSURE: Record<string, number> = {
   cloud: 25,     // Cloud misconfig = broad exposure
   logs: 20,      // Log findings = attacks in progress
   cicd: 20,      // CI/CD = pipeline risk
+  sast: 30,      // SAST = code-level vulnerabilities, highly exploitable
 };
 
 function calculateRiskScore(severity: Severity, confidence: Confidence, scanType: string): number {
@@ -604,6 +914,17 @@ function getFixTemplate(input: FindingInput): { fix: string; fixCommand: string 
       };
     }
 
+    case "sast": {
+      const template = SAST_FIXES[input.patternId || ""];
+      if (template) return template;
+      return {
+        fix: input.description || "Review and fix the security vulnerability identified by AST analysis.",
+        fixCommand: null,
+        codeExample: null,
+        effort: input.severity === "critical" ? "medium" : "low",
+      };
+    }
+
     default:
       return {
         fix: "Review the finding and apply appropriate remediation.",
@@ -647,6 +968,10 @@ function getDefaultCompliance(scanType: string, severity: Severity): string[] {
       break;
     case "logs":
       base.push("OWASP A09:2021");
+      break;
+    case "sast":
+      base.push("OWASP A03:2021");
+      if (severity === "critical") base.push("PCI-DSS 6.5.1");
       break;
   }
   return base;
