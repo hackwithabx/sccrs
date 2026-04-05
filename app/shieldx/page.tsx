@@ -783,12 +783,34 @@ export default function ShieldXWorkspacePage() {
                           <div>
                             <label className="text-sm font-medium mb-2 block">{inputCfg.label}</label>
                             {inputCfg.type === "textarea" ? (
+                              activeModule === "sast" ? (
+                                <div className="relative flex rounded-lg border bg-muted/30 focus-within:ring-2 focus-within:ring-primary/40 min-h-[200px] max-h-[500px] overflow-auto resize-y">
+                                  {/* Line numbers gutter */}
+                                  <div
+                                    className="select-none text-right pr-3 pl-3 pt-4 pb-4 font-mono text-xs text-muted-foreground/60 border-r bg-muted/40 shrink-0 leading-[1.625]"
+                                    aria-hidden="true"
+                                  >
+                                    {(scanInput || "\n").split("\n").map((_, i) => (
+                                      <div key={i}>{i + 1}</div>
+                                    ))}
+                                  </div>
+                                  {/* Code textarea */}
+                                  <textarea
+                                    className="w-full min-h-[200px] bg-transparent p-4 font-mono text-sm focus:outline-none resize-none leading-[1.625]"
+                                    placeholder={inputCfg.placeholder}
+                                    value={scanInput}
+                                    onChange={(e) => setScanInput(e.target.value)}
+                                    spellCheck={false}
+                                  />
+                                </div>
+                              ) : (
                               <textarea
                                 className="w-full min-h-[200px] rounded-lg border bg-muted/30 p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
                                 placeholder={inputCfg.placeholder}
                                 value={scanInput}
                                 onChange={(e) => setScanInput(e.target.value)}
                               />
+                              )
                             ) : (
                               <input
                                 type="url"
