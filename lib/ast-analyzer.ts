@@ -72,6 +72,82 @@ const TAINT_SOURCES: { pattern: string[]; label: string }[] = [
   { pattern: ["location", "search"], label: "URL search" },
 ];
 
+/* ── Known Sanitizers — functions that neutralize tainted data ── */
+
+interface SanitizerDef {
+  /** Call patterns that identify the sanitizer (e.g., ["DOMPurify", "sanitize"]) */
+  pattern: string[];
+  /** Which vulnerability category(s) this sanitizer mitigates */
+  mitigates: Set<string>;
+}
+
+const KNOWN_SANITIZERS: SanitizerDef[] = [
+  // XSS sanitizers
+  { pattern: ["DOMPurify", "sanitize"],  mitigates: new Set(["xss-reflected", "dangerous-innerhtml"]) },
+  { pattern: ["sanitizeHtml"],           mitigates: new Set(["xss-reflected", "dangerous-innerhtml"]) },
+  { pattern: ["he", "encode"],           mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["escapeHtml"],             mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["xss"],                    mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["validator", "escape"],    mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["encodeURIComponent"],     mitigates: new Set(["xss-reflected", "open-redirect"]) },
+  { pattern: ["encodeURI"],              mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["htmlEncode"],             mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["Encode", "forHtml"],      mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["striptags"],             mitigates: new Set(["xss-reflected"]) },
+  // SQL sanitizers
+  { pattern: ["escape"],                 mitigates: new Set(["sql-injection", "nosql-injection"]) },
+  { pattern: ["mysql", "escape"],        mitigates: new Set(["sql-injection"]) },
+  { pattern: ["pg", "escapeLiteral"],    mitigates: new Set(["sql-injection"]) },
+  { pattern: ["pg", "escapeIdentifier"], mitigates: new Set(["sql-injection"]) },
+  { pattern: ["sanitize"],               mitigates: new Set(["xss-reflected", "sql-injection", "nosql-injection", "log-injection"]) },
+  { pattern: ["mongoSanitize"],          mitigates: new Set(["nosql-injection"]) },
+  { pattern: ["mongo", "sanitize"],      mitigates: new Set(["nosql-injection"]) },
+  // Path sanitizers
+  { pattern: ["path", "basename"],       mitigates: new Set(["path-traversal"]) },
+  // Command sanitizers
+  { pattern: ["shellEscape"],            mitigates: new Set(["command-injection"]) },
+  { pattern: ["shellescape"],            mitigates: new Set(["command-injection"]) },
+  { pattern: ["escapeshellarg"],         mitigates: new Set(["command-injection"]) },
+  // Log sanitizers
+  { pattern: ["stripAnsi"],              mitigates: new Set(["log-injection"]) },
+  // General validation
+  { pattern: ["parseInt"],               mitigates: new Set(["sql-injection", "command-injection", "xss-reflected"]) },
+  { pattern: ["Number"],                 mitigates: new Set(["sql-injection", "command-injection", "xss-reflected"]) },
+  { pattern: ["parseFloat"],             mitigates: new Set(["sql-injection", "command-injection", "xss-reflected"]) },
+  { pattern: ["validator", "isEmail"],   mitigates: new Set(["sql-injection", "command-injection", "xss-reflected"]) },
+  { pattern: ["validator", "isURL"],     mitigates: new Set(["ssrf", "open-redirect"]) },
+  { pattern: ["validator", "isInt"],     mitigates: new Set(["sql-injection", "command-injection"]) },
+  { pattern: ["validator", "isAlphanumeric"], mitigates: new Set(["sql-injection", "command-injection", "xss-reflected", "path-traversal"]) },
+];
+
+/** Known input-validation functions that reduce confidence when used as a guard */
+const VALIDATION_FUNCTIONS = new Set([
+  "isValid", "validate", "isAllowed", "isSafe", "checkPermission", "authorize",
+  "isAuthenticated", "isAuthorized", "hasPermission", "canAccess", "isWhitelisted",
+  "isAllowlisted", "sanitize", "clean", "verify", "check", "assert",
+  "isValidUrl", "isValidPath", "isLocalUrl", "isInternalUrl",
+  "isValidEmail", "isValidId", "isValidInput", "isValidParam",
+  "startsWith", "endsWith", "includes", "match", "test",
+]);
+
+/** Check whether a CallExpression is a known sanitizer for a specific vulnerability */
+function matchesSanitizer(callNode: ASTNode, vulnId: string): boolean {
+  if (callNode.type !== "CallExpression") return false;
+  const chain = resolveMemberChain(callNode.callee);
+  if (chain.length === 0 && callNode.callee?.type === "Identifier") {
+    chain.push(callNode.callee.name);
+  }
+  for (const san of KNOWN_SANITIZERS) {
+    if (chain.length >= san.pattern.length) {
+      const endSlice = chain.slice(chain.length - san.pattern.length);
+      if (san.pattern.every((p, i) => endSlice[i] === p) && san.mitigates.has(vulnId)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /* ── Dangerous Sinks — where tainted data becomes exploitable ── */
 
 interface SinkDef {
@@ -827,9 +903,50 @@ interface TaintInfo {
 
 class TaintTracker {
   private taintedVars = new Map<string, TaintInfo>();
+  /** Variables that have been sanitized — maps varName → set of mitigated vuln IDs */
+  private sanitizedVars = new Map<string, Set<string>>();
 
   markTainted(varName: string, info: TaintInfo) {
     this.taintedVars.set(varName, info);
+    // If re-tainted, remove any previous sanitization
+    this.sanitizedVars.delete(varName);
+  }
+
+  /** Mark a variable as sanitized for specific vulnerability types */
+  markSanitized(varName: string, mitigatedVulns: Set<string>) {
+    const existing = this.sanitizedVars.get(varName) || new Set();
+    for (const v of mitigatedVulns) existing.add(v);
+    this.sanitizedVars.set(varName, existing);
+  }
+
+  /** Check if a variable has been sanitized for a specific vulnerability */
+  isSanitizedFor(node: ASTNode, vulnId: string): boolean {
+    if (node.type === "Identifier") {
+      const san = this.sanitizedVars.get(node.name);
+      return san ? san.has(vulnId) : false;
+    }
+    if (node.type === "MemberExpression" && node.object?.type === "Identifier") {
+      const san = this.sanitizedVars.get(node.object.name);
+      return san ? san.has(vulnId) : false;
+    }
+    // If the entire expression is wrapped in a sanitizer call, it's clean
+    return false;
+  }
+
+  /** Check if an argument node is wrapped in a sanitizer call for the given vuln */
+  isArgSanitized(node: ASTNode, vulnId: string): boolean {
+    // Direct sanitizer: sink(sanitize(tainted))
+    if (node.type === "CallExpression" && matchesSanitizer(node, vulnId)) return true;
+    // Check variable sanitization
+    if (this.isSanitizedFor(node, vulnId)) return true;
+    // If it's a numeric conversion: sink(Number(x)) or sink(parseInt(x))
+    if (node.type === "CallExpression") {
+      const callee = node.callee;
+      if (callee?.type === "Identifier" && (callee.name === "parseInt" || callee.name === "parseFloat" || callee.name === "Number")) {
+        return true;
+      }
+    }
+    return false;
   }
 
   isTainted(node: ASTNode): TaintInfo | null {
@@ -867,6 +984,30 @@ class TaintTracker {
   // Propagate taint through assignments
   processAssignment(left: ASTNode, right: ASTNode, code: string, lines: string[]) {
     if (left.type !== "Identifier") return;
+    // Check if right side is a sanitizer call wrapping tainted data
+    if (right.type === "CallExpression") {
+      const chain = resolveMemberChain(right.callee);
+      if (chain.length === 0 && right.callee?.type === "Identifier") chain.push(right.callee.name);
+      for (const san of KNOWN_SANITIZERS) {
+        if (chain.length >= san.pattern.length) {
+          const endSlice = chain.slice(chain.length - san.pattern.length);
+          if (san.pattern.every((p, i) => endSlice[i] === p)) {
+            // This is a sanitizer: x = sanitize(tainted)
+            // Mark the var as sanitized for these categories
+            this.markSanitized(left.name, san.mitigates);
+            // Still propagate taint (it's sanitized, not untainted)
+            const innerArg = right.arguments?.[0];
+            if (innerArg) {
+              const existing = this.isTainted(innerArg);
+              if (existing) {
+                this.taintedVars.set(left.name, existing);
+              }
+            }
+            return;
+          }
+        }
+      }
+    }
     // Check direct taint source
     const source = isTaintSource(right);
     if (source.tainted) {
@@ -884,6 +1025,137 @@ class TaintTracker {
       this.markTainted(left.name, existing);
     }
   }
+}
+
+/* ── Inter-procedural Analysis: Function Definition Tracker ── */
+
+interface FuncDef {
+  name: string;
+  params: string[];
+  body: ASTNode;
+  node: ASTNode;
+}
+
+class FunctionCollector {
+  private funcs = new Map<string, FuncDef>();
+
+  collect(ast: ASTNode) {
+    walkAST(ast, (node) => {
+      // function foo(x, y) { ... }
+      if (node.type === "FunctionDeclaration" && node.id?.name) {
+        this.funcs.set(node.id.name, {
+          name: node.id.name,
+          params: (node.params || []).map((p: ASTNode) => p.name || p.argument?.name || "").filter(Boolean),
+          body: node.body,
+          node,
+        });
+      }
+      // const foo = function(x, y) { ... }  OR  const foo = (x) => { ... }
+      if (node.type === "VariableDeclarator" && node.id?.type === "Identifier" && node.init) {
+        const init = node.init;
+        if (init.type === "FunctionExpression" || init.type === "ArrowFunctionExpression") {
+          this.funcs.set(node.id.name, {
+            name: node.id.name,
+            params: (init.params || []).map((p: ASTNode) => p.name || p.argument?.name || "").filter(Boolean),
+            body: init.body,
+            node: init,
+          });
+        }
+      }
+      // Object method: { foo(x) { ... } }
+      if (node.type === "MethodDefinition" && node.key?.name && node.value) {
+        this.funcs.set(node.key.name, {
+          name: node.key.name,
+          params: (node.value.params || []).map((p: ASTNode) => p.name || p.argument?.name || "").filter(Boolean),
+          body: node.value.body,
+          node: node.value,
+        });
+      }
+    });
+  }
+
+  get(name: string): FuncDef | undefined { return this.funcs.get(name); }
+  has(name: string): boolean { return this.funcs.has(name); }
+  all(): Map<string, FuncDef> { return this.funcs; }
+}
+
+/* ── Control-Flow Sensitivity: check if a sink is guarded by validation ── */
+
+/**
+ * Check if the sink node is inside an if-block whose condition involves
+ * a validation or sanitization check on the tainted variable.
+ * Returns true if a validation guard is detected (reduce confidence).
+ */
+function hasValidationGuard(sinkNode: ASTNode, taintedVarName: string, ast: ASTNode): boolean {
+  // Walk ancestors: find if we're inside an IfStatement whose test validates the var
+  let guardFound = false;
+
+  walkAST(ast, (node) => {
+    if (guardFound) return;
+    if (node.type !== "IfStatement") return;
+
+    // Check if the if-test involves a validation function on the tainted variable
+    const test = node.test;
+    if (!test) return;
+
+    // Check if the sink is inside this if's consequent
+    const consequent = node.consequent;
+    if (!consequent) return;
+    if (!nodeContainsPosition(consequent, sinkNode.start, sinkNode.end)) return;
+
+    // Now check if the test involves validation
+    if (testInvolvesValidation(test, taintedVarName)) {
+      guardFound = true;
+    }
+  });
+
+  return guardFound;
+}
+
+function nodeContainsPosition(node: ASTNode, start: number, end: number): boolean {
+  if (!node || node.start == null || node.end == null) return false;
+  return node.start <= start && node.end >= end;
+}
+
+function testInvolvesValidation(testNode: ASTNode, varName: string): boolean {
+  let found = false;
+  walkAST(testNode, (node) => {
+    if (found) return;
+    // Call to a validation function with varName as arg
+    if (node.type === "CallExpression") {
+      const calleeName = node.callee?.name || node.callee?.property?.name || "";
+      if (VALIDATION_FUNCTIONS.has(calleeName)) {
+        // Check if any argument references the tainted var
+        for (const arg of node.arguments || []) {
+          if (argReferencesVar(arg, varName)) { found = true; return; }
+        }
+      }
+      // method call: taintedVar.match(), taintedVar.startsWith(), etc.
+      if (node.callee?.type === "MemberExpression" && node.callee?.object?.name === varName) {
+        const method = node.callee.property?.name || "";
+        if (VALIDATION_FUNCTIONS.has(method)) { found = true; return; }
+      }
+    }
+    // typeof check: typeof x === "string"
+    if (node.type === "UnaryExpression" && node.operator === "typeof" && node.argument?.name === varName) {
+      found = true;
+    }
+    // Comparison: x === constant, x !== undefined
+    if (node.type === "BinaryExpression" && (node.operator === "===" || node.operator === "==" || node.operator === "!==" || node.operator === "!=")) {
+      if ((node.left?.name === varName && node.right?.type === "Literal") ||
+          (node.right?.name === varName && node.left?.type === "Literal")) {
+        found = true;
+      }
+    }
+  });
+  return found;
+}
+
+function argReferencesVar(node: ASTNode, varName: string): boolean {
+  if (!node) return false;
+  if (node.type === "Identifier" && node.name === varName) return true;
+  if (node.type === "MemberExpression") return argReferencesVar(node.object, varName);
+  return false;
 }
 
 /* ── AST Walker ── */
@@ -998,6 +1270,7 @@ export function analyzeCode(code: string): {
   }
 
   const tracker = new TaintTracker();
+  const funcCollector = new FunctionCollector();
   const seenFindings = new Set<string>();
 
   function addFinding(f: ASTFinding) {
@@ -1011,7 +1284,10 @@ export function analyzeCode(code: string): {
     findings.push(f);
   }
 
-  // Phase 1: Walk AST to build taint map
+  // Pre-pass: Collect all function definitions for inter-procedural analysis
+  funcCollector.collect(ast);
+
+  // Phase 1: Walk AST to build taint map (+ sanitizer awareness)
   walkAST(ast, (node) => {
     // Variable declarations: const x = req.body.name
     if (node.type === "VariableDeclarator" && node.init) {
@@ -1072,6 +1348,9 @@ export function analyzeCode(code: string): {
       : node.arguments[sink.argIndex] ? [node.arguments[sink.argIndex]] : [];
 
     for (const arg of argsToCheck) {
+      // Skip if the arg is wrapped in a sanitizer call for this vuln type
+      if (tracker.isArgSanitized(arg, sink.id)) continue;
+
       // Check direct taint source
       const directTaint = isTaintSource(arg);
       // Check tracked taint
@@ -1081,9 +1360,19 @@ export function analyzeCode(code: string): {
         : trackedTaint;
 
       if (taintInfo) {
+        // Check if the tainted variable has been sanitized for this specific vuln
+        const taintedVarName = arg.type === "Identifier" ? arg.name : (arg.object?.name || "");
+        if (taintedVarName && tracker.isSanitizedFor(arg, sink.id)) continue;
+
         const sinkLine = getNodeLine(node, code);
         const sinkCode = getCodeSnippet(lines, sinkLine);
         const callName = resolveIdentifierName(node.callee);
+
+        // Control-flow sensitivity: reduce confidence if guarded by validation
+        let confidence: "high" | "medium" | "low" = directTaint.tainted ? "high" : "medium";
+        if (taintedVarName && hasValidationGuard(node, taintedVarName, ast)) {
+          confidence = confidence === "high" ? "medium" : "low";
+        }
 
         const dataflow: DataflowStep[] = [
           { line: taintInfo.sourceLine, label: `Source: ${taintInfo.label}`, code: taintInfo.sourceCode },
@@ -1096,7 +1385,7 @@ export function analyzeCode(code: string): {
           id: sink.id,
           name: sink.name,
           severity: sink.severity,
-          confidence: directTaint.tainted ? "high" : "medium",
+          confidence,
           line: sinkLine,
           column: getNodeColumn(node, code),
           category: sink.category,
@@ -1109,6 +1398,83 @@ export function analyzeCode(code: string): {
         });
       }
     }
+  });
+
+  // Phase 2b: Inter-procedural analysis — check calls to user-defined functions
+  walkAST(ast, (node) => {
+    if (node.type !== "CallExpression") return;
+    const calleeName = node.callee?.name;
+    if (!calleeName || !funcCollector.has(calleeName)) return;
+
+    // Check if any argument to this call is tainted
+    const taintedArgs: { index: number; info: TaintInfo }[] = [];
+    for (let ai = 0; ai < (node.arguments || []).length; ai++) {
+      const arg = node.arguments[ai];
+      const directTaint = isTaintSource(arg);
+      const trackedTaint = tracker.isTainted(arg);
+      const info = directTaint.tainted
+        ? { label: directTaint.label, sourceLine: getNodeLine(arg, code), sourceCode: getCodeSnippet(lines, getNodeLine(arg, code)) }
+        : trackedTaint;
+      if (info) taintedArgs.push({ index: ai, info });
+    }
+
+    if (taintedArgs.length === 0) return;
+
+    // Get the function definition
+    const funcDef = funcCollector.get(calleeName)!;
+
+    // Create a temporary taint tracker for the function body
+    const funcTracker = new TaintTracker();
+    for (const ta of taintedArgs) {
+      if (ta.index < funcDef.params.length) {
+        funcTracker.markTainted(funcDef.params[ta.index], ta.info);
+      }
+    }
+
+    // Walk the function body looking for sinks using the tainted params
+    walkAST(funcDef.body, (innerNode) => {
+      if (innerNode.type !== "CallExpression") return;
+
+      const sink = matchesSink(innerNode);
+      if (!sink) return;
+
+      const innerArgs = sink.argIndex === -1
+        ? innerNode.arguments
+        : innerNode.arguments[sink.argIndex] ? [innerNode.arguments[sink.argIndex]] : [];
+
+      for (const innerArg of innerArgs) {
+        if (funcTracker.isArgSanitized(innerArg, sink.id)) continue;
+        const innerTaint = funcTracker.isTainted(innerArg);
+        if (innerTaint) {
+          const callLine = getNodeLine(node, code);
+          const sinkLine = getNodeLine(innerNode, code);
+
+          const dataflow: DataflowStep[] = [
+            { line: innerTaint.sourceLine, label: `Source: ${innerTaint.label}`, code: innerTaint.sourceCode },
+            { line: callLine, label: `Call: ${calleeName}() with tainted arg`, code: getCodeSnippet(lines, callLine) },
+          ];
+          if (sinkLine !== callLine) {
+            dataflow.push({ line: sinkLine, label: `Sink: ${resolveIdentifierName(innerNode.callee)}() inside ${calleeName}()`, code: getCodeSnippet(lines, sinkLine) });
+          }
+
+          addFinding({
+            id: sink.id,
+            name: `${sink.name} (via ${calleeName}())`,
+            severity: sink.severity,
+            confidence: "medium",
+            line: callLine,
+            column: getNodeColumn(node, code),
+            category: sink.category,
+            cwe: sink.cwe,
+            owasp: sink.owasp,
+            detail: `Tainted data (${innerTaint.label}) flows into ${calleeName}(), which passes it to ${resolveIdentifierName(innerNode.callee)}() without sanitization.`,
+            evidence: getCodeSnippet(lines, callLine),
+            dataflow,
+            remediation: sink.remediation,
+          });
+        }
+      }
+    });
   });
 
   // Phase 3: Pattern-based checks

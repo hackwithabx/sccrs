@@ -408,6 +408,316 @@ const JAVA_HTTP_METHODS = new Set([
 const JAVA_READER_METHODS = new Set(["nextLine","next","nextInt","nextDouble","nextFloat","nextLong","readLine","read"]);
 const CS_REQUEST_PROPS = new Set(["Query","Form","Headers","Cookies","Body","Path","QueryString","RouteValues","Method"]);
 
+// ═══════════════════════════════════════════════════
+//  SECTION 3b — SANITIZER DEFINITIONS & CONTROL FLOW
+// ═══════════════════════════════════════════════════
+
+/**
+ * Known sanitization functions per language.
+ * If a tainted variable is passed through one of these, it should not
+ * trigger findings for the mitigated vulnerability categories.
+ */
+interface LangSanitizer { method: string; chain?: string[]; mitigates: Set<string>; }
+
+const JAVA_SANITIZERS: LangSanitizer[] = [
+  { method: "forHtml",        chain: ["Encode"],            mitigates: new Set(["java-xss"]) },
+  { method: "forJavaScript",  chain: ["Encode"],            mitigates: new Set(["java-xss"]) },
+  { method: "encodeForHTML",  chain: ["encoder()"],         mitigates: new Set(["java-xss"]) },
+  { method: "escapeHtml4",                                  mitigates: new Set(["java-xss"]) },
+  { method: "escapeXml",                                    mitigates: new Set(["java-xss"]) },
+  { method: "prepareStatement",                             mitigates: new Set(["java-sql-injection", "java-sql-concat"]) },
+  { method: "setParameter",                                 mitigates: new Set(["java-sql-injection"]) },
+  { method: "setString",                                    mitigates: new Set(["java-sql-injection"]) },
+  { method: "parseInt",       chain: ["Integer"],           mitigates: new Set(["java-sql-injection", "java-command-injection", "java-xss"]) },
+  { method: "valueOf",        chain: ["Integer"],           mitigates: new Set(["java-sql-injection", "java-command-injection", "java-xss"]) },
+  { method: "matches",                                      mitigates: new Set(["java-command-injection", "java-sql-injection", "java-path-traversal", "java-xss"]) },
+  { method: "toRealPath",                                   mitigates: new Set(["java-path-traversal"]) },
+  { method: "normalize",                                    mitigates: new Set(["java-path-traversal"]) },
+  { method: "getCanonicalPath",                             mitigates: new Set(["java-path-traversal"]) },
+  { method: "escapeLdap",                                   mitigates: new Set(["java-ldap-injection"]) },
+  { method: "replaceAll",                                   mitigates: new Set(["java-log-injection"]) },
+];
+
+const CPP_SANITIZERS: LangSanitizer[] = [
+  { method: "strncpy",   mitigates: new Set(["cpp-buffer-overflow-strcpy"]) },
+  { method: "strlcpy",   mitigates: new Set(["cpp-buffer-overflow-strcpy"]) },
+  { method: "strncat",   mitigates: new Set(["cpp-buffer-overflow-strcat"]) },
+  { method: "strlcat",   mitigates: new Set(["cpp-buffer-overflow-strcat"]) },
+  { method: "snprintf",  mitigates: new Set(["cpp-buffer-overflow-sprintf", "cpp-format-string"]) },
+  { method: "fgets",     mitigates: new Set(["cpp-buffer-overflow-gets"]) },
+  { method: "wcsncpy",   mitigates: new Set(["cpp-buffer-overflow-wcscpy"]) },
+  { method: "wcsncat",   mitigates: new Set(["cpp-buffer-overflow-wcscat"]) },
+  { method: "strtol",    mitigates: new Set(["cpp-integer-overflow"]) },
+  { method: "strtoll",   mitigates: new Set(["cpp-integer-overflow"]) },
+  { method: "stoi",      mitigates: new Set(["cpp-integer-overflow"]) },
+  { method: "realpath",  mitigates: new Set(["cpp-path-traversal"]) },
+  { method: "execFile",  mitigates: new Set(["cpp-command-injection"]) },
+];
+
+const CS_SANITIZERS: LangSanitizer[] = [
+  { method: "HtmlEncode",     chain: ["WebUtility"],       mitigates: new Set(["csharp-xss"]) },
+  { method: "Encode",         chain: ["HtmlEncoder"],      mitigates: new Set(["csharp-xss"]) },
+  { method: "AddWithValue",                                mitigates: new Set(["csharp-sql-injection", "csharp-sql-concat"]) },
+  { method: "Add",            chain: ["Parameters"],       mitigates: new Set(["csharp-sql-injection", "csharp-sql-concat"]) },
+  { method: "GetFullPath",    chain: ["Path"],             mitigates: new Set(["csharp-path-traversal"]) },
+  { method: "IsLocalUrl",     chain: ["Url"],              mitigates: new Set(["csharp-open-redirect"]) },
+  { method: "LocalRedirect",                               mitigates: new Set(["csharp-open-redirect"]) },
+  { method: "Parse",          chain: ["Int32"],            mitigates: new Set(["csharp-sql-injection", "csharp-command-injection", "csharp-xss"]) },
+  { method: "TryParse",       chain: ["Int32"],            mitigates: new Set(["csharp-sql-injection", "csharp-command-injection", "csharp-xss"]) },
+  { method: "Sanitize",                                    mitigates: new Set(["csharp-xss"]) },
+  { method: "IsMatch",        chain: ["Regex"],            mitigates: new Set(["csharp-command-injection", "csharp-sql-injection", "csharp-xss"]) },
+];
+
+function getSanitizersForLanguage(lang: Language): LangSanitizer[] {
+  switch (lang) { case "java": return JAVA_SANITIZERS; case "cpp": return CPP_SANITIZERS; case "csharp": return CS_SANITIZERS; }
+}
+
+/**
+ * Build a set of sanitized variables.
+ * Scans for patterns like: sanitized = sanitizerFunction(tainted)
+ * and for method calls: tainted.matches("^[a-zA-Z]+$")
+ */
+function buildSanitizedMap(tokens: Token[], lang: Language, tainted: Map<string, TaintInfo>, lines: string[]): Map<string, Set<string>> {
+  const sanitized = new Map<string, Set<string>>();
+  const sanitizers = getSanitizersForLanguage(lang);
+
+  for (let i = 0; i < tokens.length; i++) {
+    // Pattern: varName = SanitizerCall(...)
+    const asgn = detectAssignment(tokens, i);
+    if (asgn) {
+      for (let k = asgn.valueStart; k < asgn.valueEnd; k++) {
+        if (tokens[k].t !== TT.Ident || tokens[k + 1]?.t !== TT.LParen) continue;
+        const methodName = tokens[k].v;
+        for (const san of sanitizers) {
+          if (san.method !== methodName) continue;
+          if (san.chain) {
+            const chain = resolveChain(tokens, k);
+            if (!san.chain.some(hint => chain.some(p => p.startsWith(hint)))) continue;
+          }
+          // This assignment goes through a sanitizer
+          const existing = sanitized.get(asgn.varName) || new Set<string>();
+          for (const m of san.mitigates) existing.add(m);
+          sanitized.set(asgn.varName, existing);
+        }
+      }
+    }
+
+    // Pattern: taintedVar.sanitizerMethod(...) — in-place validation pattern
+    if (tokens[i].t === TT.Ident && tainted.has(tokens[i].v) && tokens[i + 1]?.t === TT.Dot && tokens[i + 2]?.t === TT.Ident) {
+      const methodName = tokens[i + 2].v;
+      for (const san of sanitizers) {
+        if (san.method === methodName) {
+          const existing = sanitized.get(tokens[i].v) || new Set<string>();
+          for (const m of san.mitigates) existing.add(m);
+          sanitized.set(tokens[i].v, existing);
+        }
+      }
+    }
+  }
+
+  return sanitized;
+}
+
+/** Known validation patterns — functions that when called as guards should reduce confidence */
+const VALIDATION_METHODS = new Set([
+  "matches", "startsWith", "endsWith", "contains", "isEmpty", "isBlank",
+  "IsNullOrEmpty", "IsNullOrWhiteSpace", "isValid", "validate", "check",
+  "isMatch", "TryParse", "equalsIgnoreCase", "contentEquals",
+  "isDigit", "isAlpha", "isAlphanumeric", "isLetterOrDigit",
+]);
+
+/**
+ * Check if a tainted variable has a validation guard before the sink line.
+ * Looks for if-statements where the condition calls a validation method on the variable.
+ */
+function hasValidationGuardToken(tokens: Token[], varName: string, sinkLine: number, lang: Language): boolean {
+  // Search backwards from the sink for an if-statement testing the variable
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].ln >= sinkLine) break;
+    if (tokens[i].t !== TT.Keyword || tokens[i].v !== "if") continue;
+    if (tokens[i + 1]?.t !== TT.LParen) continue;
+
+    // Scan the condition (between parentheses) for validation of varName
+    let depth = 1;
+    let j = i + 2;
+    while (j < tokens.length && depth > 0) {
+      if (tokens[j].t === TT.LParen) depth++;
+      if (tokens[j].t === TT.RParen) depth--;
+      if (depth > 0) {
+        // Check: varName.validationMethod(...)
+        if (tokens[j].t === TT.Ident && tokens[j].v === varName &&
+            tokens[j + 1]?.t === TT.Dot && tokens[j + 2]?.t === TT.Ident &&
+            VALIDATION_METHODS.has(tokens[j + 2].v)) {
+          return true;
+        }
+        // Check: ValidationClass.method(varName, ...)
+        if (tokens[j].t === TT.Ident && VALIDATION_METHODS.has(tokens[j].v) && tokens[j + 1]?.t === TT.LParen) {
+          const { args } = extractArgs(tokens, j + 1);
+          for (const arg of args) {
+            if (arg.some(t => t.t === TT.Ident && t.v === varName)) return true;
+          }
+        }
+      }
+      j++;
+    }
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════
+//  SECTION 3c — INTER-PROCEDURAL ANALYSIS
+// ═══════════════════════════════════════════════════
+
+interface MethodDef {
+  name: string;
+  params: string[];
+  bodyStart: number;  // token index of opening {
+  bodyEnd: number;    // token index of closing }
+  startLine: number;
+}
+
+/**
+ * Collect method/function definitions from the token stream.
+ */
+function collectMethodDefs(tokens: Token[], lang: Language): MethodDef[] {
+  const methods: MethodDef[] = [];
+
+  for (let i = 0; i < tokens.length; i++) {
+    // Java/C#: [modifiers] ReturnType methodName ( params ) { body }
+    // C++: ReturnType functionName ( params ) { body }
+    if (tokens[i].t === TT.Ident && tokens[i + 1]?.t === TT.LParen) {
+      const methodName = tokens[i].v;
+
+      // Skip if it looks like a keyword or known function call (not a definition)
+      // Heuristic: a definition has a return type or modifier before the name
+      let isDefinition = false;
+      if (i > 0) {
+        const prev = tokens[i - 1];
+        // Check if preceded by a type (Ident, keyword like void/int/string/boolean/etc.)
+        if (prev.t === TT.Ident || (prev.t === TT.Keyword && ["void", "int", "long", "double", "float", "char", "boolean", "string", "bool", "short", "byte", "var", "auto", "static", "public", "private", "protected", "override", "virtual", "abstract", "async"].includes(prev.v))) {
+          isDefinition = true;
+        }
+        // Also check 2 back: "public static void methodName"
+        if (i > 1 && tokens[i - 2].t === TT.Keyword) isDefinition = true;
+        // C/C++: ReturnType* methodName(
+        if (prev.t === TT.Star) isDefinition = true;
+        // main is always a definition
+        if (methodName === "main" || methodName === "Main") isDefinition = true;
+      }
+      if (!isDefinition) continue;
+
+      // Extract parameters
+      const params: string[] = [];
+      let j = i + 2; // skip name and (
+      while (j < tokens.length && tokens[j].t !== TT.RParen && tokens[j].t !== TT.Eof) {
+        if (tokens[j].t === TT.Ident && (tokens[j + 1]?.t === TT.Comma || tokens[j + 1]?.t === TT.RParen)) {
+          params.push(tokens[j].v);
+        }
+        j++;
+      }
+      j++; // skip )
+
+      // Skip optional throws/const/override
+      while (j < tokens.length && tokens[j].t !== TT.LBrace && tokens[j].t !== TT.Semi && tokens[j].t !== TT.Eof) j++;
+
+      if (tokens[j]?.t !== TT.LBrace) continue;
+      const bodyStart = j;
+
+      // Find matching }
+      let depth = 1; j++;
+      while (j < tokens.length && depth > 0) {
+        if (tokens[j].t === TT.LBrace) depth++;
+        if (tokens[j].t === TT.RBrace) depth--;
+        j++;
+      }
+      const bodyEnd = j - 1;
+
+      methods.push({ name: methodName, params, bodyStart, bodyEnd, startLine: tokens[i].ln });
+    }
+  }
+
+  return methods;
+}
+
+/**
+ * Inter-procedural taint: when a function is called with tainted args,
+ * check if those args flow to sinks inside the function body.
+ */
+function checkInterProcedural(
+  tokens: Token[], methods: MethodDef[], tainted: Map<string, TaintInfo>,
+  sanitized: Map<string, Set<string>>, sinks: SinkDef[], lines: string[], lang: Language,
+  addFinding: (f: PatternFinding) => void
+) {
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].t !== TT.Ident || tokens[i + 1]?.t !== TT.LParen) continue;
+    const callName = tokens[i].v;
+
+    // Find matching method definition
+    const method = methods.find(m => m.name === callName);
+    if (!method) continue;
+
+    // Check if any call argument is tainted
+    const { args } = extractArgs(tokens, i + 1);
+    const taintedParams = new Map<string, TaintInfo>();
+
+    for (let ai = 0; ai < args.length; ai++) {
+      const ti = argTaint(args[ai], tainted);
+      if (ti && ai < method.params.length) {
+        taintedParams.set(method.params[ai], ti);
+      }
+    }
+
+    if (taintedParams.size === 0) continue;
+
+    // Scan the method body for sinks using the tainted params
+    for (let j = method.bodyStart; j <= method.bodyEnd; j++) {
+      if (tokens[j].t !== TT.Ident || tokens[j + 1]?.t !== TT.LParen) continue;
+      const innerMethod = tokens[j].v;
+
+      for (const sink of sinks) {
+        if (!sink.methods.includes(innerMethod)) continue;
+        if (sink.chainHint) {
+          const chain = resolveChain(tokens, j);
+          if (!sink.chainHint.some(hint => chain.some(p => p.startsWith(hint)))) continue;
+        }
+
+        const { args: innerArgs } = extractArgs(tokens, j + 1);
+        const argsToCheck = sink.argIdx === -1 ? innerArgs : (innerArgs[sink.argIdx] ? [innerArgs[sink.argIdx]] : []);
+
+        for (const innerArg of argsToCheck) {
+          const ti = argTaint(innerArg, taintedParams);
+          if (!ti) continue;
+
+          const callLine = tokens[i].ln;
+          const sinkLine = tokens[j].ln;
+          const dataflow = [
+            { line: ti.sourceLine, label: `Source: ${ti.label}`, code: ti.sourceCode },
+            { line: callLine, label: `Call: ${callName}() with tainted arg`, code: lines[callLine - 1]?.trim() || "" },
+            { line: sinkLine, label: `Sink: ${innerMethod}() inside ${callName}()`, code: lines[sinkLine - 1]?.trim() || "" },
+          ];
+
+          addFinding({
+            id: sink.id,
+            name: `${sink.name} (via ${callName}())`,
+            severity: sink.severity,
+            confidence: "medium",
+            line: callLine,
+            column: tokens[i].col,
+            category: sink.category,
+            cwe: sink.cwe,
+            owasp: sink.owasp,
+            detail: `Tainted data (${ti.label}) flows into ${callName}(), which passes it to ${innerMethod}() without sanitization.`,
+            evidence: lines[callLine - 1]?.trim() || "",
+            codeSnippet: buildSnippet(lines, callLine),
+            dataflow,
+            remediation: sink.remediation,
+          });
+        }
+      }
+    }
+  }
+}
+
 /**
  * Build a map of tainted variables by scanning the token stream.
  *
@@ -1058,6 +1368,8 @@ export function scanCode(code: string, language: Language): {
   const lines = code.split("\n");
   const tokens = tokenize(code, language);
   const tainted = buildTaintMap(tokens, language, lines);
+  const sanitized = buildSanitizedMap(tokens, language, tainted, lines);
+  const methods = collectMethodDefs(tokens, language);
   const sinks = getSinksForLanguage(language);
   const findings: PatternFinding[] = [];
   const seen = new Set<string>();
@@ -1108,17 +1420,22 @@ export function scanCode(code: string, language: Language): {
       if (sink.requiresTaint) {
         const argsToCheck = sink.argIdx === -1 ? args : (args[sink.argIdx] ? [args[sink.argIdx]] : []);
         let taintInfo: TaintInfo | null = null;
+        let taintedVarName = "";
 
         for (const arg of argsToCheck) {
           taintInfo = argTaint(arg, tainted);
-          if (taintInfo) break;
+          if (taintInfo) {
+            // Find the tainted variable name
+            for (const t of arg) { if (t.t === TT.Ident && tainted.has(t.v)) { taintedVarName = t.v; break; } }
+            break;
+          }
           // Check taint via concatenation: "string" + taintedVar
           for (let k = 0; k < arg.length; k++) {
             if (arg[k].t === TT.Plus) {
               // check both sides of +
               for (let d = -1; d <= 1; d += 2) {
                 const adj = arg[k + d];
-                if (adj?.t === TT.Ident && tainted.has(adj.v)) { taintInfo = tainted.get(adj.v)!; break; }
+                if (adj?.t === TT.Ident && tainted.has(adj.v)) { taintInfo = tainted.get(adj.v)!; taintedVarName = adj.v; break; }
               }
               if (taintInfo) break;
             }
@@ -1134,7 +1451,36 @@ export function scanCode(code: string, language: Language): {
 
         if (!taintInfo) continue;
 
+        // ── Sanitizer check: skip if the tainted variable was sanitized for this vuln ──
+        if (taintedVarName && sanitized.has(taintedVarName)) {
+          const sanSet = sanitized.get(taintedVarName)!;
+          if (sanSet.has(sink.id)) continue;
+        }
+
+        // ── Check if any argument is wrapped in a sanitizer call ──
+        let argSanitized = false;
+        const langSanitizers = getSanitizersForLanguage(language);
+        for (const arg of argsToCheck) {
+          for (const t of arg) {
+            if (t.t === TT.Ident && t.v !== taintedVarName) {
+              for (const san of langSanitizers) {
+                if (san.method === t.v && san.mitigates.has(sink.id)) { argSanitized = true; break; }
+              }
+            }
+            if (argSanitized) break;
+          }
+          if (argSanitized) break;
+        }
+        if (argSanitized) continue;
+
         const sinkLine = tokens[i].ln;
+
+        // ── Control-flow sensitivity: reduce confidence if guarded ──
+        let confidence = sink.confidence;
+        if (taintedVarName && hasValidationGuardToken(tokens, taintedVarName, sinkLine, language)) {
+          confidence = confidence === "high" ? "medium" : "low";
+        }
+
         // Build full dataflow from taint chain
         const dataflow: { line: number; label: string; code: string }[] = [];
         if (taintInfo.chain && taintInfo.chain.length > 0) {
@@ -1147,7 +1493,7 @@ export function scanCode(code: string, language: Language): {
         }
 
         addFinding({
-          id: sink.id, name: sink.name, severity: sink.severity, confidence: sink.confidence,
+          id: sink.id, name: sink.name, severity: sink.severity, confidence,
           line: sinkLine, column: tokens[i].col, category: sink.category, cwe: sink.cwe, owasp: sink.owasp,
           detail: sink.detail, evidence: lines[sinkLine - 1]?.trim() || "",
           codeSnippet: buildSnippet(lines, sinkLine),
@@ -1223,6 +1569,9 @@ export function scanCode(code: string, language: Language): {
       }
     }
   }
+
+  // ── Inter-procedural analysis: track taint across function/method calls ──
+  checkInterProcedural(tokens, methods, tainted, sanitized, sinks, lines, language, addFinding);
 
   // Sort by severity
   const order: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
