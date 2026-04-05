@@ -36,6 +36,7 @@ export interface PatternFinding {
   owasp: string;
   detail: string;
   evidence: string;
+  codeSnippet?: { lineNum: number; code: string; isHighlighted: boolean }[];
   dataflow?: { line: number; label: string; code: string }[];
   remediation: string;
 }
@@ -44,6 +45,18 @@ interface TaintInfo {
   label: string;
   sourceLine: number;
   sourceCode: string;
+  chain?: { line: number; code: string; label: string }[];
+}
+
+/** Build a code snippet window around a target line with ±contextRadius lines */
+function buildSnippet(lines: string[], targetLine: number, contextRadius = 3): { lineNum: number; code: string; isHighlighted: boolean }[] {
+  const start = Math.max(0, targetLine - 1 - contextRadius);
+  const end = Math.min(lines.length, targetLine - 1 + contextRadius + 1);
+  const result: { lineNum: number; code: string; isHighlighted: boolean }[] = [];
+  for (let i = start; i < end; i++) {
+    result.push({ lineNum: i + 1, code: lines[i], isHighlighted: i + 1 === targetLine });
+  }
+  return result;
 }
 
 // ═══════════════════════════════════════════════════
@@ -513,7 +526,15 @@ function buildTaintMap(tokens: Token[], lang: Language, lines: string[]): Map<st
 
       const ti = detectTaint(valueStart, valueEnd);
       if (ti) {
-        tainted.set(varName, { label: ti.label, sourceLine: line, sourceCode: lineOf(line) });
+        // Build chain: inherit from upstream taint + add this propagation step
+        const prevChain = ti.chain || [{ line: ti.sourceLine, code: ti.sourceCode, label: `Source: ${ti.label}` }];
+        const thisCode = lineOf(line);
+        const chain = [...prevChain];
+        // Only add if this is a new line (not the source itself)
+        if (line !== ti.sourceLine) {
+          chain.push({ line, code: thisCode, label: `${varName} = tainted value` });
+        }
+        tainted.set(varName, { label: ti.label, sourceLine: ti.sourceLine, sourceCode: ti.sourceCode, chain });
       }
     }
   }
@@ -1114,10 +1135,14 @@ export function scanCode(code: string, language: Language): {
         if (!taintInfo) continue;
 
         const sinkLine = tokens[i].ln;
-        const dataflow: { line: number; label: string; code: string }[] = [
-          { line: taintInfo.sourceLine, label: `Source: ${taintInfo.label}`, code: taintInfo.sourceCode },
-        ];
-        if (sinkLine !== taintInfo.sourceLine) {
+        // Build full dataflow from taint chain
+        const dataflow: { line: number; label: string; code: string }[] = [];
+        if (taintInfo.chain && taintInfo.chain.length > 0) {
+          dataflow.push(...taintInfo.chain);
+        } else {
+          dataflow.push({ line: taintInfo.sourceLine, label: `Source: ${taintInfo.label}`, code: taintInfo.sourceCode });
+        }
+        if (sinkLine !== (dataflow[dataflow.length - 1]?.line ?? -1)) {
           dataflow.push({ line: sinkLine, label: `Sink: ${methodName}()`, code: lines[sinkLine - 1]?.trim() || "" });
         }
 
@@ -1125,6 +1150,7 @@ export function scanCode(code: string, language: Language): {
           id: sink.id, name: sink.name, severity: sink.severity, confidence: sink.confidence,
           line: sinkLine, column: tokens[i].col, category: sink.category, cwe: sink.cwe, owasp: sink.owasp,
           detail: sink.detail, evidence: lines[sinkLine - 1]?.trim() || "",
+          codeSnippet: buildSnippet(lines, sinkLine),
           dataflow, remediation: sink.remediation,
         });
       } else {
@@ -1133,6 +1159,7 @@ export function scanCode(code: string, language: Language): {
           id: sink.id, name: sink.name, severity: sink.severity, confidence: sink.confidence,
           line: tokens[i].ln, column: tokens[i].col, category: sink.category, cwe: sink.cwe, owasp: sink.owasp,
           detail: sink.detail, evidence: lines[tokens[i].ln - 1]?.trim() || "",
+          codeSnippet: buildSnippet(lines, tokens[i].ln),
           remediation: sink.remediation,
         });
       }
@@ -1146,7 +1173,9 @@ export function scanCode(code: string, language: Language): {
     addFinding({
       id: h.id, name: h.name, severity: h.severity, confidence: h.confidence,
       line: h.line, column: h.col, category: h.category, cwe: h.cwe, owasp: h.owasp,
-      detail: h.detail, evidence: h.evidence, remediation: h.remediation,
+      detail: h.detail, evidence: h.evidence,
+      codeSnippet: buildSnippet(lines, h.line),
+      remediation: h.remediation,
     });
   }
 
@@ -1161,14 +1190,16 @@ export function scanCode(code: string, language: Language): {
       if ((className === "File" || className === "FileInputStream" || className === "FileOutputStream" || className === "FileReader" || className === "FileWriter") && args[0]) {
         const ti = argTaint(args[0], tainted);
         if (ti) {
+          const dataflow: { line: number; label: string; code: string }[] = [];
+          if (ti.chain && ti.chain.length > 0) { dataflow.push(...ti.chain); }
+          else { dataflow.push({ line: ti.sourceLine, label: `Source: ${ti.label}`, code: ti.sourceCode }); }
+          dataflow.push({ line: tokens[i].ln, label: `Sink: new ${className}()`, code: lines[tokens[i].ln - 1]?.trim() || "" });
           addFinding({ id: "java-path-traversal", name: "Path Traversal", severity: "high", confidence: "high",
             line: tokens[i].ln, column: tokens[i].col, category: "Access Control", cwe: "CWE-22", owasp: "A01:2021",
             detail: "File path constructed from user input. Attacker can use ../../etc/passwd to access arbitrary files.",
             evidence: lines[tokens[i].ln - 1]?.trim() || "",
-            dataflow: [
-              { line: ti.sourceLine, label: `Source: ${ti.label}`, code: ti.sourceCode },
-              { line: tokens[i].ln, label: `Sink: new ${className}()`, code: lines[tokens[i].ln - 1]?.trim() || "" },
-            ],
+            codeSnippet: buildSnippet(lines, tokens[i].ln),
+            dataflow,
             remediation: "Canonicalize paths with Paths.get(base).resolve(userInput).normalize() and verify they're under the base directory.",
           });
         }
@@ -1176,14 +1207,16 @@ export function scanCode(code: string, language: Language): {
       if (className === "URL" && args[0]) {
         const ti = argTaint(args[0], tainted);
         if (ti) {
+          const dataflow: { line: number; label: string; code: string }[] = [];
+          if (ti.chain && ti.chain.length > 0) { dataflow.push(...ti.chain); }
+          else { dataflow.push({ line: ti.sourceLine, label: `Source: ${ti.label}`, code: ti.sourceCode }); }
+          dataflow.push({ line: tokens[i].ln, label: "Sink: new URL()", code: lines[tokens[i].ln - 1]?.trim() || "" });
           addFinding({ id: "java-ssrf", name: "Server-Side Request Forgery", severity: "high", confidence: "medium",
             line: tokens[i].ln, column: tokens[i].col, category: "SSRF", cwe: "CWE-918", owasp: "A10:2021",
             detail: "URL created from user input enables SSRF.",
             evidence: lines[tokens[i].ln - 1]?.trim() || "",
-            dataflow: [
-              { line: ti.sourceLine, label: `Source: ${ti.label}`, code: ti.sourceCode },
-              { line: tokens[i].ln, label: "Sink: new URL()", code: lines[tokens[i].ln - 1]?.trim() || "" },
-            ],
+            codeSnippet: buildSnippet(lines, tokens[i].ln),
+            dataflow,
             remediation: "Validate URLs against an allowlist. Block private IP ranges and cloud metadata endpoints.",
           });
         }

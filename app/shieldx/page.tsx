@@ -1497,7 +1497,8 @@ export default function ShieldXWorkspacePage() {
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                   <span>{scanResults.checksPerformed || 0} AST checks across {scanResults.linesAnalyzed || 0} lines</span>
-                                  <Badge variant={scanResults.astParsed ? "secondary" : "destructive"} className="text-[9px]">{scanResults.astParsed ? "AST parsed" : "Parse failed"}</Badge>
+                                  <Badge variant={scanResults.astParsed ? "secondary" : scanResults.patternBased ? "secondary" : "destructive"} className="text-[9px]">{scanResults.astParsed ? "AST parsed" : scanResults.patternBased ? "Token analysis" : "Parse failed"}</Badge>
+                                  {scanResults.language && <Badge variant="outline" className="text-[9px] capitalize">{scanResults.language}</Badge>}
                                   <span>{scanResults.mode} mode</span>
                                 </div>
                                 {scanResults.findings?.length > 0 ? (
@@ -1519,18 +1520,43 @@ export default function ShieldXWorkspacePage() {
                                             </div>
                                           </div>
                                           <p className="text-xs text-muted-foreground mb-2">{f.detail}</p>
-                                          {f.evidence && <code className="block text-xs bg-muted/50 rounded p-2 font-mono break-all mb-2">{f.evidence}</code>}
-                                          {/* Dataflow trace */}
-                                          {f.dataflow?.length > 1 && (
-                                            <div className="mb-2 p-2 rounded bg-blue-500/5 border border-blue-500/20">
-                                              <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 mb-1">📊 Dataflow Trace</p>
-                                              <div className="space-y-1">
+                                          {/* Code Snippet with line numbers */}
+                                          {f.codeSnippet?.length > 0 ? (
+                                            <div className="mb-2 rounded overflow-hidden border border-muted">
+                                              <div className="bg-muted/70 px-3 py-1 flex items-center justify-between">
+                                                <span className="text-[10px] font-semibold text-muted-foreground">📄 Code — Vulnerability at Line {f.line}</span>
+                                                <span className="text-[10px] text-muted-foreground">Col {f.column}</span>
+                                              </div>
+                                              <div className="overflow-x-auto">
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                                {f.codeSnippet.map((sl: any, si: number) => (
+                                                  <div key={si} className={`flex text-[11px] font-mono ${sl.isHighlighted ? "bg-red-500/10 border-l-2 border-red-500" : "border-l-2 border-transparent"}`}>
+                                                    <span className={`select-none shrink-0 w-10 text-right pr-3 py-0.5 ${sl.isHighlighted ? "text-red-500 font-bold bg-red-500/5" : "text-muted-foreground/50"}`}>{sl.lineNum}</span>
+                                                    <pre className="py-0.5 pl-2 pr-3 whitespace-pre overflow-x-auto flex-1">{sl.code || " "}</pre>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            f.evidence && <code className="block text-xs bg-muted/50 rounded p-2 font-mono break-all mb-2">{f.evidence}</code>
+                                          )}
+                                          {/* Attack Vector / Dataflow trace */}
+                                          {f.dataflow?.length > 0 && (
+                                            <div className="mb-2 p-2.5 rounded bg-blue-500/5 border border-blue-500/20">
+                                              <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 mb-1.5">🔗 Attack Vector Flow</p>
+                                              <div className="space-y-0">
                                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                 {f.dataflow.map((step: any, si: number) => (
-                                                  <div key={si} className="flex items-center gap-2 text-[11px]">
-                                                    <span className="text-blue-600 font-mono shrink-0">L{step.line}</span>
-                                                    <span className="text-muted-foreground">{step.label}</span>
-                                                    <code className="font-mono text-[10px] bg-muted/50 rounded px-1 truncate">{step.code}</code>
+                                                  <div key={si} className="flex items-start gap-2 text-[11px] relative">
+                                                    <div className="flex flex-col items-center shrink-0">
+                                                      <div className={`w-2 h-2 rounded-full mt-1 ${si === 0 ? "bg-amber-500" : si === f.dataflow.length - 1 ? "bg-red-500" : "bg-blue-400"}`} />
+                                                      {si < f.dataflow.length - 1 && <div className="w-px h-4 bg-blue-300 dark:bg-blue-600" />}
+                                                    </div>
+                                                    <div className="flex items-baseline gap-2 min-w-0 pb-1">
+                                                      <span className="text-blue-600 dark:text-blue-400 font-mono font-bold shrink-0">L{step.line}</span>
+                                                      <span className={`text-[10px] shrink-0 ${si === 0 ? "text-amber-600 dark:text-amber-400 font-semibold" : si === f.dataflow.length - 1 ? "text-red-600 dark:text-red-400 font-semibold" : "text-muted-foreground"}`}>{step.label}</span>
+                                                      {step.code && <code className="font-mono text-[10px] bg-muted/50 rounded px-1 py-0.5 truncate max-w-[300px]">{step.code}</code>}
+                                                    </div>
                                                   </div>
                                                 ))}
                                               </div>

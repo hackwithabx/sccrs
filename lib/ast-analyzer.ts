@@ -32,6 +32,7 @@ export interface ASTFinding {
   owasp: string;
   detail: string;
   evidence: string;
+  codeSnippet?: { lineNum: number; code: string; isHighlighted: boolean }[];
   dataflow?: DataflowStep[];
   remediation: string;
 }
@@ -226,6 +227,16 @@ function getNodeColumn(node: ASTNode, code: string): number {
 function getCodeSnippet(lines: string[], line: number): string {
   if (line <= 0 || line > lines.length) return "";
   return lines[line - 1].trim();
+}
+
+function buildSnippet(lines: string[], targetLine: number, contextRadius = 3): { lineNum: number; code: string; isHighlighted: boolean }[] {
+  const start = Math.max(0, targetLine - 1 - contextRadius);
+  const end = Math.min(lines.length, targetLine - 1 + contextRadius + 1);
+  const result: { lineNum: number; code: string; isHighlighted: boolean }[] = [];
+  for (let i = start; i < end; i++) {
+    result.push({ lineNum: i + 1, code: lines[i], isHighlighted: i + 1 === targetLine });
+  }
+  return result;
 }
 
 const PATTERN_CHECKS: PatternCheck[] = [
@@ -993,6 +1004,10 @@ export function analyzeCode(code: string): {
     const key = `${f.id}:${f.line}`;
     if (seenFindings.has(key)) return;
     seenFindings.add(key);
+    // Auto-attach code snippet if not already provided
+    if (!f.codeSnippet && f.line > 0) {
+      f.codeSnippet = buildSnippet(lines, f.line);
+    }
     findings.push(f);
   }
 
