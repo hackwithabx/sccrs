@@ -134,6 +134,62 @@ const COMPLIANCE_MAP: Record<string, string[]> = {
   "log-injection": ["OWASP A09:2021", "SOC2 CC7.2"],
   "open-redirect": ["OWASP A01:2021", "SOC2 CC6.1"],
 
+  // SAST — Java
+  "java-command-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-command-injection-pb": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-sql-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
+  "java-sql-concat": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
+  "java-path-traversal": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-xss": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-ssrf": ["OWASP A10:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-deserialization": ["OWASP A08:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-xxe": ["OWASP A05:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-ldap-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "java-open-redirect": ["OWASP A01:2021", "SOC2 CC6.1"],
+  "java-log-injection": ["OWASP A09:2021", "SOC2 CC7.2"],
+  "java-weak-crypto": ["OWASP A02:2021", "SOC2 CC6.7", "ISO27001 A.10.1.1"],
+  "java-insecure-random": ["OWASP A02:2021", "SOC2 CC6.7"],
+  "java-hardcoded-secret": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3"],
+
+  // SAST — C++
+  "cpp-command-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-command-injection-exec": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-format-string": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-path-traversal": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-sql-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
+  "cpp-buffer-overflow-strcpy": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-buffer-overflow-strcat": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-buffer-overflow-sprintf": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-buffer-overflow-gets": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-buffer-overflow-wcscpy": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-buffer-overflow-wcscat": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-unsafe-scanf": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-weak-crypto": ["OWASP A02:2021", "SOC2 CC6.7", "ISO27001 A.10.1.1"],
+  "cpp-insecure-random": ["OWASP A02:2021", "SOC2 CC6.7"],
+  "cpp-hardcoded-secret": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3"],
+  "cpp-use-after-free": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-double-free": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "cpp-integer-overflow": ["OWASP A06:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+
+  // SAST — C#
+  "csharp-command-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "csharp-sql-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
+  "csharp-sql-concat": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
+  "csharp-xss": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "csharp-path-traversal": ["OWASP A01:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "csharp-ssrf": ["OWASP A10:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "csharp-open-redirect": ["OWASP A01:2021", "SOC2 CC6.1"],
+  "csharp-deserialization": ["OWASP A08:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "csharp-json-deserialization": ["OWASP A08:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "csharp-xxe": ["OWASP A05:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5"],
+  "csharp-log-injection": ["OWASP A09:2021", "SOC2 CC7.2"],
+  "csharp-weak-crypto": ["OWASP A02:2021", "SOC2 CC6.7", "ISO27001 A.10.1.1"],
+  "csharp-insecure-random": ["OWASP A02:2021", "SOC2 CC6.7"],
+  "csharp-hardcoded-secret": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3"],
+  "csharp-csrf-disabled": ["OWASP A05:2021", "SOC2 CC6.1"],
+  "csharp-insecure-cookie": ["OWASP A05:2021", "SOC2 CC6.1", "ISO27001 A.14.1.3"],
+  "csharp-devpage": ["OWASP A05:2021", "SOC2 CC6.1"],
+
   // Log Threats
   "brute-force": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.2"],
   "sql-injection": ["OWASP A03:2021", "SOC2 CC6.1", "ISO27001 A.14.2.5", "PCI-DSS 6.5.1"],
@@ -490,6 +546,7 @@ app.use((req, res, next) => {
 
 /* ── SAST Fix Templates ── */
 const SAST_FIXES: Record<string, { fix: string; fixCommand: string | null; codeExample: string | null; effort: Effort }> = {
+  // ─── JS/TS (AST analyzer) ───
   "sql-injection": {
     fix: "Use parameterized queries or prepared statements. Never concatenate user input into SQL strings.",
     fixCommand: null,
@@ -769,6 +826,844 @@ function safeRedirect(res, url) {
   }
   return res.redirect('/');
 }`,
+    effort: "low",
+  },
+
+  // ─── JAVA ───
+  "java-command-injection": {
+    fix: "Do not pass user input to Runtime.exec() as a single concatenated string. Use ProcessBuilder with an explicit argument list so each argument is separate and cannot break out of its intended position.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// Runtime.getRuntime().exec("ping -c 1 " + userInput);
+
+// SAFE — use ProcessBuilder with argument list
+ProcessBuilder pb = new ProcessBuilder("ping", "-c", "1", sanitizedHost);
+pb.redirectErrorStream(true);
+Process p = pb.start();
+
+// Always validate input against allowlist
+if (!host.matches("^[a-zA-Z0-9.-]+$")) {
+    throw new SecurityException("Invalid hostname");
+}`,
+    effort: "medium",
+  },
+  "java-command-injection-pb": {
+    fix: "Do not pass user-controlled values to ProcessBuilder arguments without validation. Allowlist permitted commands and sanitize all arguments to reject shell metacharacters.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// new ProcessBuilder("sh", "-c", userInput).start();
+
+// SAFE — fixed command, validated arguments, no shell
+private static final Set<String> ALLOWED = Set.of("ping", "nslookup");
+String cmd = request.getParameter("cmd");
+if (!ALLOWED.contains(cmd)) throw new SecurityException("Blocked");
+
+ProcessBuilder pb = new ProcessBuilder(cmd, "-c", "1", validatedArg);
+pb.redirectErrorStream(true);
+Process p = pb.start();`,
+    effort: "medium",
+  },
+  "java-sql-injection": {
+    fix: "Replace dynamic SQL built with string concatenation with PreparedStatement and bind parameters (? placeholders). This ensures user input is always treated as data, never as SQL syntax.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// stmt.executeQuery("SELECT * FROM users WHERE id = " + userId);
+
+// SAFE — PreparedStatement with bind parameter
+String sql = "SELECT * FROM users WHERE id = ?";
+PreparedStatement ps = conn.prepareStatement(sql);
+ps.setString(1, userId);
+ResultSet rs = ps.executeQuery();
+
+// For JPA/Hibernate — use named parameters
+Query q = em.createQuery("SELECT u FROM User u WHERE u.id = :id");
+q.setParameter("id", userId);`,
+    effort: "low",
+  },
+  "java-sql-concat": {
+    fix: "SQL queries built via string concatenation are vulnerable to injection even if the variables appear safe. Always use PreparedStatement with ? placeholders so the database driver handles escaping.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// stmt.executeQuery("SELECT * FROM users WHERE name = '" + name + "'");
+
+// SAFE — PreparedStatement
+PreparedStatement ps = conn.prepareStatement(
+    "SELECT * FROM users WHERE name = ?");
+ps.setString(1, name);
+ResultSet rs = ps.executeQuery();`,
+    effort: "low",
+  },
+  "java-path-traversal": {
+    fix: "Canonicalize the user-supplied path and verify the resolved absolute path falls within the intended base directory. Reject paths containing .. segments or absolute path references.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// new FileInputStream("/uploads/" + userInput);
+
+// SAFE — canonicalize and validate
+Path base = Paths.get("/uploads").toRealPath();
+Path resolved = base.resolve(userInput).normalize().toRealPath();
+if (!resolved.startsWith(base)) {
+    throw new SecurityException("Path traversal blocked");
+}
+FileInputStream fis = new FileInputStream(resolved.toFile());`,
+    effort: "low",
+  },
+  "java-xss": {
+    fix: "HTML-encode all user-controlled data before writing it to the HTTP response body. Use OWASP Java Encoder or your framework's auto-escaping template engine.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// response.getWriter().print("<h1>" + userInput + "</h1>");
+
+// SAFE — OWASP Java Encoder
+import org.owasp.encoder.Encode;
+response.getWriter().print("<h1>" + Encode.forHtml(userInput) + "</h1>");
+
+// Or use JSP/Thymeleaf with auto-escaping
+// Thymeleaf: <span th:text="\${userInput}"></span>  (auto-escaped)
+// JSP:       <c:out value="\${param.name}" />        (auto-escaped)`,
+    effort: "low",
+  },
+  "java-ssrf": {
+    fix: "Validate user-supplied URLs against an allowlist of trusted hosts. Block requests to private IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.169.254) and use network-level egress filtering.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// URL url = new URL(userInput); url.openStream();
+
+// SAFE — validate host against allowlist
+private static final Set<String> ALLOWED_HOSTS = Set.of("api.example.com");
+
+URL url = new URL(userInput);
+InetAddress addr = InetAddress.getByName(url.getHost());
+if (addr.isLoopbackAddress() || addr.isSiteLocalAddress() || addr.isLinkLocalAddress()) {
+    throw new SecurityException("Blocked: private address");
+}
+if (!ALLOWED_HOSTS.contains(url.getHost())) {
+    throw new SecurityException("Blocked: untrusted host");
+}`,
+    effort: "medium",
+  },
+  "java-deserialization": {
+    fix: "Never deserialize untrusted data with ObjectInputStream. Migrate to JSON (Jackson/Gson) or Protocol Buffers. If Java serialization is unavoidable, configure an ObjectInputFilter to strictly allowlist expected classes.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// ObjectInputStream ois = new ObjectInputStream(stream);
+// Object obj = ois.readObject();
+
+// SAFE — use JSON instead
+import com.fasterxml.jackson.databind.ObjectMapper;
+ObjectMapper mapper = new ObjectMapper();
+MyDto dto = mapper.readValue(inputStream, MyDto.class);
+
+// If ObjectInputStream is required — set a filter
+ObjectInputFilter filter = ObjectInputFilter.Config
+    .createFilter("com.myapp.model.*;!*");
+ois.setObjectInputFilter(filter);`,
+    effort: "medium",
+  },
+  "java-xxe": {
+    fix: "Disable external entity processing and DTD loading on all XML parsers (DocumentBuilderFactory, SAXParserFactory, XMLInputFactory). This prevents attackers from reading local files or triggering SSRF via XXE payloads.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+// f.newDocumentBuilder().parse(input);
+
+// SAFE — disable DTDs and external entities
+DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+factory.setXIncludeAware(false);
+factory.setExpandEntityReferences(false);
+DocumentBuilder builder = factory.newDocumentBuilder();`,
+    effort: "low",
+  },
+  "java-ldap-injection": {
+    fix: "Use parameterized LDAP search filters with SearchControls, or escape special LDAP characters (*, (, ), \\, NUL) in user input before inserting into filter strings.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// ctx.search("ou=users", "(uid=" + userInput + ")", controls);
+
+// SAFE — escape LDAP special characters
+public static String escapeLdap(String input) {
+    return input.replace("\\\\", "\\\\5c").replace("*", "\\\\2a")
+                .replace("(", "\\\\28").replace(")", "\\\\29")
+                .replace("\\0", "\\\\00");
+}
+String filter = "(uid=" + escapeLdap(userInput) + ")";
+ctx.search("ou=users", filter, controls);`,
+    effort: "low",
+  },
+  "java-open-redirect": {
+    fix: "Validate redirect URLs server-side. Allow only relative paths (starting with / but not //) or trusted domains from a hardcoded allowlist. Never redirect to user-supplied absolute URLs.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// response.sendRedirect(request.getParameter("returnUrl"));
+
+// SAFE — validate is a relative path within your site
+String url = request.getParameter("returnUrl");
+if (url == null || !url.startsWith("/") || url.startsWith("//")) {
+    url = "/dashboard"; // fallback to safe default
+}
+response.sendRedirect(url);`,
+    effort: "low",
+  },
+  "java-log-injection": {
+    fix: "Strip CRLF characters (\\r, \\n) and ANSI escape sequences from user input before passing it to log methods. Use structured logging frameworks (SLF4J + Logback) with parameterized messages instead of string concatenation.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// logger.info("Login attempt for user: " + username);
+
+// SAFE — parameterized logging (SLF4J)
+logger.info("Login attempt for user: {}", sanitize(username));
+
+private static String sanitize(String input) {
+    if (input == null) return "null";
+    return input.replaceAll("[\\\\r\\\\n\\\\t]", "_")
+                .replaceAll("\\\\x1b\\\\[[0-9;]*m", ""); // strip ANSI
+}`,
+    effort: "low",
+  },
+  "java-weak-crypto": {
+    fix: "Replace MD5/SHA-1 with SHA-256 or SHA-3 for integrity checks. For password storage, use bcrypt, scrypt, or Argon2 — never bare hash functions, even strong ones.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// MessageDigest.getInstance("MD5");
+
+// SAFE — SHA-256 for data integrity
+MessageDigest md = MessageDigest.getInstance("SHA-256");
+byte[] hash = md.digest(data.getBytes(StandardCharsets.UTF_8));
+
+// For passwords — use bcrypt
+import org.mindrot.jbcrypt.BCrypt;
+String hashed = BCrypt.hashpw(password, BCrypt.gensalt(12));
+boolean valid = BCrypt.checkpw(password, hashed);`,
+    effort: "low",
+  },
+  "java-insecure-random": {
+    fix: "Replace java.util.Random with java.security.SecureRandom for any value used in a security context (tokens, nonces, session IDs, passwords, OTPs, CSRF tokens).",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// Random rng = new Random();
+// int token = rng.nextInt(999999);
+
+// SAFE — SecureRandom
+SecureRandom sr = SecureRandom.getInstanceStrong();
+byte[] tokenBytes = new byte[32];
+sr.nextBytes(tokenBytes);
+String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);`,
+    effort: "low",
+  },
+  "java-hardcoded-secret": {
+    fix: "Remove hardcoded credentials from source code. Load secrets from environment variables, a .env file processed at build time, or a secrets manager (AWS Secrets Manager, HashiCorp Vault, Azure Key Vault).",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// private String apiKey = "sk-live-abc123def456";
+
+// SAFE — load from environment
+String apiKey = System.getenv("API_KEY");
+if (apiKey == null || apiKey.isBlank()) {
+    throw new IllegalStateException("API_KEY env var is not set");
+}
+
+// Or use Spring @Value
+@Value("\${api.key}")
+private String apiKey;`,
+    effort: "low",
+  },
+
+  // ─── C++ ───
+  "cpp-command-injection": {
+    fix: "Never pass user input to system() or popen(). Use fork()/execvp() with an explicit argument array so the shell is not invoked and metacharacters have no effect.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// system(("ping -c 1 " + host).c_str());
+
+// SAFE — execvp with argument array, no shell
+pid_t pid = fork();
+if (pid == 0) {
+    const char* args[] = {"ping", "-c", "1", sanitized_host, nullptr};
+    execvp("ping", (char* const*)args);
+    _exit(127);
+}
+int status;
+waitpid(pid, &status, 0);`,
+    effort: "medium",
+  },
+  "cpp-command-injection-exec": {
+    fix: "Validate all arguments passed to exec-family functions against an allowlist. Never pass user-controlled data as the command name or as arguments without strict validation.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// execlp("sh", "sh", "-c", user_cmd, nullptr);
+
+// SAFE — fixed command, validated argument
+static const std::set<std::string> ALLOWED = {"ping", "nslookup", "dig"};
+if (ALLOWED.find(cmd) == ALLOWED.end()) {
+    throw std::runtime_error("Command not allowed");
+}
+execlp(cmd.c_str(), cmd.c_str(), validated_arg.c_str(), nullptr);`,
+    effort: "medium",
+  },
+  "cpp-format-string": {
+    fix: "Never pass user-controlled data as the format string argument to printf/fprintf/sprintf/syslog. Always use a fixed format string with \"%s\" to print user data.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE — attacker can read/write memory:
+// printf(user_input);
+
+// SAFE — fixed format string
+printf("%s", user_input);
+
+// SAFE — snprintf with fixed format
+snprintf(buf, sizeof(buf), "User said: %s", user_input);`,
+    effort: "low",
+  },
+  "cpp-path-traversal": {
+    fix: "Canonicalize user-supplied file paths with realpath() and verify the resulting absolute path starts with the intended base directory. Reject input containing .. or absolute path prefixes.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// fopen(user_path, "r");
+
+// SAFE — resolve and validate
+const char* BASE = "/var/app/uploads";
+char resolved[PATH_MAX];
+if (realpath(user_path, resolved) == nullptr) {
+    perror("Invalid path"); return;
+}
+if (strncmp(resolved, BASE, strlen(BASE)) != 0) {
+    fprintf(stderr, "Path traversal blocked\\n"); return;
+}
+FILE* f = fopen(resolved, "r");`,
+    effort: "low",
+  },
+  "cpp-sql-injection": {
+    fix: "Use parameterized queries / prepared statements provided by your database library. Never concatenate user input into SQL strings.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// snprintf(query, sizeof(query), "SELECT * FROM users WHERE id='%s'", user_id);
+// mysql_query(conn, query);
+
+// SAFE — MySQL prepared statement
+MYSQL_STMT* stmt = mysql_stmt_init(conn);
+const char* sql = "SELECT * FROM users WHERE id = ?";
+mysql_stmt_prepare(stmt, sql, strlen(sql));
+MYSQL_BIND bind[1] = {};
+bind[0].buffer_type = MYSQL_TYPE_STRING;
+bind[0].buffer = (char*)user_id;
+bind[0].buffer_length = strlen(user_id);
+mysql_stmt_bind_param(stmt, bind);
+mysql_stmt_execute(stmt);`,
+    effort: "low",
+  },
+  "cpp-buffer-overflow-strcpy": {
+    fix: "Replace strcpy() with strncpy() or strlcpy() specifying the destination buffer size, or use std::string which manages its own memory. strcpy performs no bounds checking and will overwrite adjacent memory if the source exceeds the destination.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// char buf[64]; strcpy(buf, input);
+
+// SAFE — strncpy with explicit length
+char buf[64];
+strncpy(buf, input, sizeof(buf) - 1);
+buf[sizeof(buf) - 1] = '\\0';
+
+// BETTER — use std::string
+std::string safe = input; // automatic memory management`,
+    effort: "low",
+  },
+  "cpp-buffer-overflow-strcat": {
+    fix: "Replace strcat() with strncat() specifying the remaining space in the destination buffer, or use std::string::append(). strcat performs no bounds checking.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// char path[128]; strcpy(path, dir); strcat(path, file);
+
+// SAFE — strncat with remaining space
+char path[128];
+strncpy(path, dir, sizeof(path) - 1);
+path[sizeof(path) - 1] = '\\0';
+size_t remaining = sizeof(path) - strlen(path) - 1;
+strncat(path, file, remaining);
+
+// BETTER — std::string
+std::string path = std::string(dir) + "/" + file;`,
+    effort: "low",
+  },
+  "cpp-buffer-overflow-sprintf": {
+    fix: "Replace sprintf() with snprintf() which takes a buffer size parameter and will never write beyond it. Better yet, use std::ostringstream or std::format (C++20).",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// char buf[256]; sprintf(buf, "User %s: %s", user, msg);
+
+// SAFE — snprintf with size limit
+char buf[256];
+snprintf(buf, sizeof(buf), "User %s: %s", user, msg);
+
+// BETTER — std::ostringstream
+std::ostringstream oss;
+oss << "User " << user << ": " << msg;
+std::string result = oss.str();`,
+    effort: "low",
+  },
+  "cpp-buffer-overflow-gets": {
+    fix: "gets() was removed from the C11 standard because it is fundamentally unsafe — it reads unlimited input with no bounds check. Replace with fgets() specifying the buffer size.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE (removed from C11):
+// char line[100]; gets(line);
+
+// SAFE — fgets with buffer size
+char line[100];
+if (fgets(line, sizeof(line), stdin) != NULL) {
+    // Remove trailing newline if present
+    line[strcspn(line, "\\n")] = '\\0';
+    puts(line);
+}`,
+    effort: "low",
+  },
+  "cpp-buffer-overflow-wcscpy": {
+    fix: "Replace wcscpy() with wcsncpy() specifying the destination buffer size, or use std::wstring. wcscpy performs no bounds checking on wide character strings.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// wchar_t buf[64]; wcscpy(buf, input);
+
+// SAFE — wcsncpy with explicit length
+wchar_t buf[64];
+wcsncpy(buf, input, 63);
+buf[63] = L'\\0';
+
+// BETTER — std::wstring
+std::wstring safe = input;`,
+    effort: "low",
+  },
+  "cpp-buffer-overflow-wcscat": {
+    fix: "Replace wcscat() with wcsncat() specifying the remaining space in the destination buffer, or use std::wstring. wcscat performs no bounds checking on wide character strings.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// wcscat(buf, user_input);
+
+// SAFE — wcsncat with remaining space
+size_t remaining = sizeof(buf)/sizeof(wchar_t) - wcslen(buf) - 1;
+wcsncat(buf, user_input, remaining);
+
+// BETTER — std::wstring
+std::wstring result = base + user_input;`,
+    effort: "low",
+  },
+  "cpp-unsafe-scanf": {
+    fix: "Add a width specifier to the %s format to limit reads: scanf(\"%99s\", buf) for a 100-byte buffer. Better yet, use fgets() followed by sscanf() or std::cin with std::string.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// char buf[100]; scanf("%s", buf);
+
+// SAFE — width specifier
+char buf[100];
+scanf("%99s", buf); // reads at most 99 chars + null
+
+// BETTER — fgets
+char buf[100];
+fgets(buf, sizeof(buf), stdin);
+
+// BEST (C++) — std::string
+std::string input;
+std::cin >> input; // no overflow possible`,
+    effort: "low",
+  },
+  "cpp-weak-crypto": {
+    fix: "Replace MD5/SHA-1 with SHA-256 or SHA-3. Use OpenSSL EVP API (EVP_sha256()) for hashing. For password storage, use Argon2 or bcrypt.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// MD5_Init(&ctx); MD5_Update(&ctx, data, len); MD5_Final(hash, &ctx);
+
+// SAFE — OpenSSL EVP SHA-256
+#include <openssl/evp.h>
+EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
+EVP_DigestUpdate(ctx, data, data_len);
+unsigned char hash[EVP_MAX_MD_SIZE];
+unsigned int hash_len;
+EVP_DigestFinal_ex(ctx, hash, &hash_len);
+EVP_MD_CTX_free(ctx);`,
+    effort: "low",
+  },
+  "cpp-insecure-random": {
+    fix: "Replace rand()/srand() with a cryptographically secure random number generator. Use /dev/urandom on Linux, CryptGenRandom on Windows, or std::random_device from C++11.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// srand(time(0)); int token = rand();
+
+// SAFE (C++11) — std::random_device
+#include <random>
+std::random_device rd;
+uint32_t token = rd();
+
+// SAFE (POSIX) — /dev/urandom
+unsigned char buf[32];
+FILE* f = fopen("/dev/urandom", "rb");
+fread(buf, 1, sizeof(buf), f);
+fclose(f);`,
+    effort: "low",
+  },
+  "cpp-hardcoded-secret": {
+    fix: "Remove hardcoded credentials from source code. Load them from environment variables at runtime or from a secure configuration file with restricted file permissions.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// const char* password = "SuperSecret123!";
+
+// SAFE — environment variable
+const char* password = getenv("DB_PASSWORD");
+if (!password) {
+    fprintf(stderr, "DB_PASSWORD not set\\n");
+    exit(1);
+}`,
+    effort: "low",
+  },
+  "cpp-use-after-free": {
+    fix: "Set pointers to nullptr immediately after freeing. Better yet, use RAII with smart pointers (std::unique_ptr, std::shared_ptr) which automatically manage memory lifecycle and prevent use-after-free bugs.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// free(ptr); printf("%s", ptr);
+
+// SAFE — null after free
+free(ptr);
+ptr = NULL;
+
+// BEST — smart pointers (C++)
+#include <memory>
+auto ptr = std::make_unique<char[]>(100);
+// ptr is automatically freed when it goes out of scope
+// Cannot be used after move: auto p2 = std::move(ptr); // ptr is now null`,
+    effort: "medium",
+  },
+  "cpp-double-free": {
+    fix: "Set pointers to nullptr immediately after free() to prevent double-free. Use smart pointers (std::unique_ptr) which enforce single ownership and prevent double-free by design.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// free(ptr); ... free(ptr); // heap corruption
+
+// SAFE — null after free prevents double-free
+free(ptr);
+ptr = NULL; // second free(NULL) is a harmless no-op
+
+// BEST — unique_ptr (C++)
+auto ptr = std::make_unique<int[]>(100);
+// Cannot be freed twice — unique_ptr destructor runs exactly once`,
+    effort: "medium",
+  },
+  "cpp-integer-overflow": {
+    fix: "Replace atoi()/atol() with strtol()/strtoll() and check errno and the range before using the converted value. In C++, use std::stoi/stol inside a try-catch block.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// int val = atoi(user_input); // no error/range check
+
+// SAFE — strtol with validation
+errno = 0;
+char* end;
+long val = strtol(user_input, &end, 10);
+if (errno == ERANGE || *end != '\\0' || val > INT_MAX || val < INT_MIN) {
+    fprintf(stderr, "Invalid or out-of-range integer\\n");
+    return -1;
+}
+int safe_val = (int)val;
+
+// SAFE (C++) — std::stoi with exception handling
+try {
+    int val = std::stoi(user_input);
+} catch (const std::out_of_range&) {
+    // handle overflow
+}`,
+    effort: "low",
+  },
+
+  // ─── C# ───
+  "csharp-command-injection": {
+    fix: "Set UseShellExecute = false, specify FileName and Arguments separately, and validate command arguments against an allowlist. Never pass user input directly to cmd.exe or /bin/sh.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// Process.Start("cmd.exe", "/c ping " + userInput);
+
+// SAFE — no shell, separate arguments
+var psi = new ProcessStartInfo {
+    FileName = "ping",
+    Arguments = $"-n 1 {validatedHost}", // validate first!
+    UseShellExecute = false,
+    RedirectStandardOutput = true,
+    CreateNoWindow = true
+};
+// Validate input
+if (!Regex.IsMatch(host, @"^[a-zA-Z0-9.-]+$"))
+    throw new SecurityException("Invalid hostname");
+using var process = Process.Start(psi);`,
+    effort: "medium",
+  },
+  "csharp-sql-injection": {
+    fix: "Use parameterized queries with SqlParameter objects. Never concatenate user input into SQL strings. For EF Core, use LINQ or FromSqlInterpolated() which auto-parameterizes.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// cmd.ExecuteReader($"SELECT * FROM Users WHERE Id = {id}");
+
+// SAFE — SqlParameter
+var cmd = new SqlCommand("SELECT * FROM Users WHERE Id = @id", conn);
+cmd.Parameters.AddWithValue("@id", userId);
+var reader = cmd.ExecuteReader();
+
+// SAFE — EF Core
+var user = await db.Users
+    .FromSqlInterpolated($"SELECT * FROM Users WHERE Id = {userId}")
+    .FirstOrDefaultAsync();
+
+// BEST — LINQ (no raw SQL)
+var user = await db.Users.FindAsync(userId);`,
+    effort: "low",
+  },
+  "csharp-sql-concat": {
+    fix: "SQL queries built via string concatenation are always vulnerable to injection. Use parameter placeholders (@param) and SqlParameter / AddWithValue() to safely bind user values.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// new SqlCommand("SELECT * FROM Users WHERE Id = " + id, conn);
+
+// SAFE — parameterized
+var cmd = new SqlCommand("SELECT * FROM Users WHERE Id = @id", conn);
+cmd.Parameters.AddWithValue("@id", id);
+var reader = cmd.ExecuteReader();`,
+    effort: "low",
+  },
+  "csharp-xss": {
+    fix: "Use Razor's default HTML encoding (@Model.Property). If Html.Raw() is required for rich content, sanitize the input with HtmlSanitizer first. Never output user data without encoding.",
+    fixCommand: "dotnet add package HtmlSanitizer",
+    codeExample: `// VULNERABLE:
+// @Html.Raw(userInput)
+
+// SAFE — Razor auto-encodes by default
+<p>Welcome, @Model.Username</p>  @* Auto HTML-encoded *@
+
+// If raw HTML is needed, sanitize first
+@using Ganss.Xss;
+@{
+    var sanitizer = new HtmlSanitizer();
+    var clean = sanitizer.Sanitize(Model.Bio);
+}
+@Html.Raw(clean)`,
+    effort: "low",
+  },
+  "csharp-path-traversal": {
+    fix: "Canonicalize user-supplied paths with Path.GetFullPath() and verify the result starts with the intended base directory. Reject paths containing .. or absolute path references.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// File.ReadAllBytes("/uploads/" + userFile);
+
+// SAFE — canonicalize and validate
+string basePath = Path.GetFullPath("/uploads");
+string fullPath = Path.GetFullPath(Path.Combine(basePath, userFile));
+if (!fullPath.StartsWith(basePath + Path.DirectorySeparatorChar)) {
+    throw new SecurityException("Path traversal blocked");
+}
+byte[] data = File.ReadAllBytes(fullPath);`,
+    effort: "low",
+  },
+  "csharp-ssrf": {
+    fix: "Validate user-supplied URLs against a strict allowlist of trusted hosts. Block requests to private IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.169.254). Use HttpClientHandler with custom socket-level validation.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// await httpClient.GetAsync(userUrl);
+
+// SAFE — validate against allowlist
+var allowed = new HashSet<string> { "api.example.com" };
+var uri = new Uri(userUrl);
+if (!allowed.Contains(uri.Host))
+    throw new SecurityException("Untrusted host");
+
+// Block private IPs
+var ip = (await Dns.GetHostAddressesAsync(uri.Host)).FirstOrDefault();
+if (IPAddress.IsLoopback(ip) || ip.IsPrivate())
+    throw new SecurityException("Private IP blocked");
+
+var result = await httpClient.GetAsync(uri);`,
+    effort: "medium",
+  },
+  "csharp-open-redirect": {
+    fix: "Use Url.IsLocalUrl() or LocalRedirect() to ensure redirects stay within your application. Never redirect to user-supplied absolute URLs without validation.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// return Redirect(returnUrl);
+
+// SAFE — LocalRedirect (throws on external URLs)
+return LocalRedirect(returnUrl);
+
+// Or validate manually
+if (!Url.IsLocalUrl(returnUrl)) {
+    returnUrl = "/dashboard";
+}
+return Redirect(returnUrl);`,
+    effort: "low",
+  },
+  "csharp-deserialization": {
+    fix: "Never use BinaryFormatter, SoapFormatter, or NetDataContractSerializer — they are inherently unsafe and enable remote code execution. Use System.Text.Json or Newtonsoft.Json (without TypeNameHandling) for serialization.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// var formatter = new BinaryFormatter();
+// var obj = formatter.Deserialize(stream);
+
+// SAFE — System.Text.Json
+using System.Text.Json;
+var obj = await JsonSerializer.DeserializeAsync<MyDto>(stream);
+
+// Or Newtonsoft.Json (safe defaults)
+var obj = JsonConvert.DeserializeObject<MyDto>(json);
+// NEVER: TypeNameHandling = TypeNameHandling.All`,
+    effort: "medium",
+  },
+  "csharp-json-deserialization": {
+    fix: "Set TypeNameHandling = TypeNameHandling.None (Newtonsoft.Json default). TypeNameHandling.All/Auto/Objects lets attackers instantiate arbitrary types, leading to remote code execution.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// var settings = new JsonSerializerSettings {
+//     TypeNameHandling = TypeNameHandling.All  // RCE!
+// };
+
+// SAFE — None (default)
+var settings = new JsonSerializerSettings {
+    TypeNameHandling = TypeNameHandling.None
+};
+var obj = JsonConvert.DeserializeObject<MyDto>(json, settings);
+
+// If type info is needed, use a custom SerializationBinder
+settings.SerializationBinder = new KnownTypesBinder(typeof(MyDto));`,
+    effort: "low",
+  },
+  "csharp-xxe": {
+    fix: "Set XmlResolver = null on XmlDocument before loading any XML. Or use XmlReader.Create() with DtdProcessing = DtdProcessing.Prohibit. This prevents attackers from including external entities that read local files or trigger SSRF.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// var doc = new XmlDocument();
+// doc.Load(stream);
+
+// SAFE — disable resolver
+var doc = new XmlDocument();
+doc.XmlResolver = null; // blocks external entities
+doc.Load(stream);
+
+// Or use XmlReader with strict settings
+var settings = new XmlReaderSettings {
+    DtdProcessing = DtdProcessing.Prohibit,
+    XmlResolver = null
+};
+using var reader = XmlReader.Create(stream, settings);`,
+    effort: "low",
+  },
+  "csharp-weak-crypto": {
+    fix: "Replace MD5/SHA1 with SHA256 or SHA512 for integrity hashing. For password storage, use BCrypt, Argon2, or PBKDF2 with at least 100,000 iterations — never bare hash functions.",
+    fixCommand: "dotnet add package BCrypt.Net-Next",
+    codeExample: `// VULNERABLE:
+// var hash = MD5.Create().ComputeHash(data);
+
+// SAFE — SHA256 for data integrity
+using var sha = SHA256.Create();
+byte[] hash = sha.ComputeHash(data);
+
+// For passwords — use BCrypt
+using BCrypt.Net;
+string hashed = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+bool valid = BCrypt.Net.BCrypt.Verify(password, hashed);`,
+    effort: "low",
+  },
+  "csharp-insecure-random": {
+    fix: "Replace System.Random with System.Security.Cryptography.RandomNumberGenerator for tokens, session IDs, OTPs, CSRF tokens, and any security-sensitive random values.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// var rng = new Random();
+// int otp = rng.Next(100000, 999999);
+
+// SAFE — cryptographic RNG
+using System.Security.Cryptography;
+byte[] tokenBytes = RandomNumberGenerator.GetBytes(32);
+string token = Convert.ToBase64String(tokenBytes);
+
+// For integer range
+int otp = RandomNumberGenerator.GetInt32(100000, 999999);`,
+    effort: "low",
+  },
+  "csharp-hardcoded-secret": {
+    fix: "Remove hardcoded credentials from source code. Use IConfiguration with user-secrets for development and environment variables or Azure Key Vault for production.",
+    fixCommand: "dotnet user-secrets set \"ApiKey\" \"your-key-here\"",
+    codeExample: `// VULNERABLE:
+// private string apiKey = "sk-live-abc123";
+
+// SAFE — IConfiguration
+public class MyService {
+    private readonly string _apiKey;
+    public MyService(IConfiguration config) {
+        _apiKey = config["ApiKey"]
+            ?? throw new InvalidOperationException("ApiKey not configured");
+    }
+}
+
+// Or Azure Key Vault
+builder.Configuration.AddAzureKeyVault(
+    new Uri("https://myvault.vault.azure.net/"),
+    new DefaultAzureCredential());`,
+    effort: "low",
+  },
+  "csharp-csrf-disabled": {
+    fix: "Remove [IgnoreAntiforgeryToken]. All state-changing POST/PUT/DELETE actions must have CSRF protection via [ValidateAntiForgeryToken] or the global AutoValidateAntiforgeryToken filter.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// [IgnoreAntiforgeryToken]
+// [HttpPost]
+// public IActionResult TransferFunds(...) { }
+
+// SAFE — validate token
+[ValidateAntiForgeryToken]
+[HttpPost]
+public IActionResult TransferFunds(decimal amount, string to) {
+    // CSRF token will be validated automatically
+    return Ok();
+}
+
+// Or enable globally in Startup.cs
+services.AddControllersWithViews(options => {
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});`,
+    effort: "low",
+  },
+  "csharp-insecure-cookie": {
+    fix: "Set Secure = true (HTTPS only) and HttpOnly = true (blocks JavaScript access) on all session and authentication cookies. Add SameSite = SameSiteMode.Strict for CSRF protection.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// new CookieOptions { Secure = false, HttpOnly = false };
+
+// SAFE — secure cookie settings
+Response.Cookies.Append("session", token, new CookieOptions {
+    Secure = true,       // Only sent over HTTPS
+    HttpOnly = true,     // Not accessible via JavaScript
+    SameSite = SameSiteMode.Strict, // CSRF protection
+    Expires = DateTimeOffset.UtcNow.AddHours(1),
+    IsEssential = true
+});`,
+    effort: "low",
+  },
+  "csharp-devpage": {
+    fix: "Only enable UseDeveloperExceptionPage() inside an if (env.IsDevelopment()) block. In production it exposes stack traces, source code, and environment variables to attackers.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// app.UseDeveloperExceptionPage(); // in all environments!
+
+// SAFE — only in development
+if (app.Environment.IsDevelopment()) {
+    app.UseDeveloperExceptionPage();
+} else {
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}`,
+    effort: "low",
+  },
+  "csharp-log-injection": {
+    fix: "Use structured logging with message templates and named placeholders. Never concatenate user input into log strings — this enables log forging and CRLF injection.",
+    fixCommand: null,
+    codeExample: `// VULNERABLE:
+// _logger.LogInformation("User logged in: " + username);
+
+// SAFE — structured logging with placeholder
+_logger.LogInformation("User logged in: {Username}", username);
+
+// Serilog example
+Log.Information("Login for {User} from {IP}", username, ip);`,
     effort: "low",
   },
 };
