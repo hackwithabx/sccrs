@@ -51,7 +51,7 @@ const FEATURES: PlanFeature[] = [
   { name: "Dependency Scanner (OSV.dev real-time)", icon: Package, free: false, pro: true, enterprise: true },
   { name: "Cloud Security Audit (18 checks)", icon: Cloud, free: false, pro: true, enterprise: true },
   { name: "API Scanner (OWASP API Top 10)", icon: Globe, free: false, pro: true, enterprise: true },
-  { name: "SAST Code Analyzer (AST-based taint analysis)", icon: Brain, free: false, pro: true, enterprise: true },
+  { name: "SAST Code Analyzer (AST taint analysis + multi-file project scan)", icon: Brain, free: false, pro: true, enterprise: true },
   { name: "Threat Log Analyzer", icon: Brain, free: false, pro: true, enterprise: true },
   { name: "CI/CD Pipeline Gate", icon: GitBranch, free: false, pro: false, enterprise: true },
   // { name: "Alerts (Email, Slack, Webhook)", icon: Bell, free: false, pro: true, enterprise: true },  // Hidden — re-enable when alerts are live

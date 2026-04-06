@@ -42,7 +42,7 @@ const ShieldXScanSchema = new mongoose.Schema(
     },
     scanType: {
       type: String,
-      enum: ["secrets", "deps", "cloud", "api", "logs", "cicd", "score"],
+      enum: ["secrets", "deps", "cloud", "api", "logs", "sast", "cicd", "score"],
       required: true,
     },
     title: {

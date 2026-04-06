@@ -19,6 +19,7 @@ const SCAN_TYPES = new Set([
   "cloud",
   "api",
   "logs",
+  "sast",
   "cicd",
   "score",
 ]);

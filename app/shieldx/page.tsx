@@ -33,9 +33,91 @@ import {
   ChevronDown,
   Search,
   X,
+  Upload,
+  FolderOpen,
+  Trash2,
+  ExternalLink,
+  Files,
+  Download,
+  ShieldCheck,
+  Eye,
+  Server,
+  Code2,
 } from "lucide-react";
 
 /* ── Types ── */
+
+const SCANNABLE_EXTENSIONS = new Set([
+  ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts",
+  ".java", ".cpp", ".cc", ".cxx", ".c", ".h", ".hpp", ".cs",
+]);
+
+function isScannable(path: string): boolean {
+  const ext = path.slice(path.lastIndexOf(".")).toLowerCase();
+  return SCANNABLE_EXTENSIONS.has(ext);
+}
+
+async function extractZipFiles(file: File): Promise<{ path: string; content: string }[]> {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(file);
+  const results: { path: string; content: string }[] = [];
+
+  for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
+    if (zipEntry.dir) continue;
+    // Skip node_modules, .git, build artifacts, binary files
+    if (
+      relativePath.includes("node_modules/") ||
+      relativePath.includes(".git/") ||
+      relativePath.includes("dist/") ||
+      relativePath.includes("build/") ||
+      relativePath.includes("__pycache__/") ||
+      relativePath.startsWith(".")
+    ) continue;
+    if (!isScannable(relativePath)) continue;
+
+    try {
+      const content = await zipEntry.async("string");
+      if (content.length > 0 && content.length < 500_000) {
+        results.push({ path: relativePath, content });
+      }
+    } catch {
+      // Skip binary or unreadable files
+    }
+  }
+
+  return results;
+}
+
+async function readFolderFiles(fileList: FileList): Promise<{ path: string; content: string }[]> {
+  const results: { path: string; content: string }[] = [];
+  const MAX_FILES = 200;
+
+  for (let i = 0; i < Math.min(fileList.length, MAX_FILES); i++) {
+    const file = fileList[i];
+    const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+
+    if (
+      path.includes("node_modules/") ||
+      path.includes(".git/") ||
+      path.includes("dist/") ||
+      path.includes("build/") ||
+      path.includes("__pycache__/")
+    ) continue;
+    if (!isScannable(path)) continue;
+
+    try {
+      const content = await file.text();
+      if (content.length > 0 && content.length < 500_000) {
+        results.push({ path, content });
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  return results;
+}
+
 type PlanTier = "free" | "pro" | "enterprise";
 
 interface BillingState {
@@ -67,7 +149,7 @@ const MODULES = [
   { id: "api", name: "API Security Scanner", description: "OWASP API Top 10 2023 compliance checks — security headers, CORS, auth, and 15+ automated tests.", icon: Globe, plans: ["pro", "enterprise"] },
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "Pattern-based log analysis to detect brute-force attacks, injection attempts, privilege escalation, and anomalous traffic.", icon: Brain, plans: ["pro", "enterprise"] },
-  { id: "sast", name: "SAST Code Analyzer", description: "AST-based static analysis — parses code into an Abstract Syntax Tree to trace tainted data from user inputs to dangerous sinks. Detects SQL injection, XSS, command injection, SSRF, and 15+ vulnerability classes with dataflow evidence.", icon: FileCode, plans: ["pro", "enterprise"] },
+  { id: "sast", name: "SAST Code Analyzer", description: "Multi-file AST-based static analysis with cross-file taint tracking, exploit PoC generation, and downloadable reports. Detects SQL injection, XSS, SSRF, command injection, and 15+ vulnerability classes across JavaScript, TypeScript, Java, C++, and C#.", icon: FileCode, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
   { id: "alerts", name: "Alert System (Coming Soon)", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected. Coming soon.", icon: Bell, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
@@ -99,10 +181,17 @@ export default function ShieldXWorkspacePage() {
   const [cicdDepsInput, setCicdDepsInput] = useState("");
   const [cicdScanType, setCicdScanType] = useState<"full" | "secrets" | "dependencies">("full");
   const [sastLanguage, setSastLanguage] = useState<"javascript" | "typescript" | "java" | "cpp" | "csharp">("javascript");
+  const [sastMode, setSastMode] = useState<"single" | "multi">("single");
+  const [multiFiles, setMultiFiles] = useState<{ path: string; content: string }[]>([]);
+  const [multiFileLoading, setMultiFileLoading] = useState(false);
+  const [selectedFileIdx, setSelectedFileIdx] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scanResults, setScanResults] = useState<any>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [expandedPoC, setExpandedPoC] = useState<Set<number>>(new Set());
   const [sessionScans, setSessionScans] = useState<ScanHistoryItem[]>([]);
 
   /* ── Alert config state ── */
@@ -117,6 +206,196 @@ export default function ShieldXWorkspacePage() {
   const [upgradingPlan, setUpgradingPlan] = useState(false);
   const [planMessage, setPlanMessage] = useState<string | null>(null);
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
+
+  /* ── Multi-file handlers ── */
+  const handleZipUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMultiFileLoading(true);
+    try {
+      const files = await extractZipFiles(file);
+      if (files.length === 0) {
+        setScanError("No scannable source files found in ZIP. Supported: .js, .ts, .java, .cpp, .cs and related extensions.");
+      } else {
+        setMultiFiles(files);
+        setSelectedFileIdx(0);
+        setScanError(null);
+      }
+    } catch {
+      setScanError("Failed to read ZIP file. Please ensure it is a valid ZIP archive.");
+    } finally {
+      setMultiFileLoading(false);
+      if (e.target) e.target.value = "";
+    }
+  }, []);
+
+  const handleFolderUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    setMultiFileLoading(true);
+    try {
+      const files = await readFolderFiles(fileList);
+      if (files.length === 0) {
+        setScanError("No scannable source files found in folder.");
+      } else {
+        setMultiFiles(files);
+        setSelectedFileIdx(0);
+        setScanError(null);
+      }
+    } catch {
+      setScanError("Failed to read folder contents.");
+    } finally {
+      setMultiFileLoading(false);
+      if (e.target) e.target.value = "";
+    }
+  }, []);
+
+  const multiFileTotalSize = multiFiles.reduce((s, f) => s + f.content.length, 0);
+  const multiFileTotalLines = multiFiles.reduce((s, f) => s + f.content.split("\n").length, 0);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generateSASTReport = useCallback((results: any) => {
+    const now = new Date();
+    const sevColor: Record<string, string> = { critical: "#ef4444", high: "#f97316", medium: "#eab308", low: "#3b82f6", info: "#6b7280" };
+    const findings = results.findings || [];
+    const stats = results.stats || { total: 0, critical: 0, high: 0, medium: 0, low: 0 };
+    const isMulti = results.multiFile;
+    const esc = (s: string) => s?.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") || "";
+
+    let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>SAST Security Report - SecureCodeReviews</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;color:#1e293b;line-height:1.5;padding:32px}
+  .container{max-width:900px;margin:0 auto}
+  .header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:32px;border-radius:12px;margin-bottom:24px}
+  .header h1{font-size:22px;margin-bottom:4px}.header p{opacity:.85;font-size:13px}
+  .header .logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}.header .logo svg{width:32px;height:32px}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+  .stat{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;text-align:center}
+  .stat .num{font-size:28px;font-weight:700}.stat .label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+  .stat.critical .num{color:#ef4444}.stat.high .num{color:#f97316}.stat.medium .num{color:#eab308}.stat.low .num{color:#3b82f6}
+  .section{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:16px}
+  .section h3{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  .finding{border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:12px;border-left:3px solid}
+  .finding.critical{border-left-color:#ef4444}.finding.high{border-left-color:#f97316}.finding.medium{border-left-color:#eab308}.finding.low{border-left-color:#3b82f6}
+  .badge{display:inline-block;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;color:#fff;margin-right:6px}
+  .code-block{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:8px 12px;font-family:'JetBrains Mono',Consolas,monospace;font-size:11px;overflow-x:auto;margin:8px 0;white-space:pre}
+  .fix{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:12px;margin-top:8px}
+  .fix h4{color:#059669;font-size:12px;margin-bottom:4px}.fix p{font-size:11px;color:#065f46}
+  .dataflow{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;margin:8px 0;font-size:11px}
+  .meta{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;align-items:center}
+  .meta span{font-size:10px;padding:2px 6px;border:1px solid #e2e8f0;border-radius:3px;color:#64748b}
+  .breakdown table{width:100%;border-collapse:collapse;font-size:12px}
+  .breakdown th,.breakdown td{padding:8px 12px;text-align:left;border-bottom:1px solid #e2e8f0}
+  .breakdown th{background:#f8fafc;font-weight:600;color:#475569;font-size:11px;text-transform:uppercase}
+  .footer{text-align:center;padding:20px;color:#94a3b8;font-size:11px;border-top:1px solid #e2e8f0;margin-top:24px}
+  .diff-banner{background:linear-gradient(135deg,#f0f9ff,#eff6ff);border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:16px}
+  .diff-item{display:flex;gap:8px;margin-bottom:6px;font-size:12px}.diff-item strong{color:#1e40af;min-width:120px}
+</style></head><body><div class="container">`;
+
+    html += `<div class="header">
+      <div class="logo">
+        <svg viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="256" height="256" rx="48" fill="rgba(255,255,255,0.15)"/><path d="M128 28L48 68v60c0 52.8 34.1 102.2 80 114 45.9-11.8 80-61.2 80-114V68l-80-40z" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="6"/><text x="128" y="155" text-anchor="middle" fill="white" font-family="monospace" font-size="64" font-weight="bold">&lt;/&gt;</text></svg>
+        <div><strong style="font-size:18px">SecureCodeReviews</strong><br><span style="font-size:11px;opacity:.8">ShieldX SAST Engine</span></div>
+      </div>
+      <h1>SAST Security Analysis Report</h1>
+      <p>Generated: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()} | ${isMulti ? `Project Scan: ${results.fileCount} files, ${results.totalLines?.toLocaleString()} lines` : `Single File: ${results.linesAnalyzed || 0} lines`}</p>
+    </div>`;
+
+    html += `<div class="stats">
+      <div class="stat"><div class="num">${stats.total}</div><div class="label">Total</div></div>
+      <div class="stat critical"><div class="num">${stats.critical}</div><div class="label">Critical</div></div>
+      <div class="stat high"><div class="num">${stats.high}</div><div class="label">High</div></div>
+      <div class="stat medium"><div class="num">${stats.medium}</div><div class="label">Medium</div></div>
+      <div class="stat low"><div class="num">${stats.low}</div><div class="label">Low</div></div>
+    </div>`;
+
+    if (isMulti && results.fileBreakdown?.length > 0) {
+      html += `<div class="section breakdown"><h3>File Breakdown</h3><table>
+        <tr><th>File</th><th>Language</th><th>Lines</th><th>Findings</th><th>Critical</th><th>High</th></tr>`;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      results.fileBreakdown.forEach((fb: any) => {
+        html += `<tr><td style="font-family:monospace;font-size:11px">${esc(fb.file)}</td><td>${esc(fb.language)}</td><td>${fb.lines}</td><td>${fb.findings}</td><td style="color:#ef4444;font-weight:600">${fb.critical}</td><td style="color:#f97316;font-weight:600">${fb.high}</td></tr>`;
+      });
+      html += `</table></div>`;
+    }
+
+    if (findings.length > 0) {
+      html += `<div class="section"><h3>Vulnerability Findings (${findings.length})</h3>`;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      findings.forEach((f: any, i: number) => {
+        html += `<div class="finding ${f.severity}">
+          <div class="meta">
+            <span class="badge" style="background:${sevColor[f.severity] || "#6b7280"}">${f.severity}</span>
+            ${f.file ? `<span style="font-family:monospace">${esc(f.file)}</span>` : ""}
+            <span>Line ${f.line}</span>
+            ${f.cwe ? `<span>${esc(f.cwe)}</span>` : ""}
+            ${f.owasp ? `<span>${esc(f.owasp)}</span>` : ""}
+            <span>${esc(f.category)}</span>
+          </div>
+          <p style="font-size:13px;font-weight:600;margin:8px 0 4px">#${i + 1}: ${esc(f.name)}</p>
+          <p style="font-size:12px;color:#475569">${esc(f.detail)}</p>`;
+
+        if (f.codeSnippet?.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          html += `<div class="code-block">${f.codeSnippet.map((sl: any) => `<span style="color:#94a3b8;margin-right:12px">${sl.lineNum}</span>${sl.isHighlighted ? `<strong style="color:#ef4444">${esc(sl.code)}</strong>` : esc(sl.code)}`).join("\n")}</div>`;
+        }
+
+        if (f.dataflow?.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          html += `<div class="dataflow"><strong>Attack Vector Flow:</strong><br>${f.dataflow.map((s: any) => `L${s.line}: ${esc(s.label)} ${s.code ? `- <code>${esc(s.code)}</code>` : ""}`).join(" -> ")}</div>`;
+        }
+
+        if (f.crossFileDataflow?.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          html += `<div class="dataflow"><strong>Cross-File Dataflow:</strong><br>${f.crossFileDataflow.map((s: any) => `${esc(s.file)}:L${s.line} - ${esc(s.label)}`).join("<br>")}</div>`;
+        }
+
+        if (f.exploitPoC) {
+          html += `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:12px;margin-top:8px">
+            <p style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:6px">⚠️ Exploit PoC: ${esc(f.exploitPoC.title)}</p>
+            <p style="font-size:11px;color:#991b1b;margin-bottom:6px"><strong>Impact:</strong> ${esc(f.exploitPoC.impact)}</p>
+            <p style="font-size:10px;font-weight:600;color:#991b1b;margin-bottom:4px">Attack Steps:</p>
+            <ol style="font-size:11px;color:#7f1d1d;padding-left:16px;margin-bottom:8px">${f.exploitPoC.steps.map((s: string) => `<li>${esc(s)}</li>`).join("")}</ol>
+            <div class="code-block" style="background:#1e1e1e;color:#d4d4d4;border:none">${esc(f.exploitPoC.payload)}</div>
+            <p style="font-size:10px;color:#059669;margin-top:6px"><strong>Verify Fix:</strong> ${esc(f.exploitPoC.verifyFix)}</p>
+          </div>`;
+        }
+
+        if (f.fix) {
+          html += `<div class="fix"><h4>Fix: ${esc(f.fix.title || "")}</h4><p>${esc(f.fix.fix || f.remediation || "")}</p>`;
+          if (f.fix.codeExample) html += `<div class="code-block">${esc(f.fix.codeExample)}</div>`;
+          if (f.fix.effort) html += `<span style="font-size:10px;color:#059669">Effort: ${f.fix.effort}</span>`;
+          html += `</div>`;
+        }
+        html += `</div>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="section" style="background:#ecfdf5;border-color:#a7f3d0"><h3 style="color:#059669">No Vulnerabilities Detected</h3><p style="font-size:13px;color:#065f46">Your code passed all security checks.</p></div>`;
+    }
+
+    html += `<div class="diff-banner">
+      <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">How This Scan Differs From Other Tools</h3>
+      <div class="diff-item"><strong>vs Checkmarx:</strong> Zero code storage. Your source code never touches a database or disk. Analyzed in memory and immediately discarded.</div>
+      <div class="diff-item"><strong>vs Semgrep:</strong> Full taint tracking with visualized dataflow. Traces data from user input through assignments and calls to dangerous sinks.</div>
+      <div class="diff-item"><strong>vs SonarQube:</strong> Cross-file analysis with CWE/OWASP references and auto-generated fix code with effort estimates.</div>
+    </div>`;
+
+    html += `<div class="footer">
+      <p>Generated by <strong>SecureCodeReviews ShieldX</strong> SAST Engine</p>
+      <p>securecodereviews.com | Zero code storage | Client-first security</p>
+    </div></div></body></html>`;
+
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sast-report-${now.toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
 
   const userPlan: PlanTier = isAdmin
     ? "enterprise"
@@ -265,7 +544,13 @@ export default function ShieldXWorkspacePage() {
           break;
         case "sast":
           endpoint = "/api/shieldx/scan-sast";
-          payload = isDemo ? { demo: true, language: sastLanguage } : { code: scanInput, language: sastLanguage };
+          if (sastMode === "multi" && multiFiles.length > 0) {
+            payload = isDemo
+              ? { demo: true, files: multiFiles }
+              : { files: multiFiles, language: sastLanguage };
+          } else {
+            payload = isDemo ? { demo: true, language: sastLanguage } : { code: scanInput, language: sastLanguage };
+          }
           break;
         case "cicd":
           endpoint = "/api/shieldx/ci-scan";
@@ -282,10 +567,18 @@ export default function ShieldXWorkspacePage() {
           return;
       }
 
-      if (!isDemo && activeModule !== "cicd" && !scanInput.trim()) {
-        setScanError("Please enter input to scan.");
-        setScanning(false);
-        return;
+      if (!isDemo && activeModule !== "cicd") {
+        const isMultiSast = activeModule === "sast" && sastMode === "multi";
+        if (isMultiSast && multiFiles.length === 0) {
+          setScanError("Please upload project files to scan.");
+          setScanning(false);
+          return;
+        }
+        if (!isMultiSast && !scanInput.trim()) {
+          setScanError("Please enter input to scan.");
+          setScanning(false);
+          return;
+        }
       }
 
       const res = await fetch(endpoint, {
@@ -422,10 +715,12 @@ export default function ShieldXWorkspacePage() {
           finding: `${f.name}: ${f.detail}`, recommendation: f.remediation,
           severity: f.severity,
         }));
+        const linesInfo = data.multiFile ? `${data.fileCount} files, ${data.totalLines?.toLocaleString()} lines` : `${data.linesAnalyzed || 0} lines`;
+        const checksInfo = data.multiFile ? `${data.totalChecks?.toLocaleString()} checks` : `${data.checksPerformed || 0} checks`;
         return {
           scanType: "sast", title, source: "manual", status: "completed", target,
           overallScore: Math.max(0, 10 - (data.stats?.critical || 0) * 3 - (data.stats?.high || 0) * 2 - (data.stats?.medium || 0)),
-          summary: `AST analysis of ${data.linesAnalyzed || 0} lines. ${data.stats?.total || 0} vulnerabilities found via ${data.checksPerformed || 0} checks.`,
+          summary: `${data.multiFile ? "Multi-file project" : "AST"} analysis of ${linesInfo}. ${data.stats?.total || 0} vulnerabilities found via ${checksInfo}.${data.crossFileFindings ? ` ${data.crossFileFindings} cross-file findings.` : ""}`,
           counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.stats?.total || 0 },
           findings,
         };
@@ -756,30 +1051,132 @@ export default function ShieldXWorkspacePage() {
                           </div>
                         )}
 
-                        {/* SAST Language Selector */}
+                        {/* SAST Language Selector + Mode Toggle */}
                         {activeModule === "sast" && (
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Language</label>
-                            <div className="flex gap-2 flex-wrap">
-                              {(["javascript", "typescript", "java", "cpp", "csharp"] as const).map((lang) => {
-                                const labels: Record<string, string> = { javascript: "JavaScript", typescript: "TypeScript", java: "Java", cpp: "C / C++", csharp: "C#" };
-                                return (
-                                  <Button key={lang} size="sm" variant={sastLanguage === lang ? "default" : "outline"} onClick={() => { setSastLanguage(lang); setScanInput(""); }} className="text-xs">
-                                    {labels[lang]}
-                                  </Button>
-                                );
-                              })}
+                          <div className="space-y-3">
+                            {/* Mode Toggle: Single File vs Project Scan */}
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Scan Mode</label>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant={sastMode === "single" ? "default" : "outline"} onClick={() => { setSastMode("single"); setMultiFiles([]); setSelectedFileIdx(null); setScanResults(null); setScanError(null); }} className="text-xs gap-1.5">
+                                  <FileCode className="h-3.5 w-3.5" /> Single File
+                                </Button>
+                                <Button size="sm" variant={sastMode === "multi" ? "default" : "outline"} onClick={() => { setSastMode("multi"); setScanInput(""); setScanResults(null); setScanError(null); }} className="text-xs gap-1.5">
+                                  <Files className="h-3.5 w-3.5" /> Project Scan
+                                  <Badge variant="secondary" className="text-[8px] ml-1">NEW</Badge>
+                                </Button>
+                              </div>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1.5">
-                              {sastLanguage === "javascript" || sastLanguage === "typescript"
-                                ? "Full AST parsing with taint tracking and dataflow analysis"
-                                : "Pattern-based analysis with line-by-line taint tracking"}
-                            </p>
+
+                            {/* Language selector for single-file */}
+                            {sastMode === "single" && (
+                              <div>
+                                <label className="text-sm font-medium mb-2 block">Language</label>
+                                <div className="flex gap-2 flex-wrap">
+                                  {(["javascript", "typescript", "java", "cpp", "csharp"] as const).map((lang) => {
+                                    const labels: Record<string, string> = { javascript: "JavaScript", typescript: "TypeScript", java: "Java", cpp: "C / C++", csharp: "C#" };
+                                    return (
+                                      <Button key={lang} size="sm" variant={sastLanguage === lang ? "default" : "outline"} onClick={() => { setSastLanguage(lang); setScanInput(""); }} className="text-xs">
+                                        {labels[lang]}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1.5">
+                                  {sastLanguage === "javascript" || sastLanguage === "typescript"
+                                    ? "Full AST parsing with taint tracking and dataflow analysis"
+                                    : "Pattern-based analysis with line-by-line taint tracking"}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Multi-file upload area */}
+                            {sastMode === "multi" && (
+                              <div className="space-y-3">
+                                <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div>
+                                        <p className="text-sm font-medium flex items-center gap-2"><Upload className="h-4 w-4 text-primary" /> Upload Project Files</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Upload a ZIP archive or select a folder. Code is analyzed in-memory — never stored.</p>
+                                      </div>
+                                      {multiFiles.length > 0 && (
+                                        <Button variant="ghost" size="sm" onClick={() => { setMultiFiles([]); setSelectedFileIdx(null); setScanResults(null); }} className="text-xs gap-1">
+                                          <Trash2 className="h-3 w-3" /> Clear
+                                        </Button>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2 flex-wrap">
+                                      <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={multiFileLoading} className="gap-1.5 text-xs">
+                                        <Upload className="h-3.5 w-3.5" /> Upload ZIP
+                                      </Button>
+                                      <Button size="sm" variant="outline" onClick={() => folderInputRef.current?.click()} disabled={multiFileLoading} className="gap-1.5 text-xs">
+                                        <FolderOpen className="h-3.5 w-3.5" /> Select Folder
+                                      </Button>
+                                      {multiFileLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                                    </div>
+                                    {/* Hidden file inputs */}
+                                    <input ref={fileInputRef} type="file" accept=".zip" className="hidden" onChange={handleZipUpload} />
+                                    {/* @ts-expect-error webkitdirectory is a non-standard attribute */}
+                                    <input ref={folderInputRef} type="file" webkitdirectory="" multiple className="hidden" onChange={handleFolderUpload} />
+                                  </CardContent>
+                                </Card>
+
+                                {/* File tree */}
+                                {multiFiles.length > 0 && (
+                                  <Card>
+                                    <CardContent className="p-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <p className="text-xs font-medium text-muted-foreground">{multiFiles.length} files • {multiFileTotalLines.toLocaleString()} lines • {(multiFileTotalSize / 1024).toFixed(0)}KB</p>
+                                        <Badge variant="secondary" className="text-[9px]">Auto-detected languages</Badge>
+                                      </div>
+                                      <div className="max-h-[200px] overflow-y-auto space-y-0.5">
+                                        {multiFiles.map((f, idx) => {
+                                          const ext = f.path.slice(f.path.lastIndexOf("."));
+                                          const langLabel: Record<string, string> = { ".js": "JS", ".jsx": "JSX", ".ts": "TS", ".tsx": "TSX", ".java": "Java", ".cpp": "C++", ".c": "C", ".h": "H", ".cs": "C#", ".cc": "C++", ".hpp": "H++" };
+                                          return (
+                                            <div
+                                              key={idx}
+                                              className={`flex items-center gap-2 text-xs py-1 px-2 rounded cursor-pointer hover:bg-muted/50 ${selectedFileIdx === idx ? "bg-primary/10 border border-primary/20" : ""}`}
+                                              onClick={() => setSelectedFileIdx(idx)}
+                                            >
+                                              <FileCode className="h-3 w-3 text-muted-foreground shrink-0" />
+                                              <span className="truncate flex-1 font-mono">{f.path}</span>
+                                              <Badge variant="outline" className="text-[8px] shrink-0">{langLabel[ext] || ext}</Badge>
+                                              <span className="text-[10px] text-muted-foreground shrink-0">{f.content.split("\n").length} lines</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                )}
+
+                                {/* Selected file preview */}
+                                {selectedFileIdx !== null && multiFiles[selectedFileIdx] && (
+                                  <div className="relative flex rounded-lg border bg-muted/30 min-h-[120px] max-h-[250px] overflow-auto">
+                                    <div className="select-none text-right pr-3 pl-3 pt-3 pb-3 font-mono text-xs text-muted-foreground/60 border-r bg-muted/40 shrink-0 leading-[1.625]" aria-hidden="true">
+                                      {multiFiles[selectedFileIdx].content.split("\n").map((_, i) => <div key={i}>{i + 1}</div>)}
+                                    </div>
+                                    <pre className="w-full p-3 font-mono text-[11px] whitespace-pre overflow-x-auto leading-[1.625]">{multiFiles[selectedFileIdx].content}</pre>
+                                  </div>
+                                )}
+
+                                <Card className="border-blue-500/20 bg-blue-500/5">
+                                  <CardContent className="p-3">
+                                    <p className="text-[11px] text-blue-700 dark:text-blue-400 flex items-start gap-1.5">
+                                      <Lock className="h-3 w-3 shrink-0 mt-0.5" />
+                                      <span><strong>Zero Storage Guarantee:</strong> Your code is transmitted over HTTPS, analyzed in server memory, and immediately discarded. Nothing is saved to disk, database, or logs. We never see or store your source code.</span>
+                                    </p>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            )}
                           </div>
                         )}
 
                         {/* Standard module input area */}
-                        {activeModule !== "cicd" && activeModule !== "score" && !isDemoOnly && (
+                        {activeModule !== "cicd" && activeModule !== "score" && !isDemoOnly && !(activeModule === "sast" && sastMode === "multi") && (
                           <div>
                             <label className="text-sm font-medium mb-2 block">{inputCfg.label}</label>
                             {inputCfg.type === "textarea" ? (
@@ -826,7 +1223,7 @@ export default function ShieldXWorkspacePage() {
                         {/* Security Score Dashboard */}
                         {activeModule === "score" && (() => {
                           // Merge DB history + session scans, deduplicate by _id
-                          const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "cicd"];
+                          const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd"];
                           const byModule = moduleTypes.map((type) => {
                             const scans = mergedHistory.filter((s) => s.scanType === type);
                             const latest = scans[0]; // already sorted by date desc
@@ -1495,6 +1892,46 @@ export default function ShieldXWorkspacePage() {
                             {/* SAST Code Analysis results */}
                             {activeModule === "sast" && (
                               <>
+                                {/* Differentiator banner */}
+                                <Card className="border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-indigo-500/5">
+                                  <CardContent className="p-4">
+                                    <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1.5">
+                                      <ShieldCheck className="h-3.5 w-3.5" /> How ShieldX Differs From Other SAST Tools
+                                    </p>
+                                    <div className="grid sm:grid-cols-4 gap-3">
+                                      <div className="flex items-start gap-2">
+                                        <Eye className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                        <div>
+                                          <p className="text-[11px] font-semibold">vs Checkmarx</p>
+                                          <p className="text-[10px] text-muted-foreground">Zero code storage — analyzed in memory and immediately discarded. Your code never hits a database.</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-start gap-2">
+                                        <Code2 className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                        <div>
+                                          <p className="text-[11px] font-semibold">vs Semgrep</p>
+                                          <p className="text-[10px] text-muted-foreground">Full taint tracking with visual dataflow — traces data from input to sink, not just pattern matching.</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-start gap-2">
+                                        <Server className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />
+                                        <div>
+                                          <p className="text-[11px] font-semibold">vs SonarQube</p>
+                                          <p className="text-[10px] text-muted-foreground">Cross-file analysis with CWE/OWASP references and auto-generated fix code with effort estimates.</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-start gap-2">
+                                        <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
+                                        <div>
+                                          <p className="text-[11px] font-semibold">Exploit PoC Generator</p>
+                                          <p className="text-[10px] text-muted-foreground">Generates real exploit payloads showing exactly how attackers would exploit each vuln. No other SAST does this.</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* Stats grid */}
                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                   <div className="rounded-lg border p-3 text-center">
                                     <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
@@ -1517,12 +1954,68 @@ export default function ShieldXWorkspacePage() {
                                     <div className="text-xs text-muted-foreground">Low</div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                  <span>{scanResults.checksPerformed || 0} AST checks across {scanResults.linesAnalyzed || 0} lines</span>
-                                  <Badge variant={scanResults.astParsed ? "secondary" : scanResults.patternBased ? "secondary" : "destructive"} className="text-[9px]">{scanResults.astParsed ? "AST parsed" : scanResults.patternBased ? "Token analysis" : "Parse failed"}</Badge>
-                                  {scanResults.language && <Badge variant="outline" className="text-[9px] capitalize">{scanResults.language}</Badge>}
-                                  <span>{scanResults.mode} mode</span>
+
+                                {/* Scan metadata */}
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                                    {scanResults.multiFile ? (
+                                      <>
+                                        <span className="flex items-center gap-1"><Files className="h-3 w-3" /> {scanResults.fileCount} files • {scanResults.totalLines?.toLocaleString()} lines • {scanResults.totalChecks?.toLocaleString()} checks</span>
+                                        {scanResults.crossFileFindings > 0 && <Badge variant="secondary" className="text-[9px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Cross-file: {scanResults.crossFileFindings}</Badge>}
+                                        {scanResults.scanDurationMs && <span>{scanResults.scanDurationMs}ms</span>}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span>{scanResults.checksPerformed || 0} AST checks across {scanResults.linesAnalyzed || 0} lines</span>
+                                        <Badge variant={scanResults.astParsed ? "secondary" : scanResults.patternBased ? "secondary" : "destructive"} className="text-[9px]">{scanResults.astParsed ? "AST parsed" : scanResults.patternBased ? "Token analysis" : "Parse failed"}</Badge>
+                                        {scanResults.language && <Badge variant="outline" className="text-[9px] capitalize">{scanResults.language}</Badge>}
+                                        <span>{scanResults.mode} mode</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  <Button size="sm" variant="outline" onClick={() => generateSASTReport(scanResults)} className="text-xs gap-1.5 shrink-0">
+                                    <Download className="h-3.5 w-3.5" /> Download Report
+                                  </Button>
                                 </div>
+
+                                {/* Multi-file breakdown table */}
+                                {scanResults.multiFile && scanResults.fileBreakdown?.length > 0 && (
+                                  <Card>
+                                    <CardContent className="p-3">
+                                      <p className="text-xs font-medium mb-2 flex items-center gap-1.5">
+                                        <Files className="h-3.5 w-3.5 text-primary" /> File Breakdown
+                                      </p>
+                                      <div className="overflow-x-auto">
+                                        <table className="w-full text-[11px]">
+                                          <thead>
+                                            <tr className="border-b text-muted-foreground">
+                                              <th className="text-left py-1.5 px-2 font-medium">File</th>
+                                              <th className="text-left py-1.5 px-2 font-medium">Lang</th>
+                                              <th className="text-center py-1.5 px-2 font-medium">Lines</th>
+                                              <th className="text-center py-1.5 px-2 font-medium">Findings</th>
+                                              <th className="text-center py-1.5 px-2 font-medium">Crit</th>
+                                              <th className="text-center py-1.5 px-2 font-medium">High</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                            {scanResults.fileBreakdown.map((fb: any, fi: number) => (
+                                              <tr key={fi} className="border-b last:border-0 hover:bg-muted/30">
+                                                <td className="py-1.5 px-2 font-mono truncate max-w-[200px]">{fb.file}</td>
+                                                <td className="py-1.5 px-2">{fb.language}</td>
+                                                <td className="py-1.5 px-2 text-center">{fb.lines}</td>
+                                                <td className="py-1.5 px-2 text-center font-semibold">{fb.findings}</td>
+                                                <td className="py-1.5 px-2 text-center text-red-500 font-semibold">{fb.critical || 0}</td>
+                                                <td className="py-1.5 px-2 text-center text-orange-500 font-semibold">{fb.high || 0}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                )}
+
                                 {scanResults.findings?.length > 0 ? (
                                   <div className="space-y-3 max-h-[600px] overflow-y-auto">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -1538,6 +2031,7 @@ export default function ShieldXWorkspacePage() {
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                               {f.fix?.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {f.fix.riskScore}/100</span>}
+                                              {f.file && <Badge variant="outline" className="text-[9px] font-mono">{f.file.length > 30 ? `...${f.file.slice(-27)}` : f.file}</Badge>}
                                               <span className="text-xs text-muted-foreground">Line {f.line}</span>
                                             </div>
                                           </div>
@@ -1546,7 +2040,7 @@ export default function ShieldXWorkspacePage() {
                                           {f.codeSnippet?.length > 0 ? (
                                             <div className="mb-2 rounded overflow-hidden border border-muted">
                                               <div className="bg-muted/70 px-3 py-1 flex items-center justify-between">
-                                                <span className="text-[10px] font-semibold text-muted-foreground">📄 Code — Vulnerability at Line {f.line}</span>
+                                                <span className="text-[10px] font-semibold text-muted-foreground">{f.file ? `📄 ${f.file}` : "📄 Code"} — Vulnerability at Line {f.line}</span>
                                                 <span className="text-[10px] text-muted-foreground">Col {f.column}</span>
                                               </div>
                                               <div className="overflow-x-auto">
@@ -1584,12 +2078,80 @@ export default function ShieldXWorkspacePage() {
                                               </div>
                                             </div>
                                           )}
-                                          {/* CWE/OWASP badges */}
+                                          {/* Cross-file dataflow */}
+                                          {f.crossFileDataflow?.length > 0 && (
+                                            <div className="mb-2 p-2.5 rounded bg-purple-500/5 border border-purple-500/20">
+                                              <p className="text-[10px] font-semibold text-purple-700 dark:text-purple-400 mb-1.5">🔀 Cross-File Dataflow</p>
+                                              <div className="space-y-0">
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                                {f.crossFileDataflow.map((step: any, si: number) => (
+                                                  <div key={si} className="flex items-start gap-2 text-[11px] relative">
+                                                    <div className="flex flex-col items-center shrink-0">
+                                                      <div className={`w-2 h-2 rounded-full mt-1 ${si === 0 ? "bg-amber-500" : si === f.crossFileDataflow.length - 1 ? "bg-red-500" : "bg-purple-400"}`} />
+                                                      {si < f.crossFileDataflow.length - 1 && <div className="w-px h-4 bg-purple-300 dark:bg-purple-600" />}
+                                                    </div>
+                                                    <div className="flex items-baseline gap-2 min-w-0 pb-1">
+                                                      <Badge variant="outline" className="text-[8px] font-mono shrink-0">{step.file}</Badge>
+                                                      <span className="text-purple-600 dark:text-purple-400 font-mono font-bold shrink-0">L{step.line}</span>
+                                                      <span className="text-[10px] text-muted-foreground">{step.label}</span>
+                                                      {step.code && <code className="font-mono text-[10px] bg-muted/50 rounded px-1 py-0.5 truncate max-w-[250px]">{step.code}</code>}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {/* CWE/OWASP badges + references */}
                                           <div className="flex items-center gap-1.5 mb-2 flex-wrap">
                                             {f.cwe && <Badge variant="outline" className="text-[8px] font-normal">{f.cwe}</Badge>}
                                             {f.owasp && <Badge variant="outline" className="text-[8px] font-normal">{f.owasp}</Badge>}
                                             {f.fix?.priority && <Badge variant="outline" className={`text-[8px] ${f.fix.priority === "CRITICAL" ? "border-red-500 text-red-500" : f.fix.priority === "HIGH" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>{f.fix.priority}</Badge>}
+                                            {f.references?.map((ref: { title: string; url: string; type: string }, ri: number) => (
+                                              <a key={ri} href={ref.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-[8px] text-blue-600 dark:text-blue-400 hover:underline">
+                                                <ExternalLink className="h-2.5 w-2.5" /> {ref.title}
+                                              </a>
+                                            ))}
                                           </div>
+                                          {/* Exploit PoC section */}
+                                          {f.exploitPoC && (
+                                            <div className="mb-2">
+                                              <button
+                                                onClick={() => setExpandedPoC((prev) => { const next = new Set(prev); next.has(idx) ? next.delete(idx) : next.add(idx); return next; })}
+                                                className="w-full flex items-center justify-between gap-2 p-2 rounded bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 transition-colors text-left"
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                                                  <span className="text-[11px] font-semibold text-red-700 dark:text-red-400">Exploit PoC: {f.exploitPoC.title}</span>
+                                                  <Badge variant="outline" className={`text-[8px] ${f.exploitPoC.attackComplexity === "low" ? "border-red-500 text-red-500" : f.exploitPoC.attackComplexity === "medium" ? "border-orange-500 text-orange-500" : "border-amber-500 text-amber-500"}`}>
+                                                    {f.exploitPoC.attackComplexity} complexity
+                                                  </Badge>
+                                                  {f.exploitPoC.remoteExploitable && <Badge variant="destructive" className="text-[8px]">Remote</Badge>}
+                                                </div>
+                                                <ChevronDown className={`h-3.5 w-3.5 text-red-500 transition-transform ${expandedPoC.has(idx) ? "rotate-180" : ""}`} />
+                                              </button>
+                                              {expandedPoC.has(idx) && (
+                                                <div className="mt-1 p-3 rounded-b border border-t-0 border-red-500/20 bg-red-500/5 space-y-2.5">
+                                                  <p className="text-[11px] text-red-700 dark:text-red-400"><strong>Impact:</strong> {f.exploitPoC.impact}</p>
+                                                  <div>
+                                                    <p className="text-[10px] font-semibold text-red-700 dark:text-red-400 mb-1">Attack Steps:</p>
+                                                    <ol className="list-decimal list-inside space-y-0.5">
+                                                      {f.exploitPoC.steps.map((step: string, si: number) => (
+                                                        <li key={si} className="text-[11px] text-muted-foreground">{step}</li>
+                                                      ))}
+                                                    </ol>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-[10px] font-semibold text-red-700 dark:text-red-400 mb-1">Exploit Payload:</p>
+                                                    <pre className="text-[10px] font-mono bg-zinc-900 text-zinc-100 dark:bg-zinc-950 rounded p-2.5 overflow-x-auto whitespace-pre max-h-[250px] overflow-y-auto">{f.exploitPoC.payload}</pre>
+                                                  </div>
+                                                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 flex items-start gap-1">
+                                                    <CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" />
+                                                    <span><strong>Verify Fix:</strong> {f.exploitPoC.verifyFix}</span>
+                                                  </p>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
                                           {/* Fix guidance */}
                                           {f.fix && (
                                             <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
