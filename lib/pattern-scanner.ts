@@ -403,10 +403,13 @@ function detectTaintInExpr(
 const JAVA_HTTP_METHODS = new Set([
   "getParameter","getQueryString","getHeader","getCookies","getInputStream","getReader",
   "getPathInfo","getRequestURI","getRequestURL","getPart","getAttribute","getRemoteAddr",
-  "getRemoteHost","getParameterValues","getParameterMap",
+  "getRemoteHost","getParameterValues","getParameterMap","getParameterNames",
+  "getHeaderNames","getContentType","getScheme","getServerName","getServletPath",
+  "getContextPath","getAuthType","getRemoteUser","getUserPrincipal","getSession",
+  "getRequestedSessionId","getRealPath","getLocalAddr","getLocalName",
 ]);
-const JAVA_READER_METHODS = new Set(["nextLine","next","nextInt","nextDouble","nextFloat","nextLong","readLine","read"]);
-const CS_REQUEST_PROPS = new Set(["Query","Form","Headers","Cookies","Body","Path","QueryString","RouteValues","Method"]);
+const JAVA_READER_METHODS = new Set(["nextLine","next","nextInt","nextDouble","nextFloat","nextLong","readLine","read","readAll","readAllBytes"]);
+const CS_REQUEST_PROPS = new Set(["Query","Form","Headers","Cookies","Body","Path","QueryString","RouteValues","Method","Host","ContentType","Protocol","Scheme","PathBase","HasFormContentType"]);
 
 // ═══════════════════════════════════════════════════
 //  SECTION 3b — SANITIZER DEFINITIONS & CONTROL FLOW
@@ -1021,11 +1024,11 @@ const JAVA_SINKS: SinkDef[] = [
     detail: "ProcessBuilder.start() with user-controlled arguments enables command injection.",
     remediation: "Never pass user input directly to ProcessBuilder. Validate commands against an allowlist.", confidence: "high" },
   { id: "java-sql-injection", name: "SQL Injection", severity: "critical", category: "Injection", cwe: "CWE-89", owasp: "A03:2021",
-    methods: ["executeQuery","executeUpdate","execute","createQuery","createNativeQuery"], argIdx: 0, requiresTaint: true,
+    methods: ["executeQuery","executeUpdate","execute","createQuery","createNativeQuery","nativeQuery"], argIdx: 0, requiresTaint: true,
     detail: "SQL query executed with user-controlled data enables SQL injection.",
     remediation: "Use PreparedStatement with parameterized queries: ps = conn.prepareStatement(\"SELECT * FROM t WHERE id=?\"); ps.setString(1, id);", confidence: "high" },
   { id: "java-path-traversal", name: "Path Traversal", severity: "high", category: "Access Control", cwe: "CWE-22", owasp: "A01:2021",
-    methods: ["FileInputStream","FileOutputStream","FileReader","FileWriter"], argIdx: 0, requiresTaint: true,
+    methods: ["FileInputStream","FileOutputStream","FileReader","FileWriter","RandomAccessFile"], argIdx: 0, requiresTaint: true,
     detail: "File path constructed from user input enables path traversal (../../etc/passwd).",
     remediation: "Validate and canonicalize file paths. Ensure they stay within an allowed base directory.", confidence: "high" },
   { id: "java-xss", name: "Cross-Site Scripting (XSS)", severity: "high", category: "Injection", cwe: "CWE-79", owasp: "A03:2021",
@@ -1056,29 +1059,71 @@ const JAVA_SINKS: SinkDef[] = [
     methods: ["info","warn","error","debug","trace","log"], chainHint: ["logger","Logger","LOG","log"], argIdx: -1, requiresTaint: true,
     detail: "Unsanitized user input in log messages enables log forging and log injection.",
     remediation: "Sanitize user input before logging. Strip newlines, carriage returns, and ANSI escape codes.", confidence: "low" },
+  // New Java sinks
+  { id: "java-reflection-rce", name: "Reflection-Based Code Execution", severity: "critical", category: "Injection", cwe: "CWE-470", owasp: "A03:2021",
+    methods: ["forName","loadClass"], chainHint: ["Class","ClassLoader","URLClassLoader","Thread"], argIdx: 0, requiresTaint: true,
+    detail: "Class.forName() with user-controlled input enables arbitrary class loading — remote code execution risk.",
+    remediation: "Never pass user input to Class.forName(). Use an allowlist of permitted class names.", confidence: "high" },
+  { id: "java-reflection-invoke", name: "Unsafe Reflection Invocation", severity: "critical", category: "Injection", cwe: "CWE-470", owasp: "A03:2021",
+    methods: ["invoke"], chainHint: ["Method"], argIdx: -1, requiresTaint: true,
+    detail: "Method.invoke() with user-controlled target enables arbitrary method execution.",
+    remediation: "Validate method names against an allowlist. Never allow user input to control reflection targets.", confidence: "medium" },
+  { id: "java-jndi-injection", name: "JNDI Injection", severity: "critical", category: "Injection", cwe: "CWE-074", owasp: "A03:2021",
+    methods: ["lookup","lookupLink"], chainHint: ["InitialContext","Context","NamingManager"], argIdx: 0, requiresTaint: true,
+    detail: "JNDI lookup with user-controlled name enables remote code execution (similar to Log4Shell).",
+    remediation: "Never pass user input to JNDI lookups. Set com.sun.jndi.ldap.object.trustURLCodebase=false.", confidence: "high" },
+  { id: "java-xpath-injection", name: "XPath Injection", severity: "high", category: "Injection", cwe: "CWE-643", owasp: "A03:2021",
+    methods: ["evaluate","compile"], chainHint: ["XPath","XPathFactory"], argIdx: 0, requiresTaint: true,
+    detail: "XPath query with user input enables extraction of XML data or authentication bypass.",
+    remediation: "Use parameterized XPath queries with XPathVariableResolver. Never concatenate user input.", confidence: "medium" },
+  { id: "java-el-injection", name: "Expression Language Injection", severity: "critical", category: "Injection", cwe: "CWE-917", owasp: "A03:2021",
+    methods: ["createValueExpression","createMethodExpression"], chainHint: ["ExpressionFactory"], argIdx: 0, requiresTaint: true,
+    detail: "Evaluating user-controlled Expression Language (EL) enables remote code execution.",
+    remediation: "Never pass user input to EL expressions. Use parameterized templates.", confidence: "high" },
+  { id: "java-header-injection", name: "HTTP Response Splitting", severity: "high", category: "Injection", cwe: "CWE-113", owasp: "A03:2021",
+    methods: ["setHeader","addHeader","addCookie"], argIdx: -1, requiresTaint: true,
+    detail: "User input in HTTP headers enables response splitting and header injection.",
+    remediation: "Validate header values — strip CR/LF characters. Use framework response methods that auto-sanitize.", confidence: "medium" },
+  { id: "java-spring-sqli", name: "SQL Injection (Spring JdbcTemplate)", severity: "critical", category: "Injection", cwe: "CWE-89", owasp: "A03:2021",
+    methods: ["queryForObject","queryForList","queryForMap","update","batchUpdate"], chainHint: ["jdbcTemplate","JdbcTemplate","namedParameterJdbcTemplate"], argIdx: 0, requiresTaint: true,
+    detail: "JdbcTemplate query with string concatenation enables SQL injection.",
+    remediation: "Use parameterized queries: jdbcTemplate.queryForObject(\"SELECT * FROM t WHERE id=?\", new Object[]{id}, RowMapper);", confidence: "high" },
 ];
 
 const CPP_SINKS: SinkDef[] = [
   { id: "cpp-command-injection", name: "Command Injection", severity: "critical", category: "Injection", cwe: "CWE-78", owasp: "A03:2021",
-    methods: ["system","popen","_popen"], argIdx: 0, requiresTaint: true,
+    methods: ["system","popen","_popen","_wsystem","_wpopen"], argIdx: 0, requiresTaint: true,
     detail: "Shell command execution with user-controlled input enables arbitrary command execution.",
     remediation: "Avoid system(). Use fork()/exec() with explicit argument arrays. Validate and allowlist commands.", confidence: "high" },
   { id: "cpp-command-injection-exec", name: "Command Injection (exec family)", severity: "critical", category: "Injection", cwe: "CWE-78", owasp: "A03:2021",
-    methods: ["execlp","execvp","execl","execv"], argIdx: -1, requiresTaint: true,
+    methods: ["execlp","execvp","execl","execv","execle","execve","execvpe"], argIdx: -1, requiresTaint: true,
     detail: "Process execution with user-controlled arguments enables command injection.",
     remediation: "Validate commands and arguments against an allowlist. Never pass user input to shell.", confidence: "high" },
   { id: "cpp-format-string", name: "Format String Vulnerability", severity: "critical", category: "Injection", cwe: "CWE-134", owasp: "A03:2021",
-    methods: ["printf","fprintf","sprintf","snprintf","syslog"], argIdx: 0, requiresTaint: true,
+    methods: ["printf","fprintf","sprintf","snprintf","syslog","wprintf","fwprintf","swprintf","vprintf","vfprintf","vsprintf","vsnprintf"], argIdx: 0, requiresTaint: true,
     detail: "User-controlled format string enables reading/writing arbitrary memory.",
     remediation: "Always use a fixed format string: printf(\"%s\", userInput), never printf(userInput).", confidence: "high" },
   { id: "cpp-path-traversal", name: "Path Traversal", severity: "high", category: "Access Control", cwe: "CWE-22", owasp: "A01:2021",
-    methods: ["fopen","open","stat","access","remove","rename"], argIdx: 0, requiresTaint: true,
+    methods: ["fopen","open","stat","access","remove","rename","unlink","mkdir","rmdir","opendir","freopen","_wfopen","_wopen"], argIdx: 0, requiresTaint: true,
     detail: "File operation with user-controlled path enables path traversal.",
     remediation: "Validate and canonicalize paths. Use realpath() and verify result is within allowed directory.", confidence: "medium" },
   { id: "cpp-sql-injection", name: "SQL Injection", severity: "critical", category: "Injection", cwe: "CWE-89", owasp: "A03:2021",
-    methods: ["mysql_query","mysql_real_query","sqlite3_exec","PQexec"], argIdx: -1, requiresTaint: true,
+    methods: ["mysql_query","mysql_real_query","sqlite3_exec","PQexec","PQexecParams"], argIdx: -1, requiresTaint: true,
     detail: "SQL query with user-controlled input enables SQL injection.",
     remediation: "Use parameterized queries (prepared statements). Never concatenate user input into SQL.", confidence: "high" },
+  // New C++ sinks
+  { id: "cpp-memcpy-overflow", name: "Buffer Overflow (memcpy)", severity: "critical", category: "Memory Safety", cwe: "CWE-120", owasp: "A06:2021",
+    methods: ["memcpy","memmove","bcopy","wmemcpy","wmemmove"], argIdx: -1, requiresTaint: true,
+    detail: "Memory copy with user-controlled size or source can cause buffer overflow.",
+    remediation: "Validate sizes before memcpy. Use std::copy or container-based operations.", confidence: "medium" },
+  { id: "cpp-tmpfile-race", name: "Insecure Temporary File", severity: "high", category: "Race Condition", cwe: "CWE-377", owasp: "A06:2021",
+    methods: ["tmpnam","tempnam","mktemp","mktemp_s","_tempnam"], argIdx: -1, requiresTaint: false,
+    detail: "Insecure temporary file creation — race condition between name generation and file creation (TOCTOU).",
+    remediation: "Use mkstemp() or tmpfile() which atomically create unique files. Or use std::filesystem::temp_directory_path().", confidence: "high" },
+  { id: "cpp-alloca-overflow", name: "Stack Buffer Overflow (alloca)", severity: "high", category: "Memory Safety", cwe: "CWE-770", owasp: "A06:2021",
+    methods: ["alloca","_alloca"], argIdx: 0, requiresTaint: true,
+    detail: "alloca() with user-controlled size can cause stack overflow — no bounds checking possible.",
+    remediation: "Use heap allocation (malloc/new) with bounds checking instead of alloca().", confidence: "medium" },
 ];
 
 const CS_SINKS: SinkDef[] = [
@@ -1087,37 +1132,58 @@ const CS_SINKS: SinkDef[] = [
     detail: "Process spawned with user-controlled arguments enables command injection.",
     remediation: "Set UseShellExecute=false. Use explicit FileName and Arguments (not shell). Validate and allowlist.", confidence: "high" },
   { id: "csharp-sql-injection", name: "SQL Injection", severity: "critical", category: "Injection", cwe: "CWE-89", owasp: "A03:2021",
-    methods: ["ExecuteReader","ExecuteNonQuery","ExecuteScalar","ExecuteSql","FromSqlRaw","ExecuteCommand"], argIdx: -1, requiresTaint: true,
+    methods: ["ExecuteReader","ExecuteNonQuery","ExecuteScalar","ExecuteSql","FromSqlRaw","ExecuteCommand","SqlQuery","ExecuteSqlCommand","ExecuteSqlRaw"], argIdx: -1, requiresTaint: true,
     detail: "SQL query with user-controlled input enables SQL injection.",
     remediation: "Use parameterized queries: cmd.Parameters.AddWithValue(\"@id\", userId);", confidence: "high" },
   { id: "csharp-xss", name: "Cross-Site Scripting (XSS)", severity: "high", category: "Injection", cwe: "CWE-79", owasp: "A03:2021",
     methods: ["Raw"], chainHint: ["Html"], argIdx: 0, requiresTaint: true,
     detail: "Unencoded user input rendered in HTML via Html.Raw enables XSS.",
     remediation: "Use Razor auto-encoding (@Model.Property). If Html.Raw is needed, sanitize via HtmlSanitizer.", confidence: "high" },
+  { id: "csharp-xss-write", name: "Cross-Site Scripting (Response.Write)", severity: "high", category: "Injection", cwe: "CWE-79", owasp: "A03:2021",
+    methods: ["Write"], chainHint: ["Response"], argIdx: 0, requiresTaint: true,
+    detail: "Response.Write() with user input enables XSS — no encoding applied.",
+    remediation: "Use HttpUtility.HtmlEncode() before writing to response. Prefer Razor views with auto-encoding.", confidence: "high" },
   { id: "csharp-path-traversal", name: "Path Traversal", severity: "high", category: "Access Control", cwe: "CWE-22", owasp: "A01:2021",
-    methods: ["ReadAllBytes","ReadAllText","ReadAllLines","Open","Delete","Copy","Move","WriteAllText","WriteAllBytes"], chainHint: ["File","Directory"], argIdx: 0, requiresTaint: true,
+    methods: ["ReadAllBytes","ReadAllText","ReadAllLines","Open","Delete","Copy","Move","WriteAllText","WriteAllBytes","OpenRead","OpenWrite","Create","CreateText"], chainHint: ["File","Directory","FileInfo","DirectoryInfo"], argIdx: 0, requiresTaint: true,
     detail: "File operation with user-controlled path enables path traversal.",
     remediation: "Validate and canonicalize paths. Use Path.GetFullPath() and verify within base directory.", confidence: "high" },
   { id: "csharp-ssrf", name: "Server-Side Request Forgery", severity: "high", category: "SSRF", cwe: "CWE-918", owasp: "A10:2021",
-    methods: ["GetAsync","PostAsync","SendAsync","GetStringAsync","DownloadString","DownloadData"], argIdx: 0, requiresTaint: true,
+    methods: ["GetAsync","PostAsync","SendAsync","GetStringAsync","DownloadString","DownloadData","GetStreamAsync","PutAsync","DeleteAsync","PatchAsync"], argIdx: 0, requiresTaint: true,
     detail: "HTTP request to user-controlled URL enables SSRF.",
     remediation: "Validate URLs against an allowlist. Block private IPs and cloud metadata endpoints.", confidence: "medium" },
   { id: "csharp-open-redirect", name: "Open Redirect", severity: "medium", category: "Access Control", cwe: "CWE-601", owasp: "A01:2021",
-    methods: ["Redirect","RedirectPermanent","RedirectToAction"], argIdx: 0, requiresTaint: true,
+    methods: ["Redirect","RedirectPermanent","RedirectToAction","RedirectToRoute"], argIdx: 0, requiresTaint: true,
     detail: "Redirect to user-controlled URL enables phishing.",
-    remediation: "Use LocalRedirect() or validate against a trusted domain allowlist.", confidence: "medium" },
+    remediation: "Use LocalRedirect() or Url.IsLocalUrl() to validate. Never redirect to user-controlled absolute URLs.", confidence: "medium" },
   { id: "csharp-deserialization", name: "Insecure Deserialization", severity: "critical", category: "Deserialization", cwe: "CWE-502", owasp: "A08:2021",
-    methods: ["Deserialize"], chainHint: ["BinaryFormatter","SoapFormatter","NetDataContractSerializer","LosFormatter"], argIdx: -1, requiresTaint: false,
+    methods: ["Deserialize"], chainHint: ["BinaryFormatter","SoapFormatter","NetDataContractSerializer","LosFormatter","ObjectStateFormatter"], argIdx: -1, requiresTaint: false,
     detail: "BinaryFormatter deserialization enables remote code execution via crafted payloads.",
     remediation: "Do NOT use BinaryFormatter. Use System.Text.Json or JSON.NET without TypeNameHandling.", confidence: "high" },
   { id: "csharp-xxe", name: "XML External Entity (XXE)", severity: "high", category: "Injection", cwe: "CWE-611", owasp: "A05:2021",
-    methods: ["Load","LoadXml"], chainHint: ["XmlDocument"], argIdx: -1, requiresTaint: false,
+    methods: ["Load","LoadXml"], chainHint: ["XmlDocument","XmlTextReader"], argIdx: -1, requiresTaint: false,
     detail: "XmlDocument.Load() without disabling DTD processing enables XXE attacks.",
     remediation: "Set doc.XmlResolver = null before loading. Or use XmlReader.Create with DtdProcessing.Prohibit.", confidence: "medium" },
   { id: "csharp-log-injection", name: "Log Injection", severity: "medium", category: "Logging", cwe: "CWE-117", owasp: "A09:2021",
-    methods: ["LogInformation","LogWarning","LogError","LogCritical","LogDebug"], chainHint: ["_logger","Logger","logger"], argIdx: -1, requiresTaint: true,
+    methods: ["LogInformation","LogWarning","LogError","LogCritical","LogDebug","LogTrace"], chainHint: ["_logger","Logger","logger"], argIdx: -1, requiresTaint: true,
     detail: "Unsanitized user input in log messages enables log forging.",
     remediation: "Use structured logging with placeholders: _logger.LogInformation(\"User: {User}\", username);", confidence: "low" },
+  // New C# sinks
+  { id: "csharp-ldap-injection", name: "LDAP Injection", severity: "high", category: "Injection", cwe: "CWE-90", owasp: "A03:2021",
+    methods: ["FindAll","FindOne"], chainHint: ["DirectorySearcher"], argIdx: -1, requiresTaint: true,
+    detail: "LDAP search with user-controlled filter enables LDAP injection.",
+    remediation: "Escape LDAP special characters. Use parameterized filters.", confidence: "medium" },
+  { id: "csharp-regex-dos", name: "Regex Denial of Service", severity: "medium", category: "Denial of Service", cwe: "CWE-1333", owasp: "A06:2021",
+    methods: ["Match","Matches","Replace","Split","IsMatch"], chainHint: ["Regex"], argIdx: 0, requiresTaint: true,
+    detail: "User-controlled regex pattern can cause catastrophic backtracking (ReDoS).",
+    remediation: "Never use user input as regex pattern. If needed, set Regex timeout: new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(1)).", confidence: "medium" },
+  { id: "csharp-assembly-load", name: "Unsafe Assembly Loading", severity: "critical", category: "Injection", cwe: "CWE-470", owasp: "A03:2021",
+    methods: ["LoadFrom","LoadFile","Load","UnsafeLoadFrom"], chainHint: ["Assembly"], argIdx: 0, requiresTaint: true,
+    detail: "Loading assemblies from user-controlled paths enables arbitrary code execution.",
+    remediation: "Never load assemblies from user input. Use a strict allowlist of trusted assemblies.", confidence: "high" },
+  { id: "csharp-server-transfer", name: "Server-Side Request Forgery (Server.Transfer)", severity: "high", category: "SSRF", cwe: "CWE-918", owasp: "A10:2021",
+    methods: ["Transfer","Execute"], chainHint: ["Server"], argIdx: 0, requiresTaint: true,
+    detail: "Server.Transfer() with user-controlled path enables server-side request forgery.",
+    remediation: "Validate paths against an allowlist. Use Response.Redirect with validated URLs instead.", confidence: "medium" },
 ];
 
 function getSinksForLanguage(lang: Language): SinkDef[] {
@@ -1200,6 +1266,45 @@ function runStructuralChecks(tokens: Token[], lines: string[], lang: Language): 
             line: tok.ln, col: tok.col, detail: `${tokens[i - 2].v} without disabling external entities enables XXE — file disclosure and SSRF.`, remediation: "factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);", confidence: "medium" });
         }
       }
+      // Spring @CrossOrigin("*") — CORS misconfiguration
+      if (tok.t === TT.At && tokens[i + 1]?.t === TT.Ident && tokens[i + 1].v === "CrossOrigin" && tokens[i + 2]?.t === TT.LParen) {
+        const { args } = extractArgs(tokens, i + 2);
+        if (args[0]?.some(t => t.t === TT.String && t.v === "*")) {
+          add({ id: "java-cors-wildcard", name: "CORS Wildcard Origin", severity: "high", category: "Access Control", cwe: "CWE-942", owasp: "A05:2021",
+            line: tok.ln, col: tok.col, detail: "@CrossOrigin(\"*\") allows any origin to make authenticated requests.", remediation: "Specify exact trusted origins: @CrossOrigin(origins = \"https://trusted.com\").", confidence: "high" });
+        }
+      }
+      // Java hardcoded API key patterns in string literals
+      if (tok.t === TT.String && tok.v.length >= 20) {
+        const val = tok.v;
+        const keyPatterns = [
+          { regex: /^AKIA[0-9A-Z]{16}$/, label: "AWS Access Key ID" },
+          { regex: /^sk[_-]live[_-]/i, label: "Stripe live secret key" },
+          { regex: /^ghp_[a-zA-Z0-9]{36,}/, label: "GitHub personal access token" },
+          { regex: /^xox[bpsa]-[0-9a-zA-Z-]+/, label: "Slack token" },
+          { regex: /^-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/, label: "Private key" },
+        ];
+        for (const { regex, label } of keyPatterns) {
+          if (regex.test(val)) {
+            add({ id: "java-hardcoded-apikey", name: `Hardcoded ${label}`, severity: "critical", category: "Secrets", cwe: "CWE-798", owasp: "A07:2021",
+              line: tok.ln, col: tok.col, detail: `Hardcoded ${label} found in string literal. Rotate immediately.`, remediation: "Store API keys in environment variables or a secrets manager.", confidence: "high" });
+            break;
+          }
+        }
+      }
+      // Empty catch block — swallowing exceptions
+      if (tok.t === TT.Keyword && tok.v === "catch" && tokens[i + 1]?.t === TT.LParen) {
+        const closeParen = skipParen(tokens, i + 1);
+        if (tokens[closeParen + 1]?.t === TT.LBrace && tokens[closeParen + 2]?.t === TT.RBrace) {
+          add({ id: "java-empty-catch", name: "Empty Catch Block", severity: "low", category: "Error Handling", cwe: "CWE-390", owasp: "A04:2021",
+            line: tok.ln, col: tok.col, detail: "Empty catch block silently swallows exceptions — errors may go unnoticed, hiding security issues.", remediation: "Log the exception at minimum: catch (Exception e) { logger.error(\"Error\", e); }", confidence: "medium" });
+        }
+      }
+      // Unsafe Spring Actuator exposure
+      if (tok.t === TT.String && (tok.v.includes("/actuator") || tok.v.includes("management.endpoints.web.exposure.include=*"))) {
+        add({ id: "java-actuator-exposed", name: "Spring Actuator Exposed", severity: "high", category: "Information Disclosure", cwe: "CWE-200", owasp: "A04:2021",
+          line: tok.ln, col: tok.col, detail: "Spring Actuator endpoints exposed — may leak env vars, heap dumps, and configuration.", remediation: "Restrict actuator exposure: management.endpoints.web.exposure.include=health,info. Secure with authentication.", confidence: "medium" });
+      }
     }
 
     if (lang === "cpp") {
@@ -1254,6 +1359,39 @@ function runStructuralChecks(tokens: Token[], lines: string[], lang: Language): 
       if (tok.t === TT.Ident && (tok.v === "atoi" || tok.v === "atol" || tok.v === "atoll") && tokens[i + 1]?.t === TT.LParen) {
         add({ id: "cpp-integer-overflow", name: "Integer Overflow Risk", severity: "medium", category: "Memory Safety", cwe: "CWE-190", owasp: "A06:2021",
           line: tok.ln, col: tok.col, detail: `${tok.v}() does not validate input range and can cause integer overflow.`, remediation: "Use strtol/strtoll with range checking, or std::stoi with try/catch.", confidence: "medium" });
+      }
+      // strtok — not thread-safe, modifies input
+      if (tok.t === TT.Ident && tok.v === "strtok" && tokens[i + 1]?.t === TT.LParen) {
+        add({ id: "cpp-strtok-unsafe", name: "Unsafe strtok() Usage", severity: "medium", category: "Memory Safety", cwe: "CWE-676", owasp: "A06:2021",
+          line: tok.ln, col: tok.col, detail: "strtok() is not thread-safe and modifies the input string. Concurrent use causes data corruption.", remediation: "Use strtok_r() (POSIX) or strtok_s() (Windows) for thread-safe tokenization. Or use std::string methods.", confidence: "medium" });
+      }
+      // Signed/unsigned comparison
+      if (tok.t === TT.Keyword && (tok.v === "unsigned") && tokens[i + 1]?.t === TT.Ident) {
+        // Check for later comparison with signed
+        // This is best-effort since we can't do full type analysis
+      }
+      // Null pointer dereference after malloc without check
+      if (tok.t === TT.Ident && (tok.v === "malloc" || tok.v === "calloc" || tok.v === "realloc") && tokens[i + 1]?.t === TT.LParen) {
+        // Look backwards for variable = malloc(...)
+        if (i >= 2 && tokens[i - 1]?.t === TT.Assign && tokens[i - 2]?.t === TT.Ident) {
+          const varName = tokens[i - 2].v;
+          // Check if NULL check follows within 10 tokens
+          let hasNullCheck = false;
+          const closeParen = skipParen(tokens, i + 1);
+          for (let k = closeParen; k < Math.min(tokens.length, closeParen + 15); k++) {
+            if (tokens[k].t === TT.Keyword && tokens[k].v === "if" && tokens[k + 1]?.t === TT.LParen) {
+              // Check if null check inside: if (ptr == NULL) or if (!ptr) or if (ptr)
+              for (let m = k + 2; m < Math.min(tokens.length, k + 10); m++) {
+                if (tokens[m].t === TT.Ident && tokens[m].v === varName) { hasNullCheck = true; break; }
+              }
+              break;
+            }
+          }
+          if (!hasNullCheck) {
+            add({ id: "cpp-null-deref", name: "Potential Null Pointer Dereference", severity: "high", category: "Memory Safety", cwe: "CWE-476", owasp: "A06:2021",
+              line: tok.ln, col: tok.col, detail: `${tok.v}() return value not checked for NULL. Dereference of NULL pointer causes segfault.`, remediation: `Always check: ${varName} = ${tok.v}(...); if (${varName} == NULL) { /* handle error */ }`, confidence: "medium" });
+          }
+        }
       }
     }
 
@@ -1333,6 +1471,50 @@ function runStructuralChecks(tokens: Token[], lines: string[], lang: Language): 
       if (tok.t === TT.Ident && tok.v.toLowerCase() === "connectionstring" && tokens[i + 1]?.t === TT.Assign && tokens[i + 2]?.t === TT.String && tokens[i + 2].v.length >= 8) {
         add({ id: "csharp-hardcoded-secret", name: "Hardcoded Connection String", severity: "high", category: "Secrets", cwe: "CWE-798", owasp: "A07:2021",
           line: tok.ln, col: tok.col, detail: "Connection string with credentials hardcoded in source code.", remediation: "Use IConfiguration, user-secrets, Azure Key Vault, or environment variables.", confidence: "high" });
+      }
+      // C# ViewBag/ViewData XSS — data from ViewBag rendered without encoding
+      if (tok.t === TT.Ident && (tok.v === "ViewBag" || tok.v === "ViewData" || tok.v === "TempData") && tokens[i + 1]?.t === TT.LBracket) {
+        // Check if the line contains Html.Raw
+        const lineText = ev(tok.ln);
+        if (lineText.includes("Html.Raw")) {
+          add({ id: "csharp-viewbag-xss", name: "XSS via ViewBag in Html.Raw", severity: "high", category: "Injection", cwe: "CWE-79", owasp: "A03:2021",
+            line: tok.ln, col: tok.col, detail: "ViewBag/ViewData content rendered via Html.Raw bypasses Razor encoding — XSS if data contains user input.", remediation: "Use @Model.Property for auto-encoding. If Html.Raw is needed, sanitize with HtmlSanitizer first.", confidence: "medium" });
+        }
+      }
+      // C# AllowAnonymous on sensitive endpoints
+      if (tok.t === TT.LBracket && tokens[i + 1]?.t === TT.Ident && tokens[i + 1].v === "AllowAnonymous") {
+        add({ id: "csharp-allow-anonymous", name: "Allow Anonymous Access", severity: "low", category: "Authentication", cwe: "CWE-306", owasp: "A07:2021",
+          line: tok.ln, col: tok.col, detail: "[AllowAnonymous] bypasses authentication requirements on this endpoint. Verify this is intentional.", remediation: "Only use [AllowAnonymous] on public endpoints (login, registration, health check). Audit all usages.", confidence: "low" });
+      }
+      // C# HttpGet/HttpPost with ValidateAntiForgeryToken check — look for POST without validation
+      if (tok.t === TT.LBracket && tokens[i + 1]?.t === TT.Ident && (tokens[i + 1].v === "HttpPost" || tokens[i + 1].v === "HttpPut" || tokens[i + 1].v === "HttpDelete" || tokens[i + 1].v === "HttpPatch")) {
+        // Look backwards and forwards for [ValidateAntiForgeryToken]
+        let hasValidation = false;
+        for (let k = Math.max(0, i - 20); k < Math.min(tokens.length, i + 20); k++) {
+          if (tokens[k].t === TT.Ident && (tokens[k].v === "ValidateAntiForgeryToken" || tokens[k].v === "AutoValidateAntiforgeryToken")) {
+            hasValidation = true; break;
+          }
+        }
+        if (!hasValidation) {
+          add({ id: "csharp-missing-csrf", name: "Missing Anti-Forgery Token", severity: "medium", category: "Session Management", cwe: "CWE-352", owasp: "A01:2021",
+            line: tok.ln, col: tok.col, detail: `[${tokens[i + 1].v}] endpoint without [ValidateAntiForgeryToken] — vulnerable to CSRF attacks.`, remediation: "Add [ValidateAntiForgeryToken] attribute, or use AddControllersWithViews(o => o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));", confidence: "medium" });
+        }
+      }
+      // C# hardcoded API key patterns
+      if (tok.t === TT.String && tok.v.length >= 20) {
+        const val = tok.v;
+        const keyPatterns = [
+          { regex: /^AKIA[0-9A-Z]{16}$/, label: "AWS Access Key ID" },
+          { regex: /^sk[_-]live[_-]/i, label: "Stripe live secret key" },
+          { regex: /^-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/, label: "Private key" },
+        ];
+        for (const { regex, label } of keyPatterns) {
+          if (regex.test(val)) {
+            add({ id: "csharp-hardcoded-apikey", name: `Hardcoded ${label}`, severity: "critical", category: "Secrets", cwe: "CWE-798", owasp: "A07:2021",
+              line: tok.ln, col: tok.col, detail: `Hardcoded ${label} found in string literal. Rotate immediately.`, remediation: "Store API keys in IConfiguration, Azure Key Vault, or environment variables.", confidence: "high" });
+            break;
+          }
+        }
       }
     }
   }

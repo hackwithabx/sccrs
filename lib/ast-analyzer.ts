@@ -50,26 +50,64 @@ type ASTNode = any;
 /* ── Taint Sources — where user-controlled data enters ── */
 
 const TAINT_SOURCES: { pattern: string[]; label: string }[] = [
+  // Express / Connect / Koa / Hapi — server-side request objects
   { pattern: ["req", "params"], label: "URL parameter" },
   { pattern: ["req", "query"], label: "query string" },
   { pattern: ["req", "body"], label: "request body" },
   { pattern: ["req", "headers"], label: "request header" },
   { pattern: ["req", "cookies"], label: "cookie" },
+  { pattern: ["req", "files"], label: "uploaded file" },
+  { pattern: ["req", "file"], label: "uploaded file" },
+  { pattern: ["req", "hostname"], label: "request hostname" },
+  { pattern: ["req", "ip"], label: "client IP" },
+  { pattern: ["req", "path"], label: "request path" },
+  { pattern: ["req", "url"], label: "request URL" },
+  { pattern: ["req", "originalUrl"], label: "original URL" },
+  { pattern: ["req", "baseUrl"], label: "base URL" },
+  { pattern: ["req", "protocol"], label: "request protocol" },
+  { pattern: ["req", "subdomains"], label: "subdomains" },
   { pattern: ["request", "params"], label: "URL parameter" },
   { pattern: ["request", "query"], label: "query string" },
   { pattern: ["request", "body"], label: "request body" },
   { pattern: ["request", "headers"], label: "request header" },
   { pattern: ["request", "nextUrl", "searchParams"], label: "search params" },
+  { pattern: ["request", "url"], label: "request URL" },
+  { pattern: ["request", "formData"], label: "form data" },
+  { pattern: ["request", "json"], label: "request JSON body" },
+  { pattern: ["request", "text"], label: "request text body" },
+  // Event-driven / serverless
   { pattern: ["event", "body"], label: "event body" },
+  { pattern: ["event", "queryStringParameters"], label: "event query params" },
+  { pattern: ["event", "pathParameters"], label: "event path params" },
+  { pattern: ["event", "headers"], label: "event headers" },
+  { pattern: ["event", "data"], label: "event data (postMessage/WebSocket)" },
+  // Koa
   { pattern: ["ctx", "params"], label: "context parameter" },
   { pattern: ["ctx", "query"], label: "context query" },
+  { pattern: ["ctx", "request", "body"], label: "context request body" },
+  { pattern: ["ctx", "headers"], label: "context headers" },
+  // Environment (lower risk but still external)
   { pattern: ["process", "env"], label: "environment variable" },
+  { pattern: ["process", "argv"], label: "command-line argument" },
+  { pattern: ["process", "stdin"], label: "standard input" },
+  // Client-side DOM APIs
   { pattern: ["window", "location"], label: "window.location" },
+  { pattern: ["window", "name"], label: "window.name" },
   { pattern: ["document", "location"], label: "document.location" },
   { pattern: ["document", "URL"], label: "document.URL" },
   { pattern: ["document", "referrer"], label: "document.referrer" },
+  { pattern: ["document", "cookie"], label: "document.cookie" },
+  { pattern: ["document", "documentURI"], label: "document.documentURI" },
   { pattern: ["location", "hash"], label: "URL hash" },
   { pattern: ["location", "search"], label: "URL search" },
+  { pattern: ["location", "href"], label: "location.href" },
+  { pattern: ["location", "pathname"], label: "location.pathname" },
+  // Web APIs
+  { pattern: ["localStorage", "getItem"], label: "localStorage" },
+  { pattern: ["sessionStorage", "getItem"], label: "sessionStorage" },
+  // URLSearchParams
+  { pattern: ["searchParams", "get"], label: "URL search param" },
+  { pattern: ["searchParams", "getAll"], label: "URL search params" },
 ];
 
 /* ── Known Sanitizers — functions that neutralize tainted data ── */
@@ -89,8 +127,8 @@ const KNOWN_SANITIZERS: SanitizerDef[] = [
   { pattern: ["escapeHtml"],             mitigates: new Set(["xss-reflected"]) },
   { pattern: ["xss"],                    mitigates: new Set(["xss-reflected"]) },
   { pattern: ["validator", "escape"],    mitigates: new Set(["xss-reflected"]) },
-  { pattern: ["encodeURIComponent"],     mitigates: new Set(["xss-reflected", "open-redirect"]) },
-  { pattern: ["encodeURI"],              mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["encodeURIComponent"],     mitigates: new Set(["xss-reflected", "open-redirect", "log-injection"]) },
+  { pattern: ["encodeURI"],              mitigates: new Set(["xss-reflected", "log-injection"]) },
   { pattern: ["htmlEncode"],             mitigates: new Set(["xss-reflected"]) },
   { pattern: ["Encode", "forHtml"],      mitigates: new Set(["xss-reflected"]) },
   { pattern: ["striptags"],             mitigates: new Set(["xss-reflected"]) },
@@ -118,6 +156,27 @@ const KNOWN_SANITIZERS: SanitizerDef[] = [
   { pattern: ["validator", "isURL"],     mitigates: new Set(["ssrf", "open-redirect"]) },
   { pattern: ["validator", "isInt"],     mitigates: new Set(["sql-injection", "command-injection"]) },
   { pattern: ["validator", "isAlphanumeric"], mitigates: new Set(["sql-injection", "command-injection", "xss-reflected", "path-traversal"]) },
+  // Additional sanitizers
+  { pattern: ["createDOMPurify"], mitigates: new Set(["xss-reflected", "dangerous-innerhtml"]) },
+  { pattern: ["dompurify", "sanitize"], mitigates: new Set(["xss-reflected", "dangerous-innerhtml"]) },
+  { pattern: ["xssFilters", "inHTMLData"], mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["xssFilters", "inHTMLComment"], mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["crypto", "timingSafeEqual"], mitigates: new Set(["timing-attack"]) },
+  { pattern: ["bcrypt", "compare"], mitigates: new Set(["timing-attack"]) },
+  { pattern: ["bcrypt", "compareSync"], mitigates: new Set(["timing-attack"]) },
+  { pattern: ["argon2", "verify"], mitigates: new Set(["timing-attack"]) },
+  { pattern: ["validator", "whitelist"], mitigates: new Set(["sql-injection", "command-injection", "xss-reflected"]) },
+  { pattern: ["validator", "blacklist"], mitigates: new Set(["sql-injection", "xss-reflected"]) },
+  { pattern: ["validator", "normalizeEmail"], mitigates: new Set(["xss-reflected"]) },
+  { pattern: ["validator", "stripLow"], mitigates: new Set(["log-injection", "xss-reflected"]) },
+  { pattern: ["Joi", "validate"], mitigates: new Set(["sql-injection", "command-injection", "xss-reflected", "nosql-injection"]) },
+  { pattern: ["zod", "parse"], mitigates: new Set(["sql-injection", "command-injection", "xss-reflected", "nosql-injection"]) },
+  { pattern: ["yup", "validate"], mitigates: new Set(["sql-injection", "command-injection", "xss-reflected", "nosql-injection"]) },
+  { pattern: ["path", "normalize"], mitigates: new Set(["path-traversal"]) },
+  { pattern: ["path", "basename"], mitigates: new Set(["path-traversal"]) },
+  { pattern: ["slugify"], mitigates: new Set(["sql-injection", "command-injection", "xss-reflected", "path-traversal"]) },
+  { pattern: ["parameterize"], mitigates: new Set(["sql-injection"]) },
+  { pattern: ["escape_string"], mitigates: new Set(["sql-injection"]) },
 ];
 
 /** Known input-validation functions that reduce confidence when used as a guard */
@@ -128,6 +187,12 @@ const VALIDATION_FUNCTIONS = new Set([
   "isValidUrl", "isValidPath", "isLocalUrl", "isInternalUrl",
   "isValidEmail", "isValidId", "isValidInput", "isValidParam",
   "startsWith", "endsWith", "includes", "match", "test",
+  "isUUID", "isMongoId", "isIP", "isFQDN", "isJSON",
+  "isLength", "isNumeric", "isAlpha", "isAlphanumeric",
+  "hasOwnProperty", "indexOf", "lastIndexOf", "search",
+  "every", "some", "find", "filter",
+  "parseInt", "parseFloat", "Number", "isNaN", "isFinite",
+  "checkSchema", "validateAsync", "safeParse",
 ]);
 
 /** Check whether a CallExpression is a known sanitizer for a specific vulnerability */
@@ -231,19 +296,62 @@ const DANGEROUS_SINKS: SinkDef[] = [
   {
     id: "eval-injection", name: "Code Injection via eval()", cwe: "CWE-95", owasp: "A03:2021",
     severity: "critical", category: "Injection",
-    callPatterns: [["eval"], ["Function"], ["setTimeout"], ["setInterval"]],
+    callPatterns: [["eval"], ["Function"], ["setTimeout"], ["setInterval"],
+      ["vm", "runInNewContext"], ["vm", "runInThisContext"], ["vm", "runInContext"],
+      ["vm", "compileFunction"], ["vm", "createScript"]],
     argIndex: 0,
     remediation: "Never pass user-controlled data to eval(), new Function(), setTimeout(string), or setInterval(string). Use safer alternatives.",
+  },
+  // Template Injection
+  {
+    id: "template-injection", name: "Server-Side Template Injection (SSTI)", cwe: "CWE-1336", owasp: "A03:2021",
+    severity: "critical", category: "Injection",
+    callPatterns: [["ejs", "render"], ["ejs", "renderFile"], ["ejs", "compile"],
+      ["pug", "render"], ["pug", "renderFile"], ["pug", "compile"], ["pug", "compileFile"],
+      ["Handlebars", "compile"], ["Handlebars", "precompile"],
+      ["nunjucks", "renderString"], ["nunjucks", "compile"],
+      ["mustache", "render"], ["dot", "template"]],
+    argIndex: 0,
+    remediation: "Never pass user input directly to template engines. Sanitize and validate template data. Use auto-escaping and avoid rendering user-controlled template strings.",
+  },
+  // Dynamic require / import
+  {
+    id: "dynamic-require", name: "Dynamic Module Loading", cwe: "CWE-95", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    callPatterns: [["require"]],
+    argIndex: 0,
+    remediation: "Never pass user-controlled input to require() or dynamic import(). Use an allowlist of permitted modules.",
   },
   // NoSQL Injection
   {
     id: "nosql-injection", name: "NoSQL Injection", cwe: "CWE-943", owasp: "A03:2021",
     severity: "high", category: "Injection",
-    callPatterns: [["find"], ["findOne"], ["findById"],
+    callPatterns: [["find"], ["findOne"], ["findById"], ["findOneAndUpdate"], ["findOneAndDelete"], ["findOneAndReplace"],
       ["updateOne"], ["updateMany"], ["deleteOne"], ["deleteMany"],
-      ["aggregate"], ["countDocuments"]],
+      ["aggregate"], ["countDocuments"], ["distinct"],
+      ["replaceOne"], ["insertOne"], ["insertMany"],
+      ["collection", "find"], ["collection", "findOne"],
+      ["collection", "aggregate"], ["collection", "updateOne"]],
     argIndex: 0,
     remediation: "Sanitize user input before using in MongoDB queries. Use mongoose schema validation. Reject objects with $ operators from user input.",
+  },
+  // LDAP Injection
+  {
+    id: "ldap-injection", name: "LDAP Injection", cwe: "CWE-90", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    callPatterns: [["ldap", "search"], ["ldapClient", "search"], ["client", "search"],
+      ["ldap", "bind"], ["ldapClient", "bind"]],
+    argIndex: 0,
+    remediation: "Escape special LDAP characters (*, (, ), \\, NUL) in user input. Use parameterized LDAP queries.",
+  },
+  // Header Injection
+  {
+    id: "header-injection", name: "HTTP Header Injection", cwe: "CWE-113", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    callPatterns: [["res", "setHeader"], ["res", "set"], ["res", "header"],
+      ["response", "setHeader"], ["response", "set"]],
+    argIndex: 1,
+    remediation: "Validate and sanitize header values. Strip newline characters (\\r\\n) to prevent header injection and response splitting.",
   },
   // Log Injection
   {
@@ -678,7 +786,13 @@ const PATTERN_CHECKS: PatternCheck[] = [
       if (node.type === "VariableDeclarator" && node.init?.type === "Literal" && typeof node.init.value === "string") {
         const varName = node.id?.name?.toLowerCase() || "";
         const val = node.init.value;
-        const secretNames = ["password", "passwd", "secret", "api_key", "apikey", "access_token", "auth_token", "private_key", "db_password", "database_password", "mysql_password", "mongo_uri", "connection_string"];
+        const secretNames = ["password", "passwd", "secret", "api_key", "apikey", "access_token", "accesstoken",
+          "auth_token", "authtoken", "private_key", "privatekey", "db_password", "database_password",
+          "mysql_password", "mongo_uri", "connection_string", "connectionstring", "jwt_secret", "jwtsecret",
+          "encryption_key", "encryptionkey", "signing_key", "signingkey", "client_secret", "clientsecret",
+          "aws_secret", "stripe_secret", "stripe_key", "sendgrid_key", "twilio_token", "slack_token",
+          "github_token", "firebase_key", "database_url", "redis_url", "redis_password",
+          "smtp_password", "mail_password", "ftp_password"];
         if (secretNames.some(s => varName.includes(s)) && val.length >= 4 && !val.includes("process.env") && val !== "undefined" && val !== "null" && val !== "") {
           const line = getNodeLine(node, code);
           return {
@@ -686,6 +800,57 @@ const PATTERN_CHECKS: PatternCheck[] = [
             evidence: getCodeSnippet(lines, line),
             detail: `Variable "${node.id.name}" contains a hardcoded credential. This secret can be extracted from source code or version control history.`,
             confidence: "high",
+          };
+        }
+        // Detect API key patterns by value format, regardless of variable name
+        const apiKeyPatterns = [
+          { regex: /^sk[_-]live[_-]/i, label: "Stripe live secret key" },
+          { regex: /^sk[_-]test[_-]/i, label: "Stripe test secret key" },
+          { regex: /^pk[_-]live[_-]/i, label: "Stripe live publishable key" },
+          { regex: /^rk[_-]live[_-]/i, label: "Stripe restricted key" },
+          { regex: /^ghp_[a-zA-Z0-9]{36,}/, label: "GitHub personal access token" },
+          { regex: /^gho_[a-zA-Z0-9]{36,}/, label: "GitHub OAuth token" },
+          { regex: /^ghs_[a-zA-Z0-9]{36,}/, label: "GitHub app token" },
+          { regex: /^github_pat_[a-zA-Z0-9_]{22,}/, label: "GitHub fine-grained token" },
+          { regex: /^AKIA[0-9A-Z]{16}$/, label: "AWS Access Key ID" },
+          { regex: /^ASIA[0-9A-Z]{16}$/, label: "AWS temporary access key" },
+          { regex: /^xox[bpsa]-[0-9a-zA-Z-]+/, label: "Slack token" },
+          { regex: /^SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}$/, label: "SendGrid API key" },
+          { regex: /^sk-[a-zA-Z0-9]{20,}/, label: "OpenAI API key" },
+          { regex: /^Bearer\s+[A-Za-z0-9\-._~+/]+=*$/i, label: "Bearer token" },
+          { regex: /^eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}$/, label: "JWT token" },
+          { regex: /^npm_[a-zA-Z0-9]{36,}/, label: "npm access token" },
+          { regex: /^pypi-[a-zA-Z0-9_-]{50,}/, label: "PyPI API token" },
+          { regex: /^AGE-SECRET-KEY-1[a-z0-9]{58}$/, label: "Age encryption key" },
+          { regex: /^glpat-[a-zA-Z0-9\-_]{20,}/, label: "GitLab personal access token" },
+          { regex: /^dop_v1_[a-f0-9]{64}/, label: "DigitalOcean personal access token" },
+          { regex: /^-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/, label: "Private key" },
+          { regex: /^[a-f0-9]{40}$/, label: "Potential hex-encoded secret (40 chars)" },
+        ];
+        for (const { regex, label } of apiKeyPatterns) {
+          if (regex.test(val)) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `Hardcoded ${label} detected in "${node.id?.name || "variable"}". Secrets in source code are exposed in version control.`,
+              confidence: "high",
+            };
+          }
+        }
+      }
+      // Also check property assignments: obj.secret = "value"
+      if (node.type === "AssignmentExpression" && node.right?.type === "Literal" && typeof node.right.value === "string") {
+        const propName = (node.left?.property?.name || node.left?.property?.value || "").toString().toLowerCase();
+        const val = node.right.value;
+        const secretProps = ["password", "secret", "apikey", "api_key", "token", "private_key", "auth"];
+        if (secretProps.some(s => propName.includes(s)) && val.length >= 4 && val !== "undefined" && val !== "null") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: `Property "${propName}" assigned a hardcoded secret value. Extractable from source code.`,
+            confidence: "medium",
           };
         }
       }
@@ -826,6 +991,438 @@ const PATTERN_CHECKS: PatternCheck[] = [
     },
     remediation: "Never disable TLS verification in production. Fix certificate issues properly by updating CA bundles or using valid certificates.",
   },
+  // JWT algorithm none
+  {
+    id: "jwt-alg-none", name: "JWT Algorithm 'none' Accepted", cwe: "CWE-327", owasp: "A02:2021",
+    severity: "critical", category: "Authentication",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if ((prop === "sign" || prop === "verify" || prop === "decode") && node.arguments.length >= 3) {
+          const opts = node.arguments[2];
+          if (opts?.type === "ObjectExpression") {
+            for (const p of opts.properties || []) {
+              const key = p.key?.name || p.key?.value;
+              if (key === "algorithms" && p.value?.type === "ArrayExpression") {
+                for (const el of p.value.elements || []) {
+                  if (el?.type === "Literal" && typeof el.value === "string" && el.value.toLowerCase() === "none") {
+                    const line = getNodeLine(node, code);
+                    return {
+                      line, column: getNodeColumn(node, code),
+                      evidence: getCodeSnippet(lines, line),
+                      detail: "JWT configured to accept 'none' algorithm — allows unsigned tokens, bypassing authentication.",
+                      confidence: "high",
+                    };
+                  }
+                }
+              }
+              if (key === "algorithm" && p.value?.type === "Literal" && typeof p.value.value === "string" && p.value.value.toLowerCase() === "none") {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: "JWT configured to use 'none' algorithm — tokens will be unsigned, allowing forgery.",
+                  confidence: "high",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Never accept algorithm 'none'. Specify allowed algorithms explicitly: { algorithms: ['RS256'] }. Use asymmetric keys in production.",
+  },
+  // Missing SameSite on cookies
+  {
+    id: "cookie-no-samesite", name: "Cookie Missing SameSite Attribute", cwe: "CWE-1275", owasp: "A01:2021",
+    severity: "medium", category: "Session Management",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if (prop === "cookie" && node.arguments.length >= 3) {
+          const opts = node.arguments[2];
+          if (opts?.type === "ObjectExpression") {
+            const hasSameSite = opts.properties?.some((p: ASTNode) => (p.key?.name || p.key?.value) === "sameSite");
+            if (!hasSameSite) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: "Cookie set without SameSite attribute — vulnerable to Cross-Site Request Forgery (CSRF).",
+                confidence: "medium",
+              };
+            }
+            // Check for sameSite: "none" without secure: true
+            const sameSiteProp = opts.properties?.find((p: ASTNode) => (p.key?.name || p.key?.value) === "sameSite");
+            const secureProp = opts.properties?.find((p: ASTNode) => (p.key?.name || p.key?.value) === "secure");
+            if (sameSiteProp?.value?.value?.toString().toLowerCase() === "none" && secureProp?.value?.value !== true) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: "Cookie with SameSite=None must also set Secure=true, otherwise browsers will reject it.",
+                confidence: "high",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Set SameSite attribute on all cookies: { sameSite: 'strict' } or { sameSite: 'lax' }. Use 'none' only when cross-site is necessary (with Secure=true).",
+  },
+  // Weak bcrypt rounds
+  {
+    id: "weak-bcrypt", name: "Weak bcrypt Cost Factor", cwe: "CWE-916", owasp: "A02:2021",
+    severity: "medium", category: "Cryptography",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const callee = node.callee;
+        const name = callee?.property?.name || callee?.name || "";
+        if ((name === "genSalt" || name === "genSaltSync") && node.arguments.length > 0) {
+          const rounds = node.arguments[0];
+          if (rounds?.type === "Literal" && typeof rounds.value === "number" && rounds.value < 10) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `bcrypt salt rounds set to ${rounds.value}. OWASP recommends a minimum of 10 (12+ preferred). Low rounds make brute-force feasible.`,
+              confidence: "high",
+            };
+          }
+        }
+        if ((name === "hash" || name === "hashSync") && callee?.object?.name === "bcrypt") {
+          if (node.arguments.length >= 2) {
+            const rounds = node.arguments[1];
+            if (rounds?.type === "Literal" && typeof rounds.value === "number" && rounds.value < 10) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `bcrypt cost factor set to ${rounds.value}. OWASP recommends a minimum of 10 (12+ preferred).`,
+                confidence: "high",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use bcrypt with at least 10 salt rounds: bcrypt.hash(password, 12). Consider Argon2id for new projects.",
+  },
+  // postMessage without origin check
+  {
+    id: "postmessage-origin", name: "postMessage Without Origin Validation", cwe: "CWE-346", owasp: "A07:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      // window.postMessage(data, "*") — wildcard target origin
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if (prop === "postMessage" && node.arguments.length >= 2) {
+          const origin = node.arguments[1];
+          if (origin?.type === "Literal" && origin.value === "*") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "postMessage() with '*' as target origin sends the message to any window — sensitive data may leak to untrusted origins.",
+              confidence: "high",
+            };
+          }
+        }
+      }
+      // addEventListener("message", handler) without origin check
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if (prop === "addEventListener" && node.arguments.length >= 2) {
+          const evtType = node.arguments[0];
+          if (evtType?.type === "Literal" && evtType.value === "message") {
+            const handler = node.arguments[1];
+            if (handler?.type === "ArrowFunctionExpression" || handler?.type === "FunctionExpression") {
+              // Check if handler body references event.origin
+              let checksOrigin = false;
+              walkAST(handler.body, (n) => {
+                if (n.type === "MemberExpression" && n.property?.name === "origin") checksOrigin = true;
+              });
+              if (!checksOrigin) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: "Message event handler does not validate event.origin — any page can send messages to this handler.",
+                  confidence: "medium",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Always validate event.origin in message handlers: if (event.origin !== 'https://trusted.com') return; Use specific origin instead of '*' for postMessage.",
+  },
+  // Exposed GraphQL introspection
+  {
+    id: "graphql-introspection", name: "GraphQL Introspection Enabled", cwe: "CWE-200", owasp: "A04:2021",
+    severity: "medium", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Property" || node.type === "ObjectProperty") {
+        const key = node.key?.name || node.key?.value;
+        if (key === "introspection" && node.value?.value === true) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "GraphQL introspection is enabled — exposes the entire API schema including hidden fields, mutations, and types.",
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Disable introspection in production: new ApolloServer({ introspection: false }). Use schema documentation for authorized consumers only.",
+  },
+  // Helmet disabled features
+  {
+    id: "helmet-misconfigured", name: "Security Headers Misconfigured", cwe: "CWE-693", owasp: "A05:2021",
+    severity: "medium", category: "Configuration",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.name === "helmet") {
+        const opts = node.arguments[0];
+        if (opts?.type === "ObjectExpression") {
+          for (const p of opts.properties || []) {
+            const key = p.key?.name || p.key?.value;
+            const criticalHeaders = ["contentSecurityPolicy", "frameguard", "xssFilter", "noSniff", "hsts"];
+            if (criticalHeaders.includes(key) && p.value?.value === false) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `helmet() with ${key}: false disables a critical security header. This weakens browser-side protections.`,
+                confidence: "high",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Do not disable helmet security headers. Use helmet() with default settings, or customize CSP policy instead of disabling it entirely.",
+  },
+  // child_process.exec with template literal or concatenation (always dangerous)
+  {
+    id: "shell-injection-concat", name: "Shell Command via String Concatenation", cwe: "CWE-78", owasp: "A03:2021",
+    severity: "critical", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const chain = resolveMemberChain(node.callee);
+        const name = node.callee?.name || chain[chain.length - 1] || "";
+        if (name === "exec" || name === "execSync") {
+          const arg = node.arguments[0];
+          if (arg?.type === "TemplateLiteral" && arg.expressions?.length > 0) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "exec() called with template literal containing interpolated values — shell metacharacters can inject commands.",
+              confidence: "high",
+            };
+          }
+          if (arg?.type === "BinaryExpression" && arg.operator === "+") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "exec() called with string concatenation — any dynamic part can inject shell commands via ;, |, &&, etc.",
+              confidence: "high",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use child_process.execFile() with arguments array instead of exec() with string concatenation. Always avoid shell interpretation of user data.",
+  },
+  // Sensitive data in URL
+  {
+    id: "sensitive-data-url", name: "Sensitive Data in URL", cwe: "CWE-598", owasp: "A04:2021",
+    severity: "medium", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "TemplateLiteral" && node.quasis?.length > 0) {
+        const rawTemplate = node.quasis.map((q: ASTNode) => q.value?.raw || "").join("...");
+        const urlPattern = /https?:\/\/.*\?(.*password|.*secret|.*token|.*api_key|.*apikey)/i;
+        if (urlPattern.test(rawTemplate)) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Sensitive parameters (password, token, secret) passed in URL query string — visible in browser history, logs, and referer headers.",
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Send sensitive data in the request body (POST) or in HTTP headers (Authorization). Never include secrets in URLs.",
+  },
+  // Mass assignment / overfetching
+  {
+    id: "mass-assignment", name: "Mass Assignment Risk", cwe: "CWE-915", owasp: "A04:2021",
+    severity: "medium", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const callee = node.callee;
+        const prop = callee?.property?.name || "";
+        const obj = callee?.object?.property?.name || callee?.object?.name || "";
+        // Model.create(req.body) or User.update(req.body)
+        if ((prop === "create" || prop === "update" || prop === "updateOne" || prop === "findOneAndUpdate") && node.arguments.length > 0) {
+          const arg = node.arguments[0];
+          if (arg?.type === "MemberExpression") {
+            const argChain = resolveIdentifierName(arg);
+            if (argChain === "req.body" || argChain === "request.body" || argChain === "ctx.request.body") {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `${obj}.${prop}(req.body) passes the entire request body to the database — attackers can set admin privileges, email, or other sensitive fields.`,
+                confidence: "medium",
+              };
+            }
+          }
+          // Object spread: Model.create({...req.body})
+          if (arg?.type === "ObjectExpression") {
+            for (const p of arg.properties || []) {
+              if (p.type === "SpreadElement" && p.argument?.type === "MemberExpression") {
+                const chainName = resolveIdentifierName(p.argument);
+                if (chainName === "req.body" || chainName === "request.body") {
+                  const line = getNodeLine(node, code);
+                  return {
+                    line, column: getNodeColumn(node, code),
+                    evidence: getCodeSnippet(lines, line),
+                    detail: "Spreading req.body into database operations allows mass assignment — attacker can inject unexpected fields.",
+                    confidence: "medium",
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Explicitly pick allowed fields: const { name, email } = req.body; Model.create({ name, email }). Use allowlists, never blocklists.",
+  },
+  // Hardcoded IP / cloud metadata
+  {
+    id: "cloud-metadata-ssrf", name: "Cloud Metadata URL Detected", cwe: "CWE-918", owasp: "A10:2021",
+    severity: "high", category: "SSRF",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Literal" && typeof node.value === "string") {
+        const metadataUrls = ["169.254.169.254", "metadata.google.internal", "100.100.100.200", "fd00:ec2::254"];
+        if (metadataUrls.some(u => node.value.includes(u))) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Code references cloud metadata endpoint — if reachable from SSRF, leaks IAM credentials and instance metadata.",
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Block cloud metadata IPs in SSRF filters. Use IMDSv2 (token-required) on AWS. Apply network-level metadata endpoint restrictions.",
+  },
+  // outerHTML assignment
+  {
+    id: "outerhtml-xss", name: "DOM XSS via outerHTML", cwe: "CWE-79", owasp: "A03:2021",
+    severity: "high", category: "XSS",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "AssignmentExpression" && node.left?.type === "MemberExpression") {
+        const prop = node.left.property?.name || node.left.property?.value;
+        if (prop === "outerHTML") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Setting outerHTML directly replaces element markup — XSS if the value contains user-controlled data.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use textContent instead of outerHTML. If raw HTML is required, sanitize with DOMPurify.sanitize() first.",
+  },
+  // document.write
+  {
+    id: "document-write", name: "DOM XSS via document.write()", cwe: "CWE-79", owasp: "A03:2021",
+    severity: "high", category: "XSS",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name;
+        const prop = node.callee.property?.name;
+        if (obj === "document" && (prop === "write" || prop === "writeln")) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "document.write() injects raw HTML into the page — XSS if any argument contains user-controlled data.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Avoid document.write(). Use DOM APIs (textContent, createElement) or framework rendering. If needed, sanitize with DOMPurify first.",
+  },
+  // Insecure deserialization with node-serialize
+  {
+    id: "node-serialize", name: "Insecure Deserialization (node-serialize)", cwe: "CWE-502", owasp: "A08:2021",
+    severity: "critical", category: "Deserialization",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const callee = node.callee;
+        const name = callee?.property?.name || callee?.name || "";
+        if (name === "unserialize") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "node-serialize unserialize() executes arbitrary code via IIFE functions in serialized data — guaranteed RCE.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Remove node-serialize entirely. Use JSON.parse() for data deserialization. If custom serialization is needed, use safe-eval or a schema validator.",
+  },
+  // Disabled security headers: X-Powered-By leaking framework info
+  {
+    id: "x-powered-by", name: "X-Powered-By Header Exposure", cwe: "CWE-200", owasp: "A05:2021",
+    severity: "low", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if (prop === "setHeader" || prop === "set" || prop === "header") {
+          const headerName = node.arguments[0];
+          if (headerName?.type === "Literal" && typeof headerName.value === "string" && headerName.value.toLowerCase() === "x-powered-by") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Setting X-Powered-By header reveals the server framework — helps attackers select targeted exploits.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Remove X-Powered-By header: app.disable('x-powered-by'). Use helmet() which removes it by default.",
+  },
 ];
 
 /* ── AST Helpers ── */
@@ -962,6 +1559,10 @@ class TaintTracker {
       if (root?.type === "Identifier" && this.taintedVars.has(root.name)) {
         return this.taintedVars.get(root.name)!;
       }
+      // Computed property access: obj["prop"] or obj[variable]
+      if (node.computed && root?.type === "Identifier" && this.taintedVars.has(root.name)) {
+        return this.taintedVars.get(root.name)!;
+      }
     }
     // Template literal with tainted expressions
     if (node.type === "TemplateLiteral") {
@@ -974,9 +1575,67 @@ class TaintTracker {
     if (node.type === "BinaryExpression" && node.operator === "+") {
       return this.isTainted(node.left) || this.isTainted(node.right);
     }
-    // Conditional expression
+    // Conditional expression: x ? tainted : safe
     if (node.type === "ConditionalExpression") {
       return this.isTainted(node.consequent) || this.isTainted(node.alternate);
+    }
+    // Logical expression: tainted || default, tainted && other
+    if (node.type === "LogicalExpression") {
+      return this.isTainted(node.left) || this.isTainted(node.right);
+    }
+    // Object spread: { ...tainted }
+    if (node.type === "ObjectExpression") {
+      for (const prop of node.properties || []) {
+        if (prop.type === "SpreadElement") {
+          const t = this.isTainted(prop.argument);
+          if (t) return t;
+        }
+      }
+    }
+    // Array spread: [...tainted]
+    if (node.type === "ArrayExpression") {
+      for (const el of node.elements || []) {
+        if (el?.type === "SpreadElement") {
+          const t = this.isTainted(el.argument);
+          if (t) return t;
+        }
+      }
+    }
+    // Await expression: await tainted
+    if (node.type === "AwaitExpression") {
+      return this.isTainted(node.argument);
+    }
+    // Call expression: tainted.toString(), tainted.trim(), tainted.toLowerCase(), etc.
+    if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+      const method = node.callee.property?.name || "";
+      const preservesTaint = new Set([
+        "toString", "trim", "trimStart", "trimEnd", "toLowerCase", "toUpperCase",
+        "slice", "substring", "substr", "split", "replace", "replaceAll",
+        "concat", "padStart", "padEnd", "repeat", "normalize",
+        "match", "matchAll", "at", "charAt", "charCodeAt",
+        "join", "flat", "flatMap", "reverse",
+        "JSON.stringify",
+      ]);
+      if (preservesTaint.has(method)) {
+        return this.isTainted(node.callee.object);
+      }
+      // Array methods that propagate taint: arr.map(x=>x), arr.filter(x=>x), etc.
+      const arrayPropagateMethods = new Set(["map", "filter", "find", "some", "every", "reduce", "forEach", "flatMap"]);
+      if (arrayPropagateMethods.has(method)) {
+        return this.isTainted(node.callee.object);
+      }
+    }
+    // Tagged template: tag`tainted ${expr}`
+    if (node.type === "TaggedTemplateExpression") {
+      return this.isTainted(node.quasi);
+    }
+    // Sequence expression: (a, b, tainted)
+    if (node.type === "SequenceExpression" && node.expressions?.length > 0) {
+      return this.isTainted(node.expressions[node.expressions.length - 1]);
+    }
+    // Assignment expression used as value: (x = tainted)
+    if (node.type === "AssignmentExpression") {
+      return this.isTainted(node.right);
     }
     return null;
   }
@@ -1007,6 +1666,39 @@ class TaintTracker {
           }
         }
       }
+      // Taint-preserving method calls: const x = tainted.trim()
+      if (right.callee?.type === "MemberExpression") {
+        const method = right.callee.property?.name || "";
+        const preserves = new Set([
+          "toString", "trim", "trimStart", "trimEnd", "toLowerCase", "toUpperCase",
+          "slice", "substring", "substr", "concat", "padStart", "padEnd", "replace", "replaceAll",
+          "split", "join", "flat", "reverse", "normalize", "repeat",
+        ]);
+        if (preserves.has(method)) {
+          const objTaint = this.isTainted(right.callee.object);
+          if (objTaint) { this.markTainted(left.name, objTaint); return; }
+        }
+      }
+      // JSON.stringify(tainted) — still tainted
+      if (right.callee?.type === "MemberExpression") {
+        const obj = right.callee.object?.name;
+        const prop = right.callee.property?.name;
+        if (obj === "JSON" && prop === "stringify" && right.arguments?.[0]) {
+          const argTaint = this.isTainted(right.arguments[0]);
+          if (argTaint) { this.markTainted(left.name, argTaint); return; }
+        }
+        // JSON.parse(tainted) — still tainted
+        if (obj === "JSON" && prop === "parse" && right.arguments?.[0]) {
+          const argTaint = this.isTainted(right.arguments[0]);
+          if (argTaint) { this.markTainted(left.name, argTaint); return; }
+        }
+      }
+      // Propagate from first tainted arg for non-sanitizer calls
+      // e.g., const x = someFunction(tainted) — conservative propagation
+      for (const arg of right.arguments || []) {
+        const argTaint = this.isTainted(arg);
+        if (argTaint) { this.markTainted(left.name, argTaint); return; }
+      }
     }
     // Check direct taint source
     const source = isTaintSource(right);
@@ -1018,6 +1710,29 @@ class TaintTracker {
         sourceCode: getCodeSnippet(lines, line),
       });
       return;
+    }
+    // Object spread: const x = { ...tainted }
+    if (right.type === "ObjectExpression") {
+      for (const prop of right.properties || []) {
+        if (prop.type === "SpreadElement") {
+          const spreadTaint = this.isTainted(prop.argument);
+          if (spreadTaint) { this.markTainted(left.name, spreadTaint); return; }
+        }
+      }
+    }
+    // Array spread: const x = [...tainted]
+    if (right.type === "ArrayExpression") {
+      for (const el of right.elements || []) {
+        if (el?.type === "SpreadElement") {
+          const spreadTaint = this.isTainted(el.argument);
+          if (spreadTaint) { this.markTainted(left.name, spreadTaint); return; }
+        }
+      }
+    }
+    // Await: const x = await tainted
+    if (right.type === "AwaitExpression") {
+      const awaitTaint = this.isTainted(right.argument);
+      if (awaitTaint) { this.markTainted(left.name, awaitTaint); return; }
     }
     // Propagate existing taint
     const existing = this.isTainted(right);
@@ -1330,6 +2045,64 @@ export function analyzeCode(code: string): {
               sourceLine: getNodeLine(param, code),
               sourceCode: getCodeSnippet(lines, getNodeLine(param, code)),
             });
+          }
+        }
+        // Destructured params: function handler({ body, query })
+        if (param.type === "ObjectPattern") {
+          for (const prop of param.properties || []) {
+            const key = prop.value?.name || prop.key?.name;
+            if (key && ["body", "query", "params", "headers", "cookies"].includes(key)) {
+              tracker.markTainted(key, {
+                label: `destructured ${key}`,
+                sourceLine: getNodeLine(param, code),
+                sourceCode: getCodeSnippet(lines, getNodeLine(param, code)),
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Array destructuring: const [first, ...rest] = taintedArray
+    if (node.type === "VariableDeclarator" && node.id?.type === "ArrayPattern" && node.init) {
+      const initTaint = tracker.isTainted(node.init) || (isTaintSource(node.init).tainted ? {
+        label: isTaintSource(node.init).label,
+        sourceLine: getNodeLine(node, code),
+        sourceCode: getCodeSnippet(lines, getNodeLine(node, code)),
+      } : null);
+      if (initTaint) {
+        for (const el of node.id.elements || []) {
+          if (el?.type === "Identifier") {
+            tracker.markTainted(el.name, initTaint);
+          } else if (el?.type === "RestElement" && el.argument?.type === "Identifier") {
+            tracker.markTainted(el.argument.name, initTaint);
+          }
+        }
+      }
+    }
+
+    // For-in / for-of loops: for (const key in taintedObj) or for (const item of taintedArr)
+    if (node.type === "ForInStatement" || node.type === "ForOfStatement") {
+      const rightTaint = tracker.isTainted(node.right);
+      if (rightTaint && node.left?.type === "VariableDeclaration") {
+        const decl = node.left.declarations?.[0];
+        if (decl?.id?.type === "Identifier") {
+          tracker.markTainted(decl.id.name, rightTaint);
+        }
+      }
+    }
+
+    // Callback parameters from tainted array methods: taintedArr.forEach(item => ...)
+    // taintedArr.map(item => ...), Promise.then(result => ...)
+    if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+      const method = node.callee.property?.name || "";
+      const objTaint = tracker.isTainted(node.callee.object);
+      const propagateMethods = new Set(["forEach", "map", "filter", "find", "some", "every", "reduce", "flatMap", "then", "catch"]);
+      if (objTaint && propagateMethods.has(method) && node.arguments.length > 0) {
+        const callback = node.arguments[0];
+        if (callback?.type === "ArrowFunctionExpression" || callback?.type === "FunctionExpression") {
+          if (callback.params?.[0]?.type === "Identifier") {
+            tracker.markTainted(callback.params[0].name, objTaint);
           }
         }
       }
