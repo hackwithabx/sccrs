@@ -43,7 +43,81 @@ import {
   Eye,
   Server,
   Code2,
+  Activity,
 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  RadialBarChart,
+  RadialBar,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+} from "recharts";
+
+/* ── Chart Colors ── */
+const SEV_COLORS: Record<string, string> = {
+  critical: "#ef4444",
+  high: "#f97316",
+  medium: "#eab308",
+  low: "#3b82f6",
+  info: "#6b7280",
+};
+
+function SeverityPieChart({ stats }: { stats: { critical?: number; high?: number; medium?: number; low?: number; total?: number } }) {
+  const data = [
+    { name: "Critical", value: stats.critical || 0, color: SEV_COLORS.critical },
+    { name: "High", value: stats.high || 0, color: SEV_COLORS.high },
+    { name: "Medium", value: stats.medium || 0, color: SEV_COLORS.medium },
+    { name: "Low", value: stats.low || 0, color: SEV_COLORS.low },
+  ].filter((d) => d.value > 0);
+  if (data.length === 0) return null;
+  return (
+    <div className="flex flex-col items-center">
+      <ResponsiveContainer width={180} height={180}>
+        <PieChart>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} strokeWidth={0}>
+            {data.map((d, i) => <Cell key={i} fill={d.color} />)}
+          </Pie>
+          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="flex gap-3 mt-1 flex-wrap justify-center">
+        {data.map((d) => (
+          <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+            {d.name} ({d.value})
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScoreGauge({ score, label }: { score: number; label?: string }) {
+  const color = score >= 7 ? "#10b981" : score >= 4 ? "#f59e0b" : "#ef4444";
+  const data = [{ value: score, fill: color }];
+  return (
+    <div className="flex flex-col items-center">
+      <ResponsiveContainer width={160} height={160}>
+        <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" startAngle={180} endAngle={0} barSize={12} data={data}>
+          <RadialBar background={{ fill: "hsl(var(--muted))" }} dataKey="value" cornerRadius={6} max={10} />
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="-mt-14 text-center">
+        <div className="text-3xl font-bold" style={{ color }}>{score.toFixed(1)}</div>
+        <div className="text-[10px] text-muted-foreground">{label || "out of 10"}</div>
+      </div>
+    </div>
+  );
+}
 
 /* ── Types ── */
 
@@ -145,7 +219,7 @@ interface ScanHistoryItem {
 /* ── Module definitions ── */
 const MODULES = [
   { id: "secrets", name: "Secrets Scanner", description: "Detect hardcoded API keys, tokens, and credentials using 20+ regex patterns and Shannon entropy analysis.", icon: Key, plans: ["free", "pro", "enterprise"], },
-  { id: "deps", name: "Dependency Scanner", description: "Vulnerability scanning via OSV.dev (Google's open-source CVE database) for npm, pip, Go, and Gradle dependencies.", icon: Package, plans: ["pro", "enterprise"] },
+  { id: "deps", name: "Dependency Scanner", description: "Real-time vulnerability scanning for npm, pip, Go, and Gradle dependencies against a continuously updated CVE database.", icon: Package, plans: ["pro", "enterprise"] },
   { id: "api", name: "API Security Scanner", description: "OWASP API Top 10 2023 compliance checks — security headers, CORS, auth, and 15+ automated tests.", icon: Globe, plans: ["pro", "enterprise"] },
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "Pattern-based log analysis to detect brute-force attacks, injection attempts, privilege escalation, and anomalous traffic.", icon: Brain, plans: ["pro", "enterprise"] },
@@ -161,7 +235,7 @@ const POSITIONING = {
   valueProps: [
     "Find secrets, vulnerabilities, and misconfigurations before production.",
     "All-in-one security platform — no need for 5 different tools.",
-    "Cheaper than Snyk, faster than Aikido, simpler than any enterprise suite.",
+    "Enterprise-grade security at startup-friendly pricing — no bloat, no lock-in.",
     "Centralized security insights with actionable remediation guidance.",
   ],
 };
@@ -295,10 +369,19 @@ export default function ShieldXWorkspacePage() {
     html += `<div class="header">
       <div class="logo">
         <svg viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="256" height="256" rx="48" fill="rgba(255,255,255,0.15)"/><path d="M128 28L48 68v60c0 52.8 34.1 102.2 80 114 45.9-11.8 80-61.2 80-114V68l-80-40z" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="6"/><text x="128" y="155" text-anchor="middle" fill="white" font-family="monospace" font-size="64" font-weight="bold">&lt;/&gt;</text></svg>
-        <div><strong style="font-size:18px">SecureCodeReviews</strong><br><span style="font-size:11px;opacity:.8">ShieldX SAST Engine</span></div>
+        <div>
+          <strong style="font-size:20px;letter-spacing:1px">SCRS</strong>
+          <span style="font-size:13px;opacity:.9;margin-left:6px">SecureCodeReviews</span>
+          <br><span style="font-size:11px;opacity:.7">ShieldX SAST Engine — Automated Static Analysis</span>
+        </div>
       </div>
       <h1>SAST Security Analysis Report</h1>
-      <p>Generated: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()} | ${isMulti ? `Project Scan: ${results.fileCount} files, ${results.totalLines?.toLocaleString()} lines` : `Single File: ${results.linesAnalyzed || 0} lines`}</p>
+      <p style="margin-top:8px">
+        <strong>Date:</strong> ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        &nbsp;&nbsp;|&nbsp;&nbsp;<strong>Time:</strong> ${now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+      </p>
+      <p>${isMulti ? `Project Scan: ${results.fileCount} files, ${results.totalLines?.toLocaleString()} lines analyzed` : `Single File Analysis: ${results.linesAnalyzed || 0} lines analyzed`}</p>
+      <p style="font-size:11px;opacity:.6;margin-top:6px">Report ID: SCRS-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${Math.random().toString(36).slice(2, 8).toUpperCase()}</p>
     </div>`;
 
     html += `<div class="stats">
@@ -382,15 +465,17 @@ export default function ShieldXWorkspacePage() {
     </div>`;
 
     html += `<div class="footer">
-      <p>Generated by <strong>SecureCodeReviews ShieldX</strong> SAST Engine</p>
-      <p>securecodereviews.com | Zero code storage | Client-first security</p>
+      <p style="font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:4px">SCRS — SecureCodeReviews</p>
+      <p>Generated by <strong>ShieldX</strong> SAST Engine</p>
+      <p style="margin-top:4px">securecodereviews.com | Zero code storage | Client-first security</p>
+      <p style="margin-top:8px;font-size:10px;opacity:.6">This report is confidential. Distribution is restricted to authorized personnel only.</p>
     </div></div></body></html>`;
 
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sast-report-${now.toISOString().slice(0, 10)}.html`;
+    a.download = `SCRS-SAST-Report-${now.toISOString().slice(0, 10)}-${now.toISOString().slice(11, 16).replace(":", "")}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1369,7 +1454,7 @@ export default function ShieldXWorkspacePage() {
 
                         <div className="flex gap-3">
                           {activeModule !== "score" && activeModule !== "alerts" && (
-                          <Button onClick={runScan} disabled={scanning || (activeModule === "cicd" ? (cicdScanType !== "dependencies" && !scanInput.trim() && cicdScanType !== "secrets") || (cicdScanType !== "secrets" && !cicdDepsInput.trim() && cicdScanType !== "dependencies") : (!isDemoOnly && !scanInput.trim()))} className="gap-2">
+                          <Button onClick={runScan} disabled={scanning || (activeModule === "cicd" ? (cicdScanType !== "dependencies" && !scanInput.trim() && cicdScanType !== "secrets") || (cicdScanType !== "secrets" && !cicdDepsInput.trim() && cicdScanType !== "dependencies") : (!isDemoOnly && !scanInput.trim() && !(activeModule === "sast" && sastMode === "multi" && multiFiles.length > 0)))} className="gap-2">
                             {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : activeModule === "cicd" ? "Run Pipeline Gate" : "Run Scan"}</>}
                           </Button>
                           )}
@@ -1399,23 +1484,30 @@ export default function ShieldXWorkspacePage() {
                             {/* Secrets results */}
                             {activeModule === "secrets" && (
                               <>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                  <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Total Findings</div>
+                                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+                                    <div className="rounded-lg border p-3 text-center">
+                                      <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Total Findings</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                      <div className="text-2xl font-bold text-red-500">{scanResults.stats?.high || 0}</div>
+                                      <div className="text-xs text-muted-foreground">High</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                      <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Medium</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center">
+                                      <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Low</div>
+                                    </div>
                                   </div>
-                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
-                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.high || 0}</div>
-                                    <div className="text-xs text-muted-foreground">High</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
-                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Medium</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Low</div>
-                                  </div>
+                                  {(scanResults.stats?.total || 0) > 0 && (
+                                    <Card className="p-3 shrink-0">
+                                      <SeverityPieChart stats={{ ...scanResults.stats, critical: 0 }} />
+                                    </Card>
+                                  )}
                                 </div>
                                 <p className="text-xs text-muted-foreground">{scanResults.patternsChecked} patterns checked across {scanResults.totalLines} lines • {scanResults.mode} mode</p>
                                 {scanResults.findings?.length > 0 ? (
@@ -1473,27 +1565,34 @@ export default function ShieldXWorkspacePage() {
                             {/* Dependency results */}
                             {activeModule === "deps" && (
                               <>
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                                  <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold">{scanResults.totalDeps || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Dependencies</div>
+                                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-1">
+                                    <div className="rounded-lg border p-3 text-center">
+                                      <div className="text-2xl font-bold">{scanResults.totalDeps || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Dependencies</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                      <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Critical</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                      <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                      <div className="text-xs text-muted-foreground">High</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                      <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Medium</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center">
+                                      <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Low</div>
+                                    </div>
                                   </div>
-                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
-                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Critical</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center border-orange-500/20">
-                                    <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
-                                    <div className="text-xs text-muted-foreground">High</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
-                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Medium</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Low</div>
-                                  </div>
+                                  {((scanResults.stats?.critical || 0) + (scanResults.stats?.high || 0) + (scanResults.stats?.medium || 0) + (scanResults.stats?.low || 0)) > 0 && (
+                                    <Card className="p-3 shrink-0">
+                                      <SeverityPieChart stats={scanResults.stats} />
+                                    </Card>
+                                  )}
                                 </div>
                                 <p className="text-xs text-muted-foreground">Ecosystem: {scanResults.ecosystem || "npm"} • {scanResults.mode} mode</p>
                                 {scanResults.scanWarning && (
@@ -1932,27 +2031,34 @@ export default function ShieldXWorkspacePage() {
                                 </Card>
 
                                 {/* Stats grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                                  <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Total Findings</div>
+                                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-1">
+                                    <div className="rounded-lg border p-3 text-center">
+                                      <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Total Findings</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                      <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Critical</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                      <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                      <div className="text-xs text-muted-foreground">High</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                      <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Medium</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center">
+                                      <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Low</div>
+                                    </div>
                                   </div>
-                                  <div className="rounded-lg border p-3 text-center border-red-500/20">
-                                    <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Critical</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center border-orange-500/20">
-                                    <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
-                                    <div className="text-xs text-muted-foreground">High</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center border-amber-500/20">
-                                    <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Medium</div>
-                                  </div>
-                                  <div className="rounded-lg border p-3 text-center">
-                                    <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
-                                    <div className="text-xs text-muted-foreground">Low</div>
-                                  </div>
+                                  {(scanResults.stats?.total || 0) > 0 && (
+                                    <Card className="p-3 shrink-0">
+                                      <SeverityPieChart stats={scanResults.stats} />
+                                    </Card>
+                                  )}
                                 </div>
 
                                 {/* Scan metadata */}
@@ -2423,6 +2529,80 @@ export default function ShieldXWorkspacePage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Charts Row */}
+            {mergedHistory.length > 0 && (
+              <div className="grid gap-6 md:grid-cols-3 mt-6">
+                {/* Average Security Score Gauge */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Activity className="h-4 w-4 text-primary" /> Security Score</CardTitle></CardHeader>
+                  <CardContent className="flex justify-center pt-2">
+                    <ScoreGauge score={mergedHistory.reduce((a, s) => a + s.overallScore, 0) / mergedHistory.length} label="avg score" />
+                  </CardContent>
+                </Card>
+
+                {/* Severity Distribution Pie */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-primary" /> Severity Distribution</CardTitle></CardHeader>
+                  <CardContent className="flex justify-center pt-2">
+                    <SeverityPieChart stats={{
+                      critical: mergedHistory.reduce((a, s) => a + s.counts.critical, 0),
+                      high: mergedHistory.reduce((a, s) => a + s.counts.high, 0),
+                      medium: mergedHistory.reduce((a, s) => a + s.counts.medium, 0),
+                      low: mergedHistory.reduce((a, s) => a + s.counts.low, 0),
+                    }} />
+                  </CardContent>
+                </Card>
+
+                {/* Scan Type Breakdown Bar Chart */}
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /> Scans by Module</CardTitle></CardHeader>
+                  <CardContent className="pt-2">
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={(() => {
+                        const counts: Record<string, number> = {};
+                        mergedHistory.forEach((s) => { counts[s.scanType] = (counts[s.scanType] || 0) + 1; });
+                        return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+                      })()}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                        <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Score Trend Area Chart */}
+            {mergedHistory.length > 1 && (
+              <Card className="mt-6">
+                <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" /> Security Score Trend</CardTitle></CardHeader>
+                <CardContent className="pt-2">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <AreaChart data={[...mergedHistory].reverse().map((s, i) => ({
+                      scan: `#${i + 1}`,
+                      score: s.overallScore,
+                      findings: s.counts.findingsTotal,
+                    }))}>
+                      <defs>
+                        <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="scan" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                      <Area type="monotone" dataKey="score" stroke="hsl(var(--primary))" fill="url(#scoreGrad)" strokeWidth={2} dot={{ r: 3 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>

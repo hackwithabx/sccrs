@@ -47,18 +47,20 @@ interface BillingState {
 }
 
 const FEATURES: PlanFeature[] = [
-  { name: "Secrets Scanner (20 patterns + entropy)", icon: Key, free: "Demo only", pro: true, enterprise: true },
-  { name: "Dependency Scanner (OSV.dev real-time)", icon: Package, free: false, pro: true, enterprise: true },
+  { name: "Secrets Scanner (20 patterns + entropy)", icon: Key, free: "Demo (2 scans)", pro: true, enterprise: true },
+  { name: "Dependency Scanner (real-time CVE database)", icon: Package, free: false, pro: true, enterprise: true },
   { name: "Cloud Security Audit (18 checks)", icon: Cloud, free: false, pro: true, enterprise: true },
   { name: "API Scanner (OWASP API Top 10)", icon: Globe, free: false, pro: true, enterprise: true },
   { name: "SAST Code Analyzer (AST taint analysis + multi-file project scan)", icon: Brain, free: false, pro: true, enterprise: true },
   { name: "Threat Log Analyzer", icon: Brain, free: false, pro: true, enterprise: true },
   { name: "CI/CD Pipeline Gate", icon: GitBranch, free: false, pro: false, enterprise: true },
   // { name: "Alerts (Email, Slack, Webhook)", icon: Bell, free: false, pro: true, enterprise: true },  // Hidden — re-enable when alerts are live
-  { name: "Security Score Dashboard", icon: BarChart3, free: "Demo only", pro: true, enterprise: true },
-  { name: "Run Full Demo", icon: Zap, free: true, pro: true, enterprise: true },
-  { name: "Saved Scan History & Report Export", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "Security Score Dashboard", icon: BarChart3, free: "Demo (2 scans)", pro: true, enterprise: true },
+  { name: "Interactive Charts & Analytics", icon: BarChart3, free: false, pro: true, enterprise: true },
+  { name: "Downloadable Reports (HTML with SCRS branding)", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "Saved Scan History & Trend Tracking", icon: Shield, free: false, pro: true, enterprise: true },
   { name: "Unlimited Scans", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "Exploit PoC Generator", icon: Zap, free: false, pro: true, enterprise: true },
   { name: "Team Management (25 seats)", icon: Star, free: false, pro: false, enterprise: true },
   { name: "Priority Support and Onboarding", icon: Crown, free: false, pro: false, enterprise: true },
   { name: "Custom Integrations and White-labeling", icon: Crown, free: false, pro: false, enterprise: true },

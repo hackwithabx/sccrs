@@ -49,7 +49,7 @@ import {
 
 const shieldxModules = [
   { icon: Key, title: "Secrets Scanner", desc: "Detect 20+ secret patterns with entropy analysis and confidence scoring" },
-  { icon: Package, title: "Dependency Audit", desc: "Live OSV.dev integration — find CVEs in your npm, pip, go dependencies" },
+  { icon: Package, title: "Dependency Audit", desc: "Real-time CVE scanning for npm, pip, Go, and Gradle dependencies" },
   { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
   { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing for any HTTP endpoint" },
   { icon: FileCode, title: "SAST Code Analyzer", desc: "AST-based taint analysis — traces user input to dangerous sinks across 15+ vulnerability classes" },
@@ -418,7 +418,7 @@ export default function HomePage() {
 
             {/* CTA below preview */}
             <div className="mt-8 text-center">
-              <p className="text-muted-foreground mb-4">Try the free demo — no sign-up required</p>
+              <p className="text-muted-foreground mb-4">Explore ShieldX with a free demo account</p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href="/shieldx">
                   <Button size="lg" className="gap-2 rounded-xl shadow-lg shadow-primary/20">

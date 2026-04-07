@@ -38,7 +38,7 @@ export default function ToolsPage() {
         <SectionHeading
           badge="Security Tools"
           title="Security Tools"
-          description="Online tools for security testing, encoding, hashing, and analysis. No sign-up required."
+          description="Online tools for security testing, encoding, hashing, and analysis."
         />
 
         {/* Featured AI Security Auditor */}

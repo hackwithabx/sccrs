@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Free Security Tools — Header Analyzer, CSP Generator, JWT Decoder & More",
   description:
-    "Free online application security tools: Security Header Analyzer, CSP Generator, JWT Decoder, Hash Generator, Encoder/Decoder, Password Strength Checker, SQL Injection Tester. No sign-up required.",
+    "Free online application security tools: Security Header Analyzer, CSP Generator, JWT Decoder, Hash Generator, Encoder/Decoder, Password Strength Checker, SQL Injection Tester.",
   keywords: [
     "security tools",
     "header analyzer",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Free Security Tools | SecureCodeReviews",
     description:
-      "Security Header Analyzer, CSP Generator, JWT Decoder, and more — free, no sign-up.",
+      "Security Header Analyzer, CSP Generator, JWT Decoder, and more — free security tools.",
   },
   alternates: {
     canonical: "/tools",

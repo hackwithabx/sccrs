@@ -443,10 +443,10 @@ export async function POST(request: NextRequest) {
       recommendedUpgrades: recommendedUpgrades.length > 0 ? recommendedUpgrades : undefined,
       errors: errors.length > 0 ? errors : undefined,
       scanWarning: errors.length > 0
-        ? `${errors.length} package(s) could not be scanned (OSV.dev API timeout or error). Results may be incomplete — vulnerabilities for these packages are unknown, not absent.`
+        ? `${errors.length} package(s) could not be scanned (vulnerability database timeout or error). Results may be incomplete — vulnerabilities for these packages are unknown, not absent.`
         : undefined,
       scannedAt: new Date().toISOString(),
-      source: "OSV.dev (Google Open Source Vulnerabilities)",
+      source: "ShieldX Vulnerability Database",
     });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

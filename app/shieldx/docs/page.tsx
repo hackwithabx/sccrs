@@ -40,7 +40,7 @@ const modules = [
     id: "deps",
     icon: Package,
     title: "Dependency Scanner",
-    description: "Find known vulnerabilities (CVEs) in your project dependencies via OSV.dev",
+    description: "Find known vulnerabilities (CVEs) in your project dependencies using real-time CVE data",
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
     features: [
@@ -54,7 +54,7 @@ const modules = [
     howTo: [
       "Navigate to ShieldX → Dependency Scanner tab",
       "Paste your package.json, requirements.txt, or build.gradle content",
-      "Click 'Scan Dependencies' to query OSV.dev",
+      "Click 'Scan Dependencies' to query the vulnerability database",
       "Review the vulnerability list sorted by severity",
       "Click reference links for detailed CVE information",
       "Upgrade dependencies to the suggested 'Fixed In' versions",
@@ -262,7 +262,7 @@ const privacyPolicy = [
   { title: "Zero Code Storage", desc: "Your source code is analyzed in real-time memory and immediately discarded after scanning. It is never written to disk, logged, or stored in any database." },
   { title: "No Data Retention", desc: "Scan results are returned directly to your browser session. We do not retain copies of your findings, code snippets, or dependency lists on our servers." },
   { title: "HTTPS Only", desc: "All data transmission between your browser and ShieldX is encrypted via TLS 1.2+ (HTTPS). We enforce HSTS with a minimum 1-year max-age." },
-  { title: "No Third-Party Sharing", desc: "Your data is never sold, shared, or transmitted to third parties. OSV.dev queries are anonymized and contain only package name/version pairs — no source code." },
+  { title: "No Third-Party Sharing", desc: "Your data is never sold, shared, or transmitted to third parties. Dependency queries are anonymized and contain only package name/version pairs — no source code." },
   { title: "Session-Based Authentication", desc: "ShieldX uses JWT-based session tokens with configurable expiry. Sessions are server-validated and cannot be forged." },
   { title: "SOC 2 Ready Architecture", desc: "Our infrastructure follows SOC 2 Type II controls including access management, change management, and monitoring." },
 ];
@@ -315,7 +315,7 @@ const workspacePreviews = [
       "A paid workspace combines module results into one security score with saved snapshots and export-ready summaries.",
     highlights: [
       "Secrets: 0 critical, 1 high",
-      "Dependencies: 2 CVEs flagged from OSV.dev",
+      "Dependencies: 2 CVEs flagged from vulnerability database",
       "API score: 7.4 with missing CSP and weak rate-limit indicators",
     ],
   },
@@ -426,7 +426,7 @@ export default function ShieldXDocsPage() {
                   <div className="space-y-3">
                     <h3 className="font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-primary" /> Key Capabilities</h3>
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      {["Secrets detection with entropy analysis", "Real-time CVE scanning via OSV.dev", "Cloud security posture assessment", "API endpoint OWASP compliance testing", "Log-based threat detection", "CI/CD pipeline integration", "Unified security scoring"].map((item) => (
+                      {["Secrets detection with entropy analysis", "Real-time CVE scanning", "Cloud security posture assessment", "API endpoint OWASP compliance testing", "Log-based threat detection", "CI/CD pipeline integration", "Unified security scoring"].map((item) => (
                         <li key={item} className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> {item}</li>
                       ))}
                     </ul>
@@ -648,7 +648,7 @@ export default function ShieldXDocsPage() {
               {[
                 { q: "Is ShieldX safe to use with proprietary code?", a: "Yes. ShieldX has a strict Zero Code Storage policy. Your code is processed in-memory and immediately discarded. We never log, store, or transmit your source code to any third party." },
                 { q: "How accurate is the Secrets Scanner?", a: "The scanner uses 20+ curated regex patterns combined with Shannon entropy analysis and placeholder detection. High-confidence matches have very low false positive rates. Low-confidence matches are clearly labeled and collapsed by default." },
-                { q: "Does the Dependency Scanner use real data?", a: "Yes. Every query goes directly to Google's OSV.dev API in real-time. Vulnerabilities shown are actual CVEs from the National Vulnerability Database." },
+                { q: "Does the Dependency Scanner use real data?", a: "Yes. Every query runs against a real-time vulnerability database. Vulnerabilities shown are actual CVEs from the National Vulnerability Database." },
                 { q: "Can I integrate ShieldX into my CI/CD pipeline?", a: "Yes. ShieldX provides ready-to-use templates for GitHub Actions and GitLab CI, plus cURL commands for any CI system. Failed security checks return exit code 1 to fail your pipeline." },
                 { q: "What platforms does Cloud Security cover?", a: "AWS, GCP, Azure, and general cloud infrastructure. Each platform has specific checks for storage, identity, network, database, logging, and encryption." },
                 { q: "How is the Security Score calculated?", a: "Each module produces a score from 0-10 based on penalty deductions. Critical findings deduct 3 points, High deducts 2, Medium deducts 1. The overall score is the average across all 5 scanning dimensions." },
