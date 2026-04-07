@@ -1423,6 +1423,767 @@ const PATTERN_CHECKS: PatternCheck[] = [
     },
     remediation: "Remove X-Powered-By header: app.disable('x-powered-by'). Use helmet() which removes it by default.",
   },
+  // CSV / Formula Injection
+  {
+    id: "csv-injection", name: "CSV / Formula Injection", cwe: "CWE-1236", owasp: "A03:2021",
+    severity: "medium", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const callee = node.callee;
+        const name = callee?.property?.name || callee?.name || "";
+        if ((name === "createObjectCsvWriter" || name === "stringify" || name === "createCsvStringifier" || name === "writeToPath" || name === "unparse") && node.arguments.length > 0) {
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          if (/csv|export|download|spreadsheet/i.test(snippet)) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: "CSV export with user-controlled data. Cells starting with =, +, -, @ can execute formulas when opened in Excel/Sheets.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Prefix cell values with a single quote (') or tab character to prevent formula execution. Strip leading =, +, -, @, | characters from user data before CSV export.",
+  },
+  // Insecure WebSocket
+  {
+    id: "insecure-websocket", name: "Insecure WebSocket Connection", cwe: "CWE-319", owasp: "A02:2021",
+    severity: "medium", category: "Transport Security",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "NewExpression" && node.callee?.name === "WebSocket" && node.arguments.length > 0) {
+        const arg = node.arguments[0];
+        if (arg?.type === "Literal" && typeof arg.value === "string" && arg.value.startsWith("ws://") && !arg.value.includes("localhost") && !arg.value.includes("127.0.0.1")) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "WebSocket connection uses ws:// (unencrypted). Data is sent in plaintext — vulnerable to eavesdropping and MITM attacks.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use wss:// (WebSocket Secure) for all WebSocket connections. Ensure TLS certificates are valid.",
+  },
+  // Unsafe Content-Security-Policy with unsafe-inline/unsafe-eval
+  {
+    id: "csp-unsafe", name: "Weak Content Security Policy", cwe: "CWE-693", owasp: "A05:2021",
+    severity: "medium", category: "Configuration",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if (prop === "setHeader" || prop === "set" || prop === "header") {
+          const headerName = node.arguments[0];
+          const headerValue = node.arguments[1];
+          if (headerName?.type === "Literal" && typeof headerName.value === "string" &&
+              headerName.value.toLowerCase() === "content-security-policy" &&
+              headerValue?.type === "Literal" && typeof headerValue.value === "string") {
+            const csp = headerValue.value.toLowerCase();
+            if (csp.includes("unsafe-inline") || csp.includes("unsafe-eval")) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `CSP includes ${csp.includes("unsafe-inline") ? "'unsafe-inline'" : "'unsafe-eval'"} — significantly weakens XSS protection by allowing inline scripts/eval.`,
+                confidence: "high",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Remove 'unsafe-inline' and 'unsafe-eval' from CSP. Use nonce-based or hash-based CSP for inline scripts. Refactor eval() usage.",
+  },
+  // Missing HSTS header
+  {
+    id: "missing-hsts", name: "Missing Strict-Transport-Security Header", cwe: "CWE-311", owasp: "A02:2021",
+    severity: "medium", category: "Transport Security",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      // Detect app.listen() on port 443 or HTTPS server without HSTS
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if (prop === "createServer" && node.callee.object?.name === "https") {
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          // Check surrounding code for HSTS setting
+          const surroundingLines = lines.slice(Math.max(0, line - 10), Math.min(lines.length, line + 10)).join("\n");
+          if (!surroundingLines.includes("Strict-Transport-Security") && !surroundingLines.includes("hsts") && !surroundingLines.includes("helmet")) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: "HTTPS server without Strict-Transport-Security header. Browsers may still allow HTTP downgrade attacks.",
+              confidence: "low",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Add HSTS header: res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains'). Or use helmet() which sets it automatically.",
+  },
+  // Directory listing enabled
+  {
+    id: "directory-listing", name: "Directory Listing Enabled", cwe: "CWE-548", owasp: "A01:2021",
+    severity: "medium", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const callee = node.callee;
+        let isStaticServe = false;
+        if (callee?.type === "MemberExpression") {
+          const obj = callee.object?.name || "";
+          const prop = callee.property?.name || "";
+          if ((obj === "express" && prop === "static") || prop === "serveStatic") isStaticServe = true;
+        }
+        if (callee?.type === "Identifier" && (callee.name === "serveStatic" || callee.name === "serveIndex")) isStaticServe = true;
+        if (isStaticServe) {
+          const opts = node.arguments[1];
+          if (!opts || opts.type !== "ObjectExpression") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Static file server without explicit options. Missing dotfiles:'deny' may expose .env, .git, and other hidden files.",
+              confidence: "medium",
+            };
+          }
+          if (opts.type === "ObjectExpression") {
+            const hasDotfiles = opts.properties?.some((p: ASTNode) => (p.key?.name || p.key?.value) === "dotfiles");
+            if (!hasDotfiles) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: "express.static() without dotfiles:'deny' — hidden files (.env, .git) may be accessible.",
+                confidence: "medium",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Configure express.static with { dotfiles: 'deny', index: false } to block access to hidden files and directory listings.",
+  },
+  // Unhandled promise rejection
+  {
+    id: "unhandled-promise", name: "Unhandled Promise Rejection", cwe: "CWE-755", owasp: "A06:2021",
+    severity: "low", category: "Error Handling",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name;
+        if (method === "then" && node.arguments.length === 1) {
+          // .then(cb) without .catch()
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          if (!snippet.includes(".catch")) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: ".then() without .catch() — unhandled promise rejections crash Node.js in subsequent versions and may leak error info.",
+              confidence: "low",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Always chain .catch() after .then(), or use async/await with try/catch. Add process.on('unhandledRejection') as a safety net.",
+  },
+  // Missing auth middleware on sensitive routes
+  {
+    id: "missing-auth-middleware", name: "Sensitive Route Without Auth Middleware", cwe: "CWE-306", owasp: "A07:2021",
+    severity: "high", category: "Authentication",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name;
+        if ((method === "post" || method === "put" || method === "delete" || method === "patch") && node.arguments.length >= 2) {
+          const pathArg = node.arguments[0];
+          if (pathArg?.type === "Literal" && typeof pathArg.value === "string") {
+            const path = pathArg.value.toLowerCase();
+            const sensitivePatterns = ["/admin", "/user", "/account", "/settings", "/profile", "/billing", "/payment", "/transfer", "/withdraw", "/delete"];
+            if (sensitivePatterns.some(p => path.includes(p))) {
+              const handlers = node.arguments.slice(1);
+              const hasAuthMiddleware = handlers.some((h: ASTNode) => {
+                const name = h.name || h.callee?.name || "";
+                return /auth|protect|guard|verify|middleware|jwt|session|passport|restrict|require/i.test(name);
+              });
+              if (!hasAuthMiddleware && handlers.length <= 1) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: `Sensitive endpoint "${pathArg.value}" has no visible authentication middleware — may be accessible without login.`,
+                  confidence: "medium",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Add authentication middleware to sensitive routes: app.post('/admin/action', authMiddleware, handler). Use passport.js, express-jwt, or custom auth guards.",
+  },
+  // Session fixation: missing session regeneration after login
+  {
+    id: "session-fixation", name: "Potential Session Fixation", cwe: "CWE-384", owasp: "A07:2021",
+    severity: "high", category: "Session Management",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name;
+        if (method === "post" && node.arguments.length >= 2) {
+          const pathArg = node.arguments[0];
+          if (pathArg?.type === "Literal" && typeof pathArg.value === "string") {
+            const path = pathArg.value.toLowerCase();
+            if (path.includes("login") || path.includes("signin") || path.includes("authenticate")) {
+              const handler = node.arguments[node.arguments.length - 1];
+              if (handler?.type === "ArrowFunctionExpression" || handler?.type === "FunctionExpression") {
+                let hasRegenerate = false;
+                walkAST(handler.body, (n) => {
+                  if (n.type === "CallExpression" && n.callee?.type === "MemberExpression") {
+                    if (n.callee.property?.name === "regenerate" || n.callee.property?.name === "regenerateId") {
+                      hasRegenerate = true;
+                    }
+                  }
+                });
+                if (!hasRegenerate) {
+                  const line = getNodeLine(node, code);
+                  return {
+                    line, column: getNodeColumn(node, code),
+                    evidence: getCodeSnippet(lines, line),
+                    detail: `Login endpoint "${pathArg.value}" does not regenerate session ID — vulnerable to session fixation attacks.`,
+                    confidence: "medium",
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Regenerate session after login: req.session.regenerate((err) => { ... }). This prevents session fixation by issuing a new session ID.",
+  },
+  // Insecure iframe (missing sandbox)
+  {
+    id: "iframe-no-sandbox", name: "Iframe Without Sandbox Attribute", cwe: "CWE-1021", owasp: "A05:2021",
+    severity: "medium", category: "Configuration",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "JSXOpeningElement" && node.name?.name === "iframe") {
+        const attrs = node.attributes || [];
+        const hasSandbox = attrs.some((a: ASTNode) => a.type === "JSXAttribute" && a.name?.name === "sandbox");
+        if (!hasSandbox) {
+          const srcAttr = attrs.find((a: ASTNode) => a.type === "JSXAttribute" && a.name?.name === "src");
+          if (srcAttr) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Iframe without sandbox attribute — embedded content can execute scripts, navigate the parent, and access plugins.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Add sandbox attribute to restrict iframe capabilities: <iframe sandbox=\"allow-scripts allow-same-origin\" src=\"...\">. Only grant minimum required permissions.",
+  },
+  // Unsafe file upload (no validation)
+  {
+    id: "unsafe-file-upload", name: "File Upload Without Validation", cwe: "CWE-434", owasp: "A04:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const callee = node.callee;
+        const name = callee?.name || callee?.property?.name || "";
+        // multer without fileFilter, busboy, formidable
+        if (name === "multer" && node.arguments.length > 0) {
+          const opts = node.arguments[0];
+          if (opts?.type === "ObjectExpression") {
+            const hasFileFilter = opts.properties?.some((p: ASTNode) => (p.key?.name || p.key?.value) === "fileFilter");
+            const hasLimits = opts.properties?.some((p: ASTNode) => (p.key?.name || p.key?.value) === "limits");
+            if (!hasFileFilter) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `multer() configured without fileFilter — accepts any file type including executables, scripts, and web shells.${!hasLimits ? " Also missing size limits." : ""}`,
+                confidence: "high",
+              };
+            }
+          }
+        }
+        // Direct fs.writeFile with req.file or req.files
+        if ((name === "writeFile" || name === "writeFileSync") && node.arguments.length >= 2) {
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          if (/req\.file|req\.files|upload|formData/i.test(snippet)) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: "Writing uploaded file data directly without content-type or extension validation — allows arbitrary file upload.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Add fileFilter to validate MIME types and extensions. Set size limits. Store uploads outside webroot. Rename files with random names. Scan for malware.",
+  },
+  // HTTP parameter pollution
+  {
+    id: "http-param-pollution", name: "HTTP Parameter Pollution Risk", cwe: "CWE-235", owasp: "A03:2021",
+    severity: "low", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name;
+        if ((method === "get" || method === "post" || method === "put") && node.arguments.length >= 2) {
+          const handler = node.arguments[node.arguments.length - 1];
+          if (handler?.type === "ArrowFunctionExpression" || handler?.type === "FunctionExpression") {
+            let usesQueryDirectly = false;
+            walkAST(handler.body, (n) => {
+              if (n.type === "MemberExpression") {
+                const chain = resolveIdentifierName(n);
+                if (chain === "req.query" && n.parent?.type !== "MemberExpression") usesQueryDirectly = true;
+              }
+            });
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use hpp() middleware to prevent HTTP parameter pollution. Access specific param properties, not the whole req.query object.",
+  },
+  // Clickjacking: X-Frame-Options removal
+  {
+    id: "clickjacking", name: "Clickjacking Protection Disabled", cwe: "CWE-1021", owasp: "A05:2021",
+    severity: "medium", category: "Configuration",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const method = node.callee.property?.name || "";
+        if ((obj === "app" || obj === "server") && method === "disable" && node.arguments.length > 0) {
+          const arg = node.arguments[0];
+          if (arg?.type === "Literal" && typeof arg.value === "string" && arg.value === "x-frame-options") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "X-Frame-Options protection explicitly disabled — page can be embedded in iframes for clickjacking attacks.",
+              confidence: "high",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Do not disable X-Frame-Options. Use helmet() which sets it to DENY by default, or set 'SAMEORIGIN' to allow same-origin framing only.",
+  },
+  // Hardcoded IP / internal network references
+  {
+    id: "internal-ip-exposure", name: "Internal IP Address Exposure", cwe: "CWE-200", owasp: "A04:2021",
+    severity: "low", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Literal" && typeof node.value === "string") {
+        const val = node.value;
+        const internalPatterns = [
+          /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}/,
+          /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}/,
+          /^192\.168\.\d{1,3}\.\d{1,3}/,
+        ];
+        if (internalPatterns.some(p => p.test(val)) && !val.includes("0.0.0.0")) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Internal/private IP address hardcoded in source — reveals network topology and may assist in lateral movement attacks.",
+            confidence: "low",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use environment variables or service discovery for internal endpoints. Remove hardcoded internal IPs from source code.",
+  },
+  // Unsafe child_process.execSync without error handling
+  {
+    id: "exec-no-timeout", name: "exec() Without Timeout", cwe: "CWE-400", owasp: "A06:2021",
+    severity: "low", category: "Denial of Service",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const name = node.callee?.property?.name || node.callee?.name || "";
+        if ((name === "exec" || name === "execSync") && node.arguments.length >= 1) {
+          const opts = node.arguments.length >= 2 ? node.arguments[1] || node.arguments[node.arguments.length - 1] : null;
+          if (!opts || opts.type !== "ObjectExpression") return null;
+          if (opts.type === "ObjectExpression") {
+            const hasTimeout = opts.properties?.some((p: ASTNode) => (p.key?.name || p.key?.value) === "timeout");
+            if (!hasTimeout) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: "exec()/execSync() without timeout option — a slow or hanging command blocks the process/event loop indefinitely.",
+                confidence: "low",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Add timeout option: exec(cmd, { timeout: 30000 }, callback). Use child_process.spawn for long-running processes.",
+  },
+  // Insecure CORS: dynamic origin reflection
+  {
+    id: "cors-origin-reflection", name: "CORS Origin Reflection", cwe: "CWE-942", owasp: "A05:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.name === "cors" && node.arguments.length > 0) {
+        const opts = node.arguments[0];
+        if (opts?.type === "ObjectExpression") {
+          for (const p of opts.properties || []) {
+            const key = p.key?.name || p.key?.value;
+            if (key === "origin" && (p.value?.type === "ArrowFunctionExpression" || p.value?.type === "FunctionExpression")) {
+              // Dynamic origin callback — check if it reflects req.headers.origin
+              let reflectsOrigin = false;
+              walkAST(p.value.body, (n) => {
+                if (n.type === "CallExpression" && n.arguments.length >= 2) {
+                  const secondArg = n.arguments[1];
+                  if (secondArg?.type === "Literal" && secondArg.value === true) {
+                    // callback(null, true) — reflects all origins
+                    reflectsOrigin = true;
+                  }
+                }
+              });
+              if (reflectsOrigin) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: "CORS origin callback always returns true — effectively reflects any origin, equivalent to wildcard.",
+                  confidence: "medium",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Validate origins against an explicit allowlist in the CORS callback. Never blindly reflect the Origin header.",
+  },
+  // Express trust proxy misconfiguration
+  {
+    id: "trust-proxy-misconfigured", name: "Express trust proxy Misconfiguration", cwe: "CWE-346", owasp: "A05:2021",
+    severity: "medium", category: "Configuration",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name;
+        if (method === "set" && node.arguments.length >= 2) {
+          const key = node.arguments[0];
+          const value = node.arguments[1];
+          if (key?.type === "Literal" && key.value === "trust proxy" && value?.type === "Literal" && value.value === true) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "trust proxy set to true trusts ALL proxies — IP spoofing via X-Forwarded-For header becomes trivial.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Set trust proxy to a specific hop count or IP: app.set('trust proxy', 1) or app.set('trust proxy', 'loopback'). Never use true in production.",
+  },
+  // Deprecated crypto methods
+  {
+    id: "deprecated-crypto", name: "Deprecated Crypto Method", cwe: "CWE-327", owasp: "A02:2021",
+    severity: "medium", category: "Cryptography",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const prop = node.callee.property?.name || "";
+        if (obj === "crypto" && prop === "createCipher") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "crypto.createCipher() is deprecated — uses weak key derivation (MD5 with 1 iteration). Vulnerable to brute-force key recovery.",
+            confidence: "high",
+          };
+        }
+        if (obj === "crypto" && prop === "createDecipher") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "crypto.createDecipher() is deprecated — uses weak key derivation internally. Data may be decryptable by attackers.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use crypto.createCipheriv() / crypto.createDecipheriv() with a properly derived key (PBKDF2/scrypt) and random IV.",
+  },
+  // Weak encryption algorithm: DES, RC4, ECB mode
+  {
+    id: "weak-cipher", name: "Weak Encryption Algorithm", cwe: "CWE-327", owasp: "A02:2021",
+    severity: "high", category: "Cryptography",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const prop = node.callee.property?.name || "";
+        if (obj === "crypto" && (prop === "createCipheriv" || prop === "createDecipheriv" || prop === "createCipher")) {
+          const algoArg = node.arguments[0];
+          if (algoArg?.type === "Literal" && typeof algoArg.value === "string") {
+            const algo = algoArg.value.toLowerCase();
+            if (algo.includes("des") || algo.includes("rc4") || algo.includes("rc2") || algo.includes("blowfish")) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `Cipher "${algoArg.value}" is cryptographically weak. DES has 56-bit keys, RC4 has known biases, Blowfish has 64-bit blocks.`,
+                confidence: "high",
+              };
+            }
+            if (algo.includes("ecb")) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: "ECB mode encrypts identical blocks identically — reveals patterns in plaintext. Never use ECB for multi-block data.",
+                confidence: "high",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use AES-256-GCM or AES-256-CBC with HMAC. Avoid DES, 3DES, RC4, Blowfish, and ECB mode.",
+  },
+  // Sensitive data in localStorage
+  {
+    id: "sensitive-localstorage", name: "Sensitive Data in localStorage", cwe: "CWE-922", owasp: "A04:2021",
+    severity: "medium", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const prop = node.callee.property?.name || "";
+        if ((obj === "localStorage" || obj === "sessionStorage") && prop === "setItem" && node.arguments.length >= 2) {
+          const key = node.arguments[0];
+          if (key?.type === "Literal" && typeof key.value === "string") {
+            const sensitiveKeys = ["token", "jwt", "password", "secret", "apiKey", "api_key", "access_token", "refresh_token", "session", "auth", "credential"];
+            if (sensitiveKeys.some(s => key.value.toLowerCase().includes(s))) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `Storing "${key.value}" in ${obj} — accessible to any JavaScript on the page including XSS payloads. Unlike cookies, no HttpOnly protection.`,
+                confidence: "medium",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Store sensitive tokens in HttpOnly cookies, not localStorage/sessionStorage. Use secure, HttpOnly, SameSite cookies for auth tokens.",
+  },
+  // Insufficient logging in catch blocks
+  {
+    id: "empty-catch", name: "Empty Catch Block", cwe: "CWE-390", owasp: "A09:2021",
+    severity: "low", category: "Error Handling",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CatchClause" && node.body?.type === "BlockStatement") {
+        const bodyStmts = node.body.body || [];
+        if (bodyStmts.length === 0) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Empty catch block silently swallows exceptions — security errors and critical failures go undetected.",
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Log the error in catch blocks: catch(err) { logger.error('Operation failed', err); }. Never use empty catch blocks.",
+  },
+  // Subprocess with shell: true
+  {
+    id: "shell-true", name: "Subprocess with shell: true", cwe: "CWE-78", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const name = node.callee?.property?.name || node.callee?.name || "";
+        if ((name === "spawn" || name === "spawnSync" || name === "execFile" || name === "execFileSync") && node.arguments.length >= 2) {
+          const opts = node.arguments[node.arguments.length - 1];
+          if (opts?.type === "ObjectExpression") {
+            for (const p of opts.properties || []) {
+              const key = p.key?.name || p.key?.value;
+              if (key === "shell" && p.value?.value === true) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: `${name}() with shell: true passes arguments through /bin/sh — shell metacharacters (;, |, &&) in arguments become command injection vectors.`,
+                  confidence: "high",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Remove shell: true from spawn/execFile options. Pass arguments as an array to avoid shell interpretation.",
+  },
+  // Debug/development mode in production
+  {
+    id: "debug-mode", name: "Debug Mode Enabled", cwe: "CWE-489", owasp: "A05:2021",
+    severity: "medium", category: "Configuration",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Property" || node.type === "ObjectProperty") {
+        const key = node.key?.name || node.key?.value;
+        if (key === "debug" && node.value?.value === true) {
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          if (/app|server|config|options|morgan|express/i.test(snippet)) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: "Debug mode enabled — may expose verbose errors, stack traces, and internal state to attackers.",
+              confidence: "low",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Disable debug mode in production. Use NODE_ENV=production and conditional debug flags.",
+  },
+  // JWT without expiration
+  {
+    id: "jwt-no-expiry", name: "JWT Without Expiration", cwe: "CWE-613", owasp: "A07:2021",
+    severity: "medium", category: "Authentication",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const prop = node.callee.property?.name;
+        if (prop === "sign" && node.arguments.length >= 2) {
+          // jwt.sign(payload, secret) without options or without expiresIn
+          if (node.arguments.length === 2) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "JWT signed without expiration — compromised tokens remain valid indefinitely.",
+              confidence: "medium",
+            };
+          }
+          if (node.arguments.length >= 3) {
+            const opts = node.arguments[2];
+            if (opts?.type === "ObjectExpression") {
+              const hasExpiry = opts.properties?.some((p: ASTNode) => {
+                const key = p.key?.name || p.key?.value;
+                return key === "expiresIn" || key === "exp";
+              });
+              if (!hasExpiry) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: "JWT signed without expiresIn option — tokens never expire, increasing risk from token theft.",
+                  confidence: "medium",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Always set expiration: jwt.sign(payload, secret, { expiresIn: '1h' }). Use short-lived tokens with refresh token rotation.",
+  },
+  // MongoDB connection string exposure
+  {
+    id: "mongodb-no-auth", name: "MongoDB Connection Without Auth", cwe: "CWE-306", owasp: "A07:2021",
+    severity: "high", category: "Authentication",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Literal" && typeof node.value === "string") {
+        const val = node.value;
+        if (/^mongodb(\+srv)?:\/\/[^:@]+\//.test(val) && !val.includes("@") && !val.includes("localhost") && !val.includes("127.0.0.1")) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "MongoDB connection string without authentication credentials — database may be accessible without login.",
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Enable MongoDB authentication. Use connection strings with credentials from environment variables. Enable --auth flag on MongoDB server.",
+  },
+  // ES Module dynamic import with user input
+  {
+    id: "dynamic-import", name: "Dynamic import() with User Input", cwe: "CWE-95", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "ImportExpression" && node.source) {
+        if (node.source.type === "Identifier" || node.source.type === "TemplateLiteral" || node.source.type === "BinaryExpression") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Dynamic import() with a variable source — if user-controlled, attacker can load arbitrary modules for code execution.",
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use an allowlist of permitted module names. Never pass user input directly to import(). Map user selections to predefined allowed modules.",
+  },
+  // Insufficient password requirements
+  {
+    id: "weak-password-policy", name: "Weak Password Policy", cwe: "CWE-521", owasp: "A07:2021",
+    severity: "medium", category: "Authentication",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "BinaryExpression" && (node.operator === "<" || node.operator === "<=" || node.operator === ">" || node.operator === ">=")) {
+        const leftChain = resolveIdentifierName(node.left);
+        const rightChain = resolveIdentifierName(node.right);
+        const isLengthCheck = leftChain.includes("length") || rightChain.includes("length");
+        const isPasswordRelated = leftChain.includes("password") || rightChain.includes("password") || leftChain.includes("passwd") || rightChain.includes("passwd");
+        if (isLengthCheck && isPasswordRelated) {
+          const threshold = node.left?.type === "Literal" ? node.left.value : node.right?.type === "Literal" ? node.right.value : null;
+          if (typeof threshold === "number" && threshold < 8) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `Password minimum length set to ${threshold} characters — OWASP recommends at least 8 (12+ preferred).`,
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Enforce minimum 8 character password (12+ recommended). Use bcrypt/argon2 for hashing. Check against breach databases (HaveIBeenPwned API).",
+  },
 ];
 
 /* ── AST Helpers ── */

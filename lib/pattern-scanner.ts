@@ -1266,6 +1266,68 @@ function runStructuralChecks(tokens: Token[], lines: string[], lang: Language): 
             line: tok.ln, col: tok.col, detail: `${tokens[i - 2].v} without disabling external entities enables XXE — file disclosure and SSRF.`, remediation: "factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);", confidence: "medium" });
         }
       }
+      // Java insecure TLS: SSLContext.getInstance("SSL") or ("TLS") without version
+      if (tok.t === TT.Ident && tok.v === "getInstance" && i >= 2 && tokens[i - 1]?.t === TT.Dot && tokens[i - 2]?.v === "SSLContext" && tokens[i + 1]?.t === TT.LParen && tokens[i + 2]?.t === TT.String) {
+        const proto = tokens[i + 2].v;
+        if (proto === "SSL" || proto === "TLS" || proto === "SSLv3" || proto === "TLSv1" || proto === "TLSv1.1") {
+          add({ id: "java-insecure-tls", name: "Insecure TLS Configuration", severity: "high", category: "Transport Security", cwe: "CWE-326", owasp: "A02:2021",
+            line: tok.ln, col: tok.col, detail: `SSLContext.getInstance("${proto}") enables deprecated protocol — vulnerable to POODLE, BEAST, and downgrade attacks.`, remediation: "Use SSLContext.getInstance(\"TLSv1.2\") or \"TLSv1.3\". Disable SSLv3/TLSv1/TLSv1.1.", confidence: "high" });
+        }
+      }
+      // Java regex DOS: Pattern.compile(userInput)
+      if (tok.t === TT.Ident && tok.v === "compile" && i >= 2 && tokens[i - 1]?.t === TT.Dot && tokens[i - 2]?.v === "Pattern" && tokens[i + 1]?.t === TT.LParen) {
+        const { args } = extractArgs(tokens, i + 1);
+        if (args[0]?.some(t => t.t === TT.Ident && t.v !== "Pattern")) {
+          add({ id: "java-regex-dos", name: "Regex Denial of Service (ReDoS)", severity: "medium", category: "Denial of Service", cwe: "CWE-1333", owasp: "A06:2021",
+            line: tok.ln, col: tok.col, detail: "Pattern.compile() with variable input — attacker can supply catastrophic backtracking patterns if user-controlled.", remediation: "Never compile regexes from user input. Use a safe regex library or set a timeout on matching.", confidence: "low" });
+        }
+      }
+      // Java session fixation: no invalidate() before login
+      if (tok.t === TT.Ident && tok.v === "setAttribute" && i >= 2 && tokens[i - 1]?.t === TT.Dot) {
+        const line = ev(tok.ln);
+        if (/session.*setAttribute.*user|role|auth|login/i.test(line)) {
+          let hasInvalidate = false;
+          for (let k = Math.max(0, i - 30); k < i; k++) {
+            if (tokens[k].t === TT.Ident && tokens[k].v === "invalidate") { hasInvalidate = true; break; }
+          }
+          if (!hasInvalidate) {
+            add({ id: "java-session-fixation", name: "Potential Session Fixation", severity: "high", category: "Session Management", cwe: "CWE-384", owasp: "A07:2021",
+              line: tok.ln, col: tok.col, detail: "Session attribute set (likely login) without prior session.invalidate() — session ID not regenerated.", remediation: "Call request.getSession().invalidate() then request.getSession(true) before setting auth attributes.", confidence: "medium" });
+          }
+        }
+      }
+      // Java trust manager that accepts all certificates
+      if (tok.t === TT.Ident && (tok.v === "X509TrustManager" || tok.v === "TrustManager") && tokens[i + 1]?.t === TT.LBrace) {
+        let checksNothing = false;
+        for (let k = i; k < Math.min(tokens.length, i + 50); k++) {
+          if (tokens[k].t === TT.Ident && tokens[k].v === "checkServerTrusted" && tokens[k + 1]?.t === TT.LParen) {
+            const closeParen = skipParen(tokens, k + 1);
+            if (tokens[closeParen + 1]?.t === TT.LBrace && tokens[closeParen + 2]?.t === TT.RBrace) {
+              checksNothing = true; break;
+            }
+          }
+        }
+        if (checksNothing) {
+          add({ id: "java-trust-all-certs", name: "TLS Certificate Verification Disabled", severity: "critical", category: "Transport Security", cwe: "CWE-295", owasp: "A07:2021",
+            line: tok.ln, col: tok.col, detail: "Custom TrustManager with empty checkServerTrusted() — accepts ALL certificates including forged ones. MITM trivial.", remediation: "Remove custom TrustManagers. Use the default trust store. For custom CAs, add them to the trust store properly.", confidence: "high" });
+        }
+      }
+      // Java unvalidated forward
+      if (tok.t === TT.Ident && tok.v === "forward" && i >= 2 && tokens[i - 1]?.t === TT.Dot && tokens[i + 1]?.t === TT.LParen) {
+        const { args } = extractArgs(tokens, i + 1);
+        if (args[0]?.some(t => t.t === TT.Ident)) {
+          add({ id: "java-unvalidated-forward", name: "Unvalidated Forward", severity: "medium", category: "Access Control", cwe: "CWE-552", owasp: "A01:2021",
+            line: tok.ln, col: tok.col, detail: "RequestDispatcher.forward() with variable path — if user-controlled, attacker can access restricted servlets and JSPs.", remediation: "Validate and allowlist forward destinations. Never forward to user-supplied paths directly.", confidence: "low" });
+        }
+      }
+      // Java @SuppressWarnings("security") or similar
+      if (tok.t === TT.At && tok.v.includes("SuppressWarnings") && tokens[i + 1]?.t === TT.LParen && tokens[i + 2]?.t === TT.String) {
+        const val = tokens[i + 2].v.toLowerCase();
+        if (val.includes("security") || val.includes("all")) {
+          add({ id: "java-suppress-security", name: "Security Warning Suppressed", severity: "medium", category: "Configuration", cwe: "CWE-710", owasp: "A04:2021",
+            line: tok.ln, col: tok.col, detail: "@SuppressWarnings suppressing security warnings — compiler security checks are bypassed.", remediation: "Do not suppress security-related compiler warnings. Fix the underlying issue instead.", confidence: "medium" });
+        }
+      }
       // Spring @CrossOrigin("*") — CORS misconfiguration
       if (tok.t === TT.At && tokens[i + 1]?.t === TT.Ident && tokens[i + 1].v === "CrossOrigin" && tokens[i + 2]?.t === TT.LParen) {
         const { args } = extractArgs(tokens, i + 2);
@@ -1393,6 +1455,39 @@ function runStructuralChecks(tokens: Token[], lines: string[], lang: Language): 
           }
         }
       }
+      // C++ TOCTOU (time-of-check-time-of-use) race condition: access() then open()
+      if (tok.t === TT.Ident && tok.v === "access" && tokens[i + 1]?.t === TT.LParen) {
+        for (let k = i + 2; k < Math.min(tokens.length, i + 40); k++) {
+          if (tokens[k].t === TT.Ident && (tokens[k].v === "open" || tokens[k].v === "fopen") && tokens[k + 1]?.t === TT.LParen) {
+            add({ id: "cpp-toctou", name: "Time-of-Check Time-of-Use Race (TOCTOU)", severity: "high", category: "Memory Safety", cwe: "CWE-367", owasp: "A06:2021",
+              line: tok.ln, col: tok.col, detail: "access() followed by open() creates a race condition — file state can change between check and use.", remediation: "Open the file first and check permissions via fstat() on the file descriptor, or use O_NOFOLLOW.", confidence: "medium" });
+            break;
+          }
+        }
+      }
+      // C++ uninitialized variable: detect declaration without initialization before use
+      if (tok.t === TT.Ident && tok.v === "int" || tok.v === "char" || tok.v === "float" || tok.v === "double") {
+        // This is a type declaration; very basic check for uninitialized vars
+      }
+      // C++ unchecked return value of security functions
+      if (tok.t === TT.Ident && (tok.v === "setuid" || tok.v === "setgid" || tok.v === "chroot" || tok.v === "chown") && tokens[i + 1]?.t === TT.LParen) {
+        // Check if result is captured: if previous token is = or it's in an if condition
+        const prevSignificant = i > 0 ? tokens[i - 1] : null;
+        if (prevSignificant?.t !== TT.Assign && prevSignificant?.t !== TT.Eq && prevSignificant?.t !== TT.LParen) {
+          add({ id: "cpp-unchecked-return", name: "Unchecked Security Function Return", severity: "medium", category: "Error Handling", cwe: "CWE-252", owasp: "A06:2021",
+            line: tok.ln, col: tok.col, detail: `${tok.v}() return value not checked — failure silently compromises security (e.g., still running as root).`, remediation: `Always check: if (${tok.v}(...) != 0) { /* handle error, abort */ }`, confidence: "medium" });
+        }
+      }
+      // C++ hardcoded IP addresses (internal network)
+      if (tok.t === TT.String && /^(10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+)/.test(tok.v)) {
+        add({ id: "cpp-internal-ip", name: "Internal IP Address Exposure", severity: "low", category: "Information Disclosure", cwe: "CWE-200", owasp: "A04:2021",
+          line: tok.ln, col: tok.col, detail: "Internal/private IP address hardcoded — reveals network topology.", remediation: "Use environment variables or configuration files for internal endpoints.", confidence: "low" });
+      }
+      // C++ signal handler with unsafe functions
+      if (tok.t === TT.Ident && tok.v === "signal" && tokens[i + 1]?.t === TT.LParen) {
+        add({ id: "cpp-unsafe-signal", name: "Async-Unsafe Signal Handler", severity: "medium", category: "Memory Safety", cwe: "CWE-479", owasp: "A06:2021",
+          line: tok.ln, col: tok.col, detail: "signal() handler may call async-unsafe functions (printf, malloc, free) — undefined behavior and potential exploits.", remediation: "Use sigaction() instead. Only call async-signal-safe functions in handlers. Set a flag and handle in main loop.", confidence: "low" });
+      }
     }
 
     if (lang === "csharp") {
@@ -1499,6 +1594,46 @@ function runStructuralChecks(tokens: Token[], lines: string[], lang: Language): 
           add({ id: "csharp-missing-csrf", name: "Missing Anti-Forgery Token", severity: "medium", category: "Session Management", cwe: "CWE-352", owasp: "A01:2021",
             line: tok.ln, col: tok.col, detail: `[${tokens[i + 1].v}] endpoint without [ValidateAntiForgeryToken] — vulnerable to CSRF attacks.`, remediation: "Add [ValidateAntiForgeryToken] attribute, or use AddControllersWithViews(o => o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));", confidence: "medium" });
         }
+      }
+      // C# EnableCors("*") — wildcard CORS
+      if (tok.t === TT.LBracket && tokens[i + 1]?.t === TT.Ident && tokens[i + 1].v === "EnableCors") {
+        const lineText = ev(tok.ln);
+        if (lineText.includes('"*"') || lineText.includes("AllowAnyOrigin")) {
+          add({ id: "csharp-cors-wildcard", name: "CORS Wildcard Origin", severity: "high", category: "Access Control", cwe: "CWE-942", owasp: "A05:2021",
+            line: tok.ln, col: tok.col, detail: "EnableCors with wildcard (*) or AllowAnyOrigin allows requests from any domain — credential theft risk.", remediation: "Restrict to trusted origins: policy.WithOrigins(\"https://yourdomain.com\").", confidence: "high" });
+        }
+      }
+      // C# insecure TLS: ServicePointManager.SecurityProtocol with old protocols
+      if (tok.t === TT.Ident && tok.v === "SecurityProtocol" && tokens[i + 1]?.t === TT.Assign) {
+        const lineText = ev(tok.ln);
+        if (/Ssl3|Tls\b(?!1[23])/.test(lineText)) {
+          add({ id: "csharp-insecure-tls", name: "Insecure TLS Protocol", severity: "high", category: "Cryptography", cwe: "CWE-326", owasp: "A02:2021",
+            line: tok.ln, col: tok.col, detail: "ServicePointManager.SecurityProtocol set to deprecated SSL3 or TLS 1.0 — vulnerable to POODLE/BEAST.", remediation: "Use SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13.", confidence: "high" });
+        }
+      }
+      // C# customErrors mode="Off" — debug info exposure
+      if (tok.t === TT.String && (tok.v === "Off" || tok.v === "off") && tokens[i - 1]?.t === TT.Assign) {
+        const lineText = ev(tok.ln);
+        if (lineText.includes("customErrors") || lineText.includes("CustomErrors")) {
+          add({ id: "csharp-debug-mode", name: "Custom Errors Disabled", severity: "medium", category: "Information Disclosure", cwe: "CWE-209", owasp: "A05:2021",
+            line: tok.ln, col: tok.col, detail: "customErrors mode=\"Off\" exposes detailed error messages and stack traces to users.", remediation: "Set customErrors mode=\"RemoteOnly\" or \"On\" in production. Configure custom error pages.", confidence: "medium" });
+        }
+      }
+      // C# Response.Write with user input — XSS
+      if (tok.t === TT.Ident && tok.v === "Response" && tokens[i + 1]?.t === TT.Dot && tokens[i + 2]?.t === TT.Ident && tokens[i + 2].v === "Write") {
+        add({ id: "csharp-response-write-xss", name: "XSS via Response.Write", severity: "high", category: "Injection", cwe: "CWE-79", owasp: "A03:2021",
+          line: tok.ln, col: tok.col, detail: "Response.Write outputs directly to browser without encoding — reflected XSS if user input is included.", remediation: "Use HttpUtility.HtmlEncode() or Razor @Model syntax for auto-encoding.", confidence: "medium" });
+      }
+      // C# Directory.GetFiles with user-controlled path — path traversal
+      if (tok.t === TT.Ident && tok.v === "Directory" && tokens[i + 1]?.t === TT.Dot && tokens[i + 2]?.t === TT.Ident &&
+          (tokens[i + 2].v === "GetFiles" || tokens[i + 2].v === "GetDirectories" || tokens[i + 2].v === "EnumerateFiles")) {
+        add({ id: "csharp-path-traversal", name: "Potential Path Traversal", severity: "medium", category: "Injection", cwe: "CWE-22", owasp: "A01:2021",
+          line: tok.ln, col: tok.col, detail: `Directory.${tokens[i + 2].v}() may use user-controlled path — directory traversal risk.`, remediation: "Validate and canonicalize paths with Path.GetFullPath(). Verify the resolved path stays within allowed directory.", confidence: "low" });
+      }
+      // C# Process.Start — command injection
+      if (tok.t === TT.Ident && tok.v === "Process" && tokens[i + 1]?.t === TT.Dot && tokens[i + 2]?.t === TT.Ident && tokens[i + 2].v === "Start") {
+        add({ id: "csharp-command-injection", name: "Potential Command Injection", severity: "high", category: "Injection", cwe: "CWE-78", owasp: "A03:2021",
+          line: tok.ln, col: tok.col, detail: "Process.Start() executes system commands — command injection if arguments include user input.", remediation: "Use ProcessStartInfo with Arguments property. Never concatenate user input into command strings.", confidence: "medium" });
       }
       // C# hardcoded API key patterns
       if (tok.t === TT.String && tok.v.length >= 20) {

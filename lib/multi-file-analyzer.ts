@@ -193,7 +193,7 @@ const VULN_REFERENCES: Record<string, VulnReference[]> = {
   // Prototype Pollution
   "prototype-pollution": [
     { title: "CWE-1321: Prototype Pollution", url: "https://cwe.mitre.org/data/definitions/1321.html", type: "cwe" },
-    { title: "Snyk: Prototype Pollution", url: "https://learn.snyk.io/lesson/prototype-pollution/", type: "blog" },
+    { title: "Prototype Pollution Deep Dive", url: "https://owasp.org/www-community/vulnerabilities/Prototype_Pollution", type: "blog" },
   ],
 
   // Weak Crypto

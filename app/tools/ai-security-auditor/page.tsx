@@ -110,6 +110,21 @@ const injectionPatterns = [
   },
 ];
 
+// Luhn check for credit card validation
+function luhnCheck(num: string): boolean {
+  const digits = num.replace(/\D/g, "");
+  if (digits.length < 13 || digits.length > 19) return false;
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let n = parseInt(digits[i], 10);
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+
 // Sensitive Data Patterns
 const sensitivePatterns = [
   {
@@ -283,6 +298,8 @@ export default function AiSecurityAuditorPage() {
       const matches = output.match(pattern.pattern);
       if (matches) {
         matches.forEach((match) => {
+          // Skip credit card false positives that fail Luhn check
+          if (pattern.name === "Credit Card Numbers" && !luhnCheck(match)) return;
           results.push({
             category: pattern.name,
             severity: pattern.severity as "Critical" | "High",
@@ -341,7 +358,12 @@ export default function AiSecurityAuditorPage() {
     // Run data leakage tests
     if (output.trim()) {
       sensitivePatterns.forEach((pattern) => {
-        const matches = output.match(pattern.pattern);
+        let matches = output.match(pattern.pattern);
+        // Filter credit card false positives with Luhn validation
+        if (matches && pattern.name === "Credit Card Numbers") {
+          const valid = matches.filter((m) => luhnCheck(m));
+          if (valid.length === 0) { matches = null; } else { matches = valid as unknown as RegExpMatchArray; }
+        }
         if (matches && matches.length > 0) {
           allResults.push({
             category: pattern.name,
@@ -369,21 +391,26 @@ export default function AiSecurityAuditorPage() {
 
     setTestResults(allResults);
 
-    // Calculate scores
+    // Calculate scores — weighted by CVSS-aligned severity
     const criticalCount = allResults.filter((r) => r.severity === "Critical").length;
     const highCount = allResults.filter((r) => r.severity === "High").length;
     const mediumCount = allResults.filter((r) => r.severity === "Medium").length;
+    const lowCount = allResults.filter((r) => r.severity === "Low").length;
 
-    const overallScore = Math.max(0, 100 - criticalCount * 40 - highCount * 20 - mediumCount * 10);
+    // Weighted penalty: Critical=15, High=8, Medium=4, Low=1 (diminishing per-finding via sqrt)
+    const penalty = Math.sqrt(criticalCount) * 15 + Math.sqrt(highCount) * 8 + Math.sqrt(mediumCount) * 4 + Math.sqrt(lowCount) * 1;
+    const overallScore = Math.max(0, Math.min(100, 100 - penalty));
 
     setScore({
       overall: Math.round(overallScore),
-      categories: owaspCategories.map((cat) => ({
-        name: cat.title,
-        score: allResults.some((r) => r.category.toLowerCase().includes(cat.id.toLowerCase()))
-          ? 40
-          : 85,
-      })),
+      categories: owaspCategories.map((cat) => {
+        const catFindings = allResults.filter((r) => r.category.toLowerCase().includes(cat.id.toLowerCase()));
+        if (catFindings.length === 0) return { name: cat.title, score: 90 };
+        const catCritical = catFindings.filter((r) => r.severity === "Critical").length;
+        const catHigh = catFindings.filter((r) => r.severity === "High").length;
+        const catPenalty = catCritical * 25 + catHigh * 15 + (catFindings.length - catCritical - catHigh) * 5;
+        return { name: cat.title, score: Math.max(10, Math.min(85, 85 - catPenalty)) };
+      }),
     });
 
     setTimeout(() => setIsLoading(false), 1000);

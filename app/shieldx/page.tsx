@@ -459,9 +459,9 @@ export default function ShieldXWorkspacePage() {
 
     html += `<div class="diff-banner">
       <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">How This Scan Differs From Other Tools</h3>
-      <div class="diff-item"><strong>vs Checkmarx:</strong> Zero code storage. Your source code never touches a database or disk. Analyzed in memory and immediately discarded.</div>
-      <div class="diff-item"><strong>vs Semgrep:</strong> Full taint tracking with visualized dataflow. Traces data from user input through assignments and calls to dangerous sinks.</div>
-      <div class="diff-item"><strong>vs SonarQube:</strong> Cross-file analysis with CWE/OWASP references and auto-generated fix code with effort estimates.</div>
+      <div class="diff-item"><strong>vs Competitors:</strong> Zero code storage. Your source code never touches a database or disk. Analyzed in memory and immediately discarded.</div>
+      <div class="diff-item"><strong>vs Competitors:</strong> Full taint tracking with visualized dataflow. Traces data from user input through assignments and calls to dangerous sinks.</div>
+      <div class="diff-item"><strong>vs Competitors:</strong> Cross-file analysis with CWE/OWASP references and auto-generated fix code with effort estimates.</div>
     </div>`;
 
     html += `<div class="footer">
@@ -928,6 +928,87 @@ export default function ShieldXWorkspacePage() {
                 </Card>
               </motion.div>
             ))}
+          </div>
+
+          {/* ── Plan Comparison — visible without login ── */}
+          <div className="text-center mb-8 mt-4">
+            <h2 className="text-2xl font-bold">Simple, Transparent Pricing</h2>
+            <p className="text-muted-foreground mt-2">Choose a plan that fits your security needs. No hidden fees.</p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3 mb-16">
+            {/* Free */}
+            <Card className="relative overflow-hidden hover:border-primary/30 transition-colors">
+              <CardHeader className="pb-3">
+                <p className="text-sm font-medium text-muted-foreground">Free</p>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-4xl font-extrabold">$0</span>
+                  <span className="text-muted-foreground text-sm">/ forever</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3 text-sm">
+                <p className="text-muted-foreground">Demo workspace with basic modules.</p>
+                <ul className="space-y-2">
+                  {["Secrets Scanner (demo)", "Security Score Dashboard", "AI Security Auditor", "Free Tools (JWT, CSP, Hash, etc.)", "OWASP Guides & Resources", "2 demo scans"].map((f) => (
+                    <li key={f} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />{f}</li>
+                  ))}
+                </ul>
+                <Link href="/auth/register" className="block pt-2">
+                  <Button variant="outline" className="w-full">Get Started Free</Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Pro */}
+            <Card className="relative overflow-hidden border-primary/40 shadow-lg">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-violet-500" />
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Pro</p>
+                  <Badge className="bg-primary/10 text-primary text-[10px]">Most Popular</Badge>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-4xl font-extrabold">$29</span>
+                  <span className="text-muted-foreground text-sm">/ month</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3 text-sm">
+                <p className="text-muted-foreground">Full security for individual developers and startups.</p>
+                <ul className="space-y-2">
+                  {["Everything in Free", "SAST Code Analyzer (multi-file)", "Dependency Scanner (CVE database)", "API Security Scanner", "Cloud Security Audit", "Threat Log Analyzer", "Unlimited scans", "Downloadable reports & charts", "Scan history & trends"].map((f) => (
+                    <li key={f} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />{f}</li>
+                  ))}
+                </ul>
+                <Link href="/auth/register" className="block pt-2">
+                  <Button className="w-full gap-1"><Crown className="h-4 w-4" /> Start Pro</Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise */}
+            <Card className="relative overflow-hidden hover:border-primary/30 transition-colors">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Enterprise</p>
+                  <Badge variant="secondary" className="text-[10px]">Built for Teams</Badge>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-4xl font-extrabold">$99</span>
+                  <span className="text-muted-foreground text-sm">/ month</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3 text-sm">
+                <p className="text-muted-foreground">Team collaboration with CI/CD and priority support.</p>
+                <ul className="space-y-2">
+                  {["Everything in Pro", "CI/CD Pipeline Gate", "25 team seats", "Team management & roles", "Priority support & onboarding", "Custom integrations", "Exploit PoC Generator"].map((f) => (
+                    <li key={f} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />{f}</li>
+                  ))}
+                </ul>
+                <Link href="/auth/register" className="block pt-2">
+                  <Button variant="outline" className="w-full">Contact Sales</Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
 
           <Card className="border-0 bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
