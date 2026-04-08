@@ -160,11 +160,11 @@ function parseLanguage(body: Record<string, unknown> | null): ScanLanguage {
 
 /* ── POST endpoint ── */
 
-/** Max total size across all files (5MB for pro, 500KB for free, 1MB demo) */
-const MAX_MULTI_FILE_FREE = 500_000;
-const MAX_MULTI_FILE_PAID = 5_000_000;
-const MAX_MULTI_FILE_DEMO = 1_000_000;
-const MAX_FILE_COUNT = 200;
+/** Max total size across all files (200MB for pro, 5MB for free, 10MB demo) */
+const MAX_MULTI_FILE_FREE = 5_000_000;
+const MAX_MULTI_FILE_PAID = 200_000_000;
+const MAX_MULTI_FILE_DEMO = 10_000_000;
+const MAX_FILE_COUNT = 500;
 
 function parseFiles(body: Record<string, unknown> | null): FileEntry[] | null {
   const raw = body?.files;
@@ -226,8 +226,8 @@ export async function POST(request: NextRequest) {
         if (totalSize > MAX_MULTI_FILE_DEMO) {
           return NextResponse.json({ error: "Demo multi-file scan limited to 1MB total." }, { status: 400 });
         }
-        if (files.length > 20) {
-          return NextResponse.json({ error: "Demo limited to 20 files. Sign up for Pro to scan up to 200 files." }, { status: 400 });
+        if (files.length > 50) {
+          return NextResponse.json({ error: "Demo limited to 50 files. Sign up for Pro to scan up to 500 files." }, { status: 400 });
         }
         const multiResult = analyzeMultipleFiles(files);
         const enriched = enrichMultiFileFindings(multiResult.findings);
@@ -315,8 +315,8 @@ export async function POST(request: NextRequest) {
       if (!code || typeof code !== "string" || code.trim().length < 5) {
         return NextResponse.json({ error: "Provide source code to scan (minimum 5 characters)." }, { status: 400 });
       }
-      if (code.length > 50_000) {
-        return NextResponse.json({ error: "Input too large. Maximum 50,000 characters for free plan." }, { status: 400 });
+      if (code.length > 500_000) {
+        return NextResponse.json({ error: "Input too large. Maximum 500KB for free plan." }, { status: 400 });
       }
 
       const result = runScan(code, language);
@@ -384,8 +384,8 @@ export async function POST(request: NextRequest) {
     if (!code || typeof code !== "string" || code.trim().length < 5) {
       return NextResponse.json({ error: "Provide source code to scan (minimum 5 characters)." }, { status: 400 });
     }
-    if (code.length > 500_000) {
-      return NextResponse.json({ error: "Input too large. Maximum 500,000 characters." }, { status: 400 });
+    if (code.length > 5_000_000) {
+      return NextResponse.json({ error: "Input too large. Maximum 5MB per file." }, { status: 400 });
     }
 
     const result = runScan(code, language);

@@ -151,7 +151,7 @@ async function extractZipFiles(file: File): Promise<{ path: string; content: str
 
     try {
       const content = await zipEntry.async("string");
-      if (content.length > 0 && content.length < 500_000) {
+      if (content.length > 0 && content.length < 2_000_000) {
         results.push({ path: relativePath, content });
       }
     } catch {
@@ -164,7 +164,7 @@ async function extractZipFiles(file: File): Promise<{ path: string; content: str
 
 async function readFolderFiles(fileList: FileList): Promise<{ path: string; content: string }[]> {
   const results: { path: string; content: string }[] = [];
-  const MAX_FILES = 200;
+  const MAX_FILES = 500;
 
   for (let i = 0; i < Math.min(fileList.length, MAX_FILES); i++) {
     const file = fileList[i];
@@ -181,7 +181,7 @@ async function readFolderFiles(fileList: FileList): Promise<{ path: string; cont
 
     try {
       const content = await file.text();
-      if (content.length > 0 && content.length < 500_000) {
+      if (content.length > 0 && content.length < 2_000_000) {
         results.push({ path, content });
       }
     } catch {
@@ -225,7 +225,7 @@ const MODULES = [
   { id: "logs", name: "Threat Log Analyzer", description: "Pattern-based log analysis to detect brute-force attacks, injection attempts, privilege escalation, and anomalous traffic.", icon: Brain, plans: ["pro", "enterprise"] },
   { id: "sast", name: "SAST Code Analyzer", description: "Multi-file AST-based static analysis with cross-file taint tracking, exploit PoC generation, and downloadable reports. Detects SQL injection, XSS, SSRF, command injection, and 15+ vulnerability classes across JavaScript, TypeScript, Java, C++, and C#.", icon: FileCode, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
-  { id: "alerts", name: "Alert System (Coming Soon)", description: "Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected. Coming soon.", icon: Bell, plans: ["pro", "enterprise"] },
+  { id: "license", name: "License Compliance Scanner", description: "Scan open-source dependencies for license risks (GPL, AGPL, copyleft). Auto-detect license conflicts that could force source disclosure — critical for startups seeking funding or acquisition.", icon: FileText, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
 ];
 
@@ -267,14 +267,8 @@ export default function ShieldXWorkspacePage() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [expandedPoC, setExpandedPoC] = useState<Set<number>>(new Set());
   const [sessionScans, setSessionScans] = useState<ScanHistoryItem[]>([]);
-
-  /* ── Alert config state ── */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [alertConfig, setAlertConfig] = useState<any>(null);
-  const [alertLoading, setAlertLoading] = useState(false);
-  const [alertSaving, setAlertSaving] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [alertTesting, setAlertTesting] = useState(false);
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [suppressedFindings, setSuppressedFindings] = useState<Set<string>>(new Set());
 
   /* ── Admin plan upgrade ── */
   const [upgradingPlan, setUpgradingPlan] = useState(false);
@@ -482,6 +476,85 @@ export default function ShieldXWorkspacePage() {
     URL.revokeObjectURL(url);
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const exportSASTJSON = useCallback((results: any) => {
+    const exportData = {
+      meta: {
+        tool: "ShieldX SAST Engine",
+        vendor: "SecureCodeReviews",
+        generatedAt: new Date().toISOString(),
+        version: "4.1",
+      },
+      summary: {
+        totalFindings: results.stats?.total || 0,
+        critical: results.stats?.critical || 0,
+        high: results.stats?.high || 0,
+        medium: results.stats?.medium || 0,
+        low: results.stats?.low || 0,
+        linesAnalyzed: results.multiFile ? results.totalLines : results.linesAnalyzed,
+        filesScanned: results.multiFile ? results.fileCount : 1,
+        scanDurationMs: results.scanDurationMs || null,
+      },
+      findings: (results.findings || []).map((f: Record<string, unknown>) => ({
+        id: f.id,
+        name: f.name,
+        severity: f.severity,
+        confidence: f.confidence,
+        category: f.category,
+        cwe: f.cwe,
+        owasp: f.owasp,
+        line: f.line,
+        column: f.column,
+        file: f.file || null,
+        detail: f.detail,
+        evidence: f.evidence,
+        remediation: f.remediation,
+        fix: f.fix || null,
+        dataflow: f.dataflow || null,
+        references: f.references || null,
+      })),
+      fileBreakdown: results.fileBreakdown || null,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `SCRS-SAST-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const exportSASTCSV = useCallback((results: any) => {
+    const findings = results.findings || [];
+    const headers = ["#", "Severity", "Name", "Category", "CWE", "OWASP", "File", "Line", "Confidence", "Detail", "Remediation"];
+    const rows = findings.map((f: Record<string, unknown>, i: number) => [
+      i + 1,
+      f.severity,
+      f.name,
+      f.category,
+      f.cwe || "",
+      f.owasp || "",
+      f.file || "",
+      f.line,
+      f.confidence || "",
+      String(f.detail || "").replace(/"/g, '""'),
+      String(f.remediation || (f.fix as Record<string, unknown>)?.fix || "").replace(/"/g, '""'),
+    ]);
+    const csv = [headers.join(","), ...rows.map((r: (string | number)[]) => r.map(v => `"${v}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `SCRS-SAST-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
   const userPlan: PlanTier = isAdmin
     ? "enterprise"
     : (billingState?.plan as PlanTier) ||
@@ -510,49 +583,6 @@ export default function ShieldXWorkspacePage() {
 
   useEffect(() => { void loadBillingState(); }, [loadBillingState]);
   useEffect(() => { void loadScanHistory(); }, [loadScanHistory]);
-
-  /* ── Alert Config Management ── */
-  const loadAlertConfig = useCallback(async () => {
-    if (!isPaid) return;
-    setAlertLoading(true);
-    try {
-      const res = await fetch("/api/shieldx/alerts");
-      const data = await res.json();
-      if (res.ok) setAlertConfig(data.config);
-    } catch { /* silent */ } finally { setAlertLoading(false); }
-  }, [isPaid]);
-
-  const saveAlertConfig = async () => {
-    if (!alertConfig) return;
-    setAlertSaving(true);
-    setAlertMessage(null);
-    try {
-      const res = await fetch("/api/shieldx/alerts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(alertConfig),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save");
-      setAlertMessage("Alert configuration saved successfully!");
-      setAlertConfig(data.config);
-    } catch (err) {
-      setAlertMessage(err instanceof Error ? err.message : "Failed to save");
-    } finally { setAlertSaving(false); }
-  };
-
-  const testAlert = async () => {
-    setAlertTesting(true);
-    setAlertMessage(null);
-    try {
-      const res = await fetch("/api/shieldx/alerts/test", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Test failed");
-      setAlertMessage("Test alert sent! Check your configured channels.");
-    } catch (err) {
-      setAlertMessage(err instanceof Error ? err.message : "Test failed");
-    } finally { setAlertTesting(false); }
-  };
 
   /* ── Admin plan upgrade ── */
   const adminUpgradePlan = async (plan: PlanTier) => {
@@ -585,7 +615,6 @@ export default function ShieldXWorkspacePage() {
     setCicdScanType("full");
     setScanResults(null);
     setScanError(null);
-    if (moduleId === "alerts") void loadAlertConfig();
     // Scroll to the scan panel after state update + animation start
     setTimeout(() => {
       scanPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -975,7 +1004,7 @@ export default function ShieldXWorkspacePage() {
               <CardContent className="pt-0 space-y-3 text-sm">
                 <p className="text-muted-foreground">Full security for individual developers and startups.</p>
                 <ul className="space-y-2">
-                  {["Everything in Free", "SAST Code Analyzer (multi-file)", "Dependency Scanner (CVE database)", "API Security Scanner", "Cloud Security Audit", "Threat Log Analyzer", "Unlimited scans", "Downloadable reports & charts", "Scan history & trends"].map((f) => (
+                  {["Everything in Free", "SAST Code Analyzer (multi-file, 200MB)", "Dependency Scanner (CVE database)", "API Security Scanner", "Cloud Security Audit", "Threat Log Analyzer", "License Compliance Scanner", "Unlimited scans", "Downloadable reports & charts", "Scan history & trends"].map((f) => (
                     <li key={f} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />{f}</li>
                   ))}
                 </ul>
@@ -1096,7 +1125,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "alerts"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "license"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
@@ -1120,7 +1149,7 @@ export default function ShieldXWorkspacePage() {
                           {isAvailable && hasScanUI ? (
                             <Button size="sm" variant={isActive ? "default" : "outline"} className="w-full gap-1.5"
                               onClick={(e) => { e.stopPropagation(); openModule(mod.id); }}>
-                              {isActive ? <>Close Scanner <X className="h-3.5 w-3.5" /></> : <>{isDemoOnly ? "Open Demo Scanner" : mod.id === "score" ? "View Score Dashboard" : mod.id === "alerts" ? "Configure Alerts" : "Open Scanner"} <ChevronDown className="h-3.5 w-3.5" /></>}
+                              {isActive ? <>Close Scanner <X className="h-3.5 w-3.5" /></> : <>{isDemoOnly ? "Open Demo Scanner" : mod.id === "score" ? "View Score Dashboard" : mod.id === "license" ? "Check Licenses" : "Open Scanner"} <ChevronDown className="h-3.5 w-3.5" /></>}
                             </Button>
                           ) : isAvailable ? (
                             <Button size="sm" variant="outline" className="w-full gap-1.5" disabled>
@@ -1142,7 +1171,7 @@ export default function ShieldXWorkspacePage() {
             {/* ── Scan Panel ── */}
             <div ref={scanPanelRef} />
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "alerts"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "license"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -1518,15 +1547,15 @@ export default function ShieldXWorkspacePage() {
                           );
                         })()}
 
-                        {/* Alert Configuration UI */}
-                        {activeModule === "alerts" && (
+                        {/* License Compliance Scanner UI */}
+                        {activeModule === "license" && (
                           <div className="space-y-5">
                             <Card className="border-primary/20 bg-primary/5">
                               <CardContent className="p-6 text-center space-y-3">
-                                <Bell className="h-8 w-8 text-primary mx-auto" />
-                                <h4 className="text-lg font-semibold">Alert System — Coming Soon</h4>
+                                <FileText className="h-8 w-8 text-primary mx-auto" />
+                                <h4 className="text-lg font-semibold">License Compliance Scanner</h4>
                                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                                  Real-time email, Slack, and webhook alerts when critical vulnerabilities are detected. This feature is under active development and will be available in an upcoming release.
+                                  Paste your <code>package.json</code> or <code>requirements.txt</code> below. We detect copyleft licenses (GPL, AGPL, LGPL) and dual-license ambiguity that can block acquisitions or open-source compliance audits.
                                 </p>
                               </CardContent>
                             </Card>
@@ -1534,9 +1563,9 @@ export default function ShieldXWorkspacePage() {
                         )}
 
                         <div className="flex gap-3">
-                          {activeModule !== "score" && activeModule !== "alerts" && (
+                          {activeModule !== "score" && (
                           <Button onClick={runScan} disabled={scanning || (activeModule === "cicd" ? (cicdScanType !== "dependencies" && !scanInput.trim() && cicdScanType !== "secrets") || (cicdScanType !== "secrets" && !cicdDepsInput.trim() && cicdScanType !== "dependencies") : (!isDemoOnly && !scanInput.trim() && !(activeModule === "sast" && sastMode === "multi" && multiFiles.length > 0)))} className="gap-2">
-                            {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : activeModule === "cicd" ? "Run Pipeline Gate" : "Run Scan"}</>}
+                            {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</> : <><Search className="h-4 w-4" /> {isDemoOnly ? "Run Demo Scan" : activeModule === "cicd" ? "Run Pipeline Gate" : activeModule === "license" ? "Check Licenses" : "Run Scan"}</>}
                           </Button>
                           )}
                           {scanResults && (
@@ -2161,8 +2190,18 @@ export default function ShieldXWorkspacePage() {
                                     )}
                                   </div>
                                   <Button size="sm" variant="outline" onClick={() => generateSASTReport(scanResults)} className="text-xs gap-1.5 shrink-0">
-                                    <Download className="h-3.5 w-3.5" /> Download Report
+                                    <Download className="h-3.5 w-3.5" /> HTML Report
                                   </Button>
+                                  {isPaid && (
+                                    <>
+                                      <Button size="sm" variant="outline" onClick={() => exportSASTJSON(scanResults)} className="text-xs gap-1.5 shrink-0">
+                                        <Download className="h-3.5 w-3.5" /> JSON
+                                      </Button>
+                                      <Button size="sm" variant="outline" onClick={() => exportSASTCSV(scanResults)} className="text-xs gap-1.5 shrink-0">
+                                        <Download className="h-3.5 w-3.5" /> CSV
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
 
                                 {/* Multi-file breakdown table */}
@@ -2204,9 +2243,22 @@ export default function ShieldXWorkspacePage() {
                                 )}
 
                                 {scanResults.findings?.length > 0 ? (
-                                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                                  <div className="space-y-3">
+                                    {/* Severity filter bar */}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs text-muted-foreground">Filter:</span>
+                                      {["all", "critical", "high", "medium", "low"].map((sev) => (
+                                        <Button key={sev} size="sm" variant={severityFilter === sev ? "default" : "outline"} className="text-[10px] h-6 px-2 capitalize" onClick={() => setSeverityFilter(sev)}>
+                                          {sev === "all" ? `All (${scanResults.findings.length})` : `${sev} (${scanResults.findings.filter((f: Record<string, unknown>) => f.severity === sev).length})`}
+                                        </Button>
+                                      ))}
+                                      {suppressedFindings.size > 0 && (
+                                        <span className="text-[10px] text-muted-foreground ml-auto">{suppressedFindings.size} suppressed</span>
+                                      )}
+                                    </div>
+                                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                    {scanResults.findings.map((f: any, idx: number) => (
+                                    {scanResults.findings.filter((f: any) => (severityFilter === "all" || f.severity === severityFilter) && !suppressedFindings.has(`${f.id}:${f.line}:${f.file || ""}`)).map((f: any, idx: number) => (
                                       <Card key={idx} className={`${f.severity === "critical" ? "border-red-500/30" : f.severity === "high" ? "border-orange-500/30" : f.severity === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`}>
                                         <CardContent className="p-4">
                                           <div className="flex items-start justify-between gap-3 mb-2">
@@ -2217,6 +2269,11 @@ export default function ShieldXWorkspacePage() {
                                               <Badge variant="outline" className="text-[9px]">{f.category}</Badge>
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
+                                              {isPaid && (
+                                                <Button size="sm" variant="ghost" className="text-[9px] h-5 px-1.5 text-muted-foreground hover:text-red-500" onClick={() => setSuppressedFindings(prev => { const next = new Set(prev); next.add(`${f.id}:${f.line}:${f.file || ""}`); return next; })} title="Suppress (mark as false positive)">
+                                                  ✕ Suppress
+                                                </Button>
+                                              )}
                                               {f.fix?.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {f.fix.riskScore}/100</span>}
                                               {f.file && <Badge variant="outline" className="text-[9px] font-mono">{f.file.length > 30 ? `...${f.file.slice(-27)}` : f.file}</Badge>}
                                               <span className="text-xs text-muted-foreground">Line {f.line}</span>
@@ -2357,6 +2414,7 @@ export default function ShieldXWorkspacePage() {
                                         </CardContent>
                                       </Card>
                                     ))}
+                                  </div>
                                   </div>
                                 ) : (
                                   <Card className="border-emerald-500/30 bg-emerald-500/5">

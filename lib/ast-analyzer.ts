@@ -2695,30 +2695,243 @@ function parseCode(code: string): ASTNode | null {
 function stripTypeAnnotations(code: string): string {
   let result = code;
 
-  // Remove: variable: Type, param: Type
-  result = result.replace(/:\s*(?:string|number|boolean|any|void|never|unknown|null|undefined|object|symbol|bigint)(?:\[\])?(?:\s*\|[^=,)}\n]+)?/g, "");
+  // Remove `import type` and `export type {…}` statements (preserve newlines)
+  result = result.replace(/(?:import|export)\s+type\s+(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)\s*(?:from\s*['"][^'"]*['"])?;?/g,
+    (m) => "\n".repeat((m.match(/\n/g) || []).length));
+
+  // Remove `declare` blocks: declare module/namespace/global/function/const/var/let/class
+  result = result.replace(/(?:export\s+)?declare\s+(?:module|namespace|global|function|const|var|let|class|interface|type|enum|abstract)\b[^;{]*(?:\{[\s\S]*?\}|;)/g,
+    (m) => "\n".repeat((m.match(/\n/g) || []).length));
 
   // Remove interface/type blocks (replace with same number of newlines)
-  result = result.replace(/(?:export\s+)?(?:interface|type)\s+\w+(?:<[^>]*>)?\s*(?:extends\s+[^{]+)?\{[\s\S]*?\}/g,
-    (match) => "\n".repeat((match.match(/\n/g) || []).length));
-
-  // Remove generic type params: <T>, <T extends X>
-  result = result.replace(/<(?:[A-Z]\w*(?:\s+extends\s+[^>]+)?)(?:,\s*[A-Z]\w*(?:\s+extends\s+[^>]+)?)*>/g, "");
-
-  // Remove "as Type" casts
-  result = result.replace(/\s+as\s+\w+(?:\[\])?/g, "");
-
-  // Remove non-null assertion: foo!.bar -> foo.bar
-  result = result.replace(/!(\.|;|\s|\)|\]|\,)/g, "$1");
-
-  // Remove access modifiers
-  result = result.replace(/\b(private|protected|public|readonly|abstract|declare|override)\s+/g, "");
+  result = result.replace(/(?:export\s+)?(?:interface|type)\s+\w+(?:<[^>]*>)?\s*(?:extends\s+[^{]+?)?\s*(?:=\s*[^;]+;|\{[\s\S]*?\})/g,
+    (m) => "\n".repeat((m.match(/\n/g) || []).length));
 
   // Remove enum blocks
   result = result.replace(/(?:export\s+)?(?:const\s+)?enum\s+\w+\s*\{[\s\S]*?\}/g,
-    (match) => "\n".repeat((match.match(/\n/g) || []).length));
+    (m) => "\n".repeat((m.match(/\n/g) || []).length));
+
+  // Remove namespace blocks
+  result = result.replace(/(?:export\s+)?namespace\s+\w+\s*\{[\s\S]*?\}/g,
+    (m) => "\n".repeat((m.match(/\n/g) || []).length));
+
+  // Remove decorators: @Something, @Something(), @Something({…})
+  result = result.replace(/@\w+(?:\.\w+)*(?:\([^)]*\))?/g, "");
+
+  // Remove access modifiers / keywords that acorn doesn't know
+  result = result.replace(/\b(private|protected|public|readonly|abstract|declare|override)\s+/g, "");
+
+  // Remove `satisfies Type`
+  result = result.replace(/\s+satisfies\s+[A-Z]\w*(?:<[^>]*>)?/g, "");
+
+  // Remove return-type annotations on functions/arrows: ): Type {  or ): Type =>
+  result = result.replace(/\):\s*[^=>{,)]+(?=\s*[{=])/g, ")");
+
+  // Remove complex type annotations after `:` — handles unions, intersections, generics, arrays, tuples, template literals
+  result = result.replace(/:\s*(?:readonly\s+)?(?:(?:[\w$.]+(?:<(?:[^<>]|<[^<>]*>)*>)?(?:\[\])?)(?:\s*[|&]\s*(?:[\w$.]+(?:<(?:[^<>]|<[^<>]*>)*>)?(?:\[\])?))*)/g, (m, offset) => {
+    // Only strip if this looks like a type annotation (after identifier, param, destructure)
+    const before = result.charAt(offset - 1);
+    if (before && /[\w)\]?!]/.test(before)) return "";
+    return m;
+  });
+
+  // Remove: variable: primitiveType, param: primitiveType (catch remaining simple ones)
+  result = result.replace(/:\s*(?:string|number|boolean|any|void|never|unknown|null|undefined|object|symbol|bigint|Function|Record|Map|Set|Array|Promise|Partial|Required|Omit|Pick|Exclude|Extract|ReturnType|Parameters|Awaited)(?:<[^>]*>)?(?:\[\])?(?:\s*\|[^=,)}\n]+)?/g, "");
+
+  // Remove generic type params: <T>, <T extends X>, <T, K extends keyof T>
+  result = result.replace(/<(?:[A-Z_]\w*(?:\s+extends\s+(?:[^>]|(?:<[^>]*>))+)?)(?:,\s*[A-Z_]\w*(?:\s+extends\s+(?:[^>]|(?:<[^>]*>))+)?)*>/g, "");
+
+  // Remove "as Type" and "as const" casts
+  result = result.replace(/\s+as\s+(?:const|(?:[\w$.]+(?:<[^>]*>)?(?:\[\])?))/g, "");
+
+  // Remove non-null assertion: foo!.bar -> foo.bar, foo! -> foo
+  result = result.replace(/!(\.|;|\s|\)|\]|\,)/g, "$1");
+
+  // Remove angle-bracket type assertions: <Type>expr (but not JSX)
+  result = result.replace(/(?<=[\s(=,;!])(<(?:string|number|boolean|any|void|unknown|object|Record|Partial|Array|Map|Set)(?:<[^>]*>)?>)(?=\w|\()/g, "");
+
+  // Remove `implements X, Y` from class declarations
+  result = result.replace(/\s+implements\s+[\w,\s<>.]+(?=\s*\{)/g, "");
+
+  // Remove method overload signatures (lines ending with `;` that look like function signatures)
+  result = result.replace(/^\s*(?:export\s+)?(?:async\s+)?(?:function\s+)?\w+\s*(?:<[^>]*>)?\s*\([^)]*\)\s*:\s*[^{;]+;$/gm,
+    (m) => "\n".repeat((m.match(/\n/g) || []).length));
 
   return result;
+}
+
+/**
+ * Fallback regex-based scanner for when AST parsing fails.
+ * Catches critical/high vulnerabilities using pattern matching on raw code.
+ * Lower confidence than AST analysis but ensures no file is silently skipped.
+ */
+function fallbackRegexScan(code: string): ASTFinding[] {
+  const lines = code.split("\n");
+  const findings: ASTFinding[] = [];
+  const seen = new Set<string>();
+
+  function add(f: ASTFinding) {
+    const key = `${f.id}:${f.line}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    if (!f.codeSnippet && f.line > 0) f.codeSnippet = buildSnippet(lines, f.line);
+    findings.push(f);
+  }
+
+  const checks: {
+    id: string; name: string; severity: Severity; category: string;
+    cwe: string; owasp: string; pattern: RegExp; detail: string; remediation: string;
+  }[] = [
+    // SQL Injection
+    {
+      id: "sql-injection", name: "SQL Injection", severity: "critical", category: "Injection",
+      cwe: "CWE-89", owasp: "A03:2021",
+      pattern: /(?:query|execute|exec|raw|prepare)\s*\(\s*(?:["'`](?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|REPLACE|TRUNCATE)\b[^"'`]*["'`]\s*\+|["'`](?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|REPLACE|TRUNCATE)\b[^"'`]*\$\{)/gi,
+      detail: "String concatenation or template literal in SQL query allows injection",
+      remediation: "Use parameterized queries or prepared statements",
+    },
+    // Command Injection
+    {
+      id: "command-injection", name: "Command Injection", severity: "critical", category: "Injection",
+      cwe: "CWE-78", owasp: "A03:2021",
+      pattern: /(?:exec|execSync|spawn|spawnSync|execFile|execFileSync)\s*\(\s*(?:[^,)]*\+\s*(?:req\.|params\.|query\.|body\.|input|user|arg|data)|`[^`]*\$\{)/gi,
+      detail: "User input in shell command execution enables command injection",
+      remediation: "Use parameterized commands or allowlist-based input validation",
+    },
+    // Path Traversal
+    {
+      id: "path-traversal", name: "Path Traversal", severity: "high", category: "Injection",
+      cwe: "CWE-22", owasp: "A01:2021",
+      pattern: /(?:readFileSync|readFile|createReadStream|writeFileSync|writeFile|unlink|unlinkSync|access|accessSync|stat|statSync|open|openSync)\s*\(\s*(?:[^,)]*\+\s*(?:req\.|params\.|query\.|body\.|input|user|filename|filepath|name)|`[^`]*\$\{[^}]*(?:req\.|params\.|query\.|body\.|name|path|file))/gi,
+      detail: "User input in file path allows directory traversal",
+      remediation: "Validate and sanitize file paths; use path.resolve with a base directory check",
+    },
+    // XSS
+    {
+      id: "xss-reflected", name: "Cross-Site Scripting (Reflected)", severity: "high", category: "XSS",
+      cwe: "CWE-79", owasp: "A03:2021",
+      pattern: /(?:res\.send|res\.write|res\.end|innerHTML|outerHTML|document\.write)\s*\(\s*(?:[^)]*(?:req\.|params\.|query\.|body\.|input|user))/gi,
+      detail: "User input reflected in response without encoding",
+      remediation: "Encode all user input before including in HTML responses",
+    },
+    // Hardcoded Secrets
+    {
+      id: "hardcoded-secret", name: "Hardcoded Secret", severity: "high", category: "Secrets",
+      cwe: "CWE-798", owasp: "A07:2021",
+      pattern: /(?:(?:password|secret|api_?key|apikey|token|auth|credential|private_?key)\s*[:=]\s*["'][^"']{8,}["']|(?:AWS|AKIA|sk-|ghp_|gho_|github_pat_|xox[bpas]-|eyJ)[A-Za-z0-9+/=_-]{20,})/gi,
+      detail: "Sensitive value appears to be hardcoded in source code",
+      remediation: "Use environment variables or a secrets manager",
+    },
+    // Eval Usage
+    {
+      id: "code-injection", name: "Code Injection (eval)", severity: "critical", category: "Injection",
+      cwe: "CWE-94", owasp: "A03:2021",
+      pattern: /\b(?:eval|Function)\s*\(\s*(?:[^)]*(?:req\.|params\.|query\.|body\.|input|user|data)|[^"')]+\+)/gi,
+      detail: "Dynamic code evaluation with potentially untrusted input",
+      remediation: "Avoid eval/Function constructor; use safe alternatives",
+    },
+    // SSRF
+    {
+      id: "ssrf", name: "Server-Side Request Forgery", severity: "high", category: "SSRF",
+      cwe: "CWE-918", owasp: "A10:2021",
+      pattern: /(?:fetch|axios|http\.get|https\.get|request|got|node-fetch|urllib)\s*\(\s*(?:[^)]*(?:req\.|params\.|query\.|body\.|input|user|url)|`[^`]*\$\{[^}]*(?:req\.|url|host|endpoint))/gi,
+      detail: "User-controlled URL in outbound HTTP request",
+      remediation: "Validate and allowlist target URLs/hosts",
+    },
+    // Insecure Deserialization
+    {
+      id: "insecure-deserialization", name: "Insecure Deserialization", severity: "critical", category: "Injection",
+      cwe: "CWE-502", owasp: "A08:2021",
+      pattern: /\b(?:serialize|unserialize|node-serialize|js-yaml\.load\s*\(|deserialize)\b/gi,
+      detail: "Unsafe deserialization may allow remote code execution",
+      remediation: "Use safe deserialization methods (e.g., js-yaml.safeLoad)",
+    },
+    // Weak Crypto
+    {
+      id: "weak-crypto", name: "Weak Cryptographic Algorithm", severity: "medium", category: "Cryptography",
+      cwe: "CWE-327", owasp: "A02:2021",
+      pattern: /createHash\s*\(\s*["'](?:md5|sha1|md4|ripemd)["']\)/gi,
+      detail: "Using a weak hash algorithm; vulnerable to collision attacks",
+      remediation: "Use SHA-256 or stronger: crypto.createHash('sha256')",
+    },
+    // Prototype Pollution
+    {
+      id: "prototype-pollution", name: "Prototype Pollution", severity: "high", category: "Injection",
+      cwe: "CWE-1321", owasp: "A03:2021",
+      pattern: /(?:_\.merge|_\.defaultsDeep|_\.set|Object\.assign)\s*\(\s*(?:\{\}|[^,]+),\s*(?:req\.|params\.|query\.|body\.|input|user|data)/gi,
+      detail: "Deep merge of user input can pollute Object prototype",
+      remediation: "Validate input keys; avoid deep-merging untrusted data into objects",
+    },
+    // CORS Misconfiguration
+    {
+      id: "cors-misconfiguration", name: "CORS Misconfiguration", severity: "medium", category: "Security Misconfiguration",
+      cwe: "CWE-942", owasp: "A05:2021",
+      pattern: /(?:cors\(\s*\{[^}]*origin\s*:\s*(?:["']\*["']|true)|Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"])/gi,
+      detail: "Wildcard or overly permissive CORS configuration",
+      remediation: "Restrict CORS origin to known, trusted domains",
+    },
+    // JWT Hardcoded Secret
+    {
+      id: "jwt-hardcoded", name: "Hardcoded JWT Secret", severity: "critical", category: "Secrets",
+      cwe: "CWE-798", owasp: "A07:2021",
+      pattern: /jwt\.sign\s*\([^,]+,\s*["'][^"']+["']/gi,
+      detail: "JWT signed with a hardcoded secret key",
+      remediation: "Load JWT secret from environment variables or a secrets manager",
+    },
+    // NoSQL Injection
+    {
+      id: "nosql-injection", name: "NoSQL Injection", severity: "critical", category: "Injection",
+      cwe: "CWE-943", owasp: "A03:2021",
+      pattern: /(?:find|findOne|findOneAndUpdate|updateOne|updateMany|deleteOne|deleteMany|aggregate)\s*\(\s*(?:req\.|params\.|query\.|body\.)/gi,
+      detail: "User input passed directly to NoSQL query operator",
+      remediation: "Validate and sanitize input; use explicit field extraction instead of passing raw objects",
+    },
+    // Insecure Randomness
+    {
+      id: "insecure-random", name: "Insecure Randomness", severity: "medium", category: "Cryptography",
+      cwe: "CWE-330", owasp: "A02:2021",
+      pattern: /Math\.random\s*\(\s*\).*(?:token|secret|password|key|session|nonce|csrf|salt|iv)/gi,
+      detail: "Math.random() used for security-sensitive value (not cryptographically secure)",
+      remediation: "Use crypto.randomBytes() or crypto.randomUUID() for security-sensitive randomness",
+    },
+    // Missing Helmet / Security Headers
+    {
+      id: "no-security-headers", name: "Missing Security Headers", severity: "medium", category: "Security Misconfiguration",
+      cwe: "CWE-693", owasp: "A05:2021",
+      pattern: /(?:express\s*\(\s*\)[\s\S]{0,500}(?:app\.listen|module\.exports))(?![\s\S]*helmet)/gi,
+      detail: "Express app appears to be missing helmet or security header middleware",
+      remediation: "Add helmet middleware: app.use(helmet())",
+    },
+  ];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNum = i + 1;
+    // Also build multi-line context (current + next 2 lines) for patterns that span lines
+    const context = lines.slice(i, Math.min(i + 3, lines.length)).join("\n");
+
+    for (const check of checks) {
+      check.pattern.lastIndex = 0; // reset regex state
+      if (check.pattern.test(line) || (context.includes("\n") && (check.pattern.lastIndex = 0, check.pattern.test(context) && i === Math.min(...[i])))) {
+        add({
+          id: check.id,
+          name: check.name,
+          severity: check.severity,
+          confidence: "medium" as const,
+          line: lineNum,
+          column: 0,
+          category: check.category,
+          cwe: check.cwe,
+          owasp: check.owasp,
+          detail: check.detail,
+          evidence: line.trim(),
+          remediation: check.remediation,
+        });
+      }
+    }
+  }
+
+  return findings;
 }
 
 /* ── Main Analysis Function ── */
@@ -2735,13 +2948,21 @@ export function analyzeCode(code: string): {
   const ast = parseCode(code);
 
   if (!ast) {
-    // AST parsing failed — return minimal info
+    // AST parsing failed — run fallback regex scanner to still catch critical/high vulns
+    const fallbackFindings = fallbackRegexScan(code);
+    const stats = {
+      critical: fallbackFindings.filter(f => f.severity === "critical").length,
+      high: fallbackFindings.filter(f => f.severity === "high").length,
+      medium: fallbackFindings.filter(f => f.severity === "medium").length,
+      low: fallbackFindings.filter(f => f.severity === "low").length,
+      total: fallbackFindings.length,
+    };
     return {
-      findings: [],
-      stats: { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
+      findings: fallbackFindings,
+      stats,
       astParsed: false,
       linesAnalyzed: lines.length,
-      checksPerformed: 0,
+      checksPerformed: 15, // fallback checks count
     };
   }
 
