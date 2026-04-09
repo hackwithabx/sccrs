@@ -15,24 +15,20 @@ import {
   ArrowRight,
   CheckCircle2,
   Lock,
-  Eye,
   Zap,
-  Users,
   Cloud,
   Brain,
   AlertTriangle,
   FileSearch,
-  Star,
   Building2,
-  ClipboardCheck,
   Key,
   Package,
   Globe,
   GitBranch,
-  Bell,
-  FileCode,
   Rocket,
   ShieldCheck,
+  Fingerprint,
+  Scale,
 } from "lucide-react";
 import {
   PieChart,
@@ -48,15 +44,15 @@ import {
 } from "recharts";
 
 const shieldxModules = [
-  { icon: Key, title: "Secrets Scanner", desc: "Detect 20+ secret patterns with entropy analysis and confidence scoring" },
-  { icon: Package, title: "Dependency Audit", desc: "Real-time CVE scanning for npm, pip, Go, and Gradle dependencies" },
+  { icon: Key, title: "Secrets Scanner", desc: "Detect 30+ secret patterns including API keys, tokens, and certificates with entropy analysis" },
+  { icon: Package, title: "Dependency Audit", desc: "Real-time CVE scanning for npm, pip, Go, and Gradle dependencies via OSV database" },
   { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
-  { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing for any HTTP endpoint" },
-  { icon: FileCode, title: "SAST Code Analyzer", desc: "AST-based taint analysis — traces user input to dangerous sinks across 15+ vulnerability classes" },
-  { icon: Brain, title: "Log Analyzer", desc: "AI-powered pattern detection for brute force, injection, exfiltration" },
-  { icon: GitBranch, title: "CI/CD Integration", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates" },
-  { icon: Bell, title: "Alert Rules", desc: "Configurable email, Slack, and webhook alerts on critical findings" },
-  { icon: BarChart3, title: "Security Score", desc: "Unified radar-chart security posture score across all modules" },
+  { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing with header analysis for any HTTP endpoint" },
+  { icon: Fingerprint, title: "SAST Code Analyzer", desc: "AST-based taint analysis with 80+ checks — traces user input to dangerous sinks across 25+ vulnerability classes" },
+  { icon: Brain, title: "Log Analyzer", desc: "AI-powered threat detection for brute force, injection, privilege escalation, and exfiltration" },
+  { icon: GitBranch, title: "CI/CD Pipeline Gate", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates with pass/fail verdicts" },
+  { icon: Scale, title: "License Compliance", desc: "Detect GPL, AGPL, and copyleft licenses that can block acquisitions or compliance audits" },
+  { icon: BarChart3, title: "Security Score", desc: "Unified composite security posture score across all modules with trend tracking" },
 ];
 
 const features = [
@@ -171,14 +167,14 @@ export default function HomePage() {
             </div>
 
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-              <span className="block mb-2 text-foreground">DevSecOps for Startups</span>
+              <span className="block mb-2 text-foreground">Enterprise-Grade AppSec</span>
               <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent text-4xl sm:text-5xl lg:text-6xl xl:text-7xl">
-                No Security Team Required
+                Without The Enterprise Price
               </span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-              Security that developers actually want to use. Run comprehensive scans in under 60 seconds. Stop overpaying for bloated, fragmented tools. ShieldX gives you everything you need—faster and infinitely more affordable.
+              9 security modules. 80+ SAST vulnerability checks. Taint analysis, exploit PoC generation, and cross-file dataflow tracing — all in under 60 seconds. The most powerful security scanner built for developers and startups.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -198,10 +194,11 @@ export default function HomePage() {
 
             {/* Trust badges */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> No code stored</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> 60-second first run</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> OWASP-aligned checks</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Built for lean teams</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Zero code storage</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> AST-based taint analysis</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> CWE/OWASP mapped</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Exploit PoC generation</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Cross-file dataflow</span>
             </div>
           </motion.div>
 
@@ -241,9 +238,9 @@ export default function HomePage() {
           >
             {[ 
               { value: "9", label: "Security Modules" },
-              { value: "60s", label: "To First Demo Run" },
+              { value: "80+", label: "SAST Vulnerability Checks" },
               { value: "$348", label: "Pro Per Year" },
-              { value: "99%", label: "Lower Than $50K Stacks" },
+              { value: "60s", label: "To First Scan Results" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-bold text-primary">{stat.value}</div>
@@ -411,14 +408,14 @@ export default function HomePage() {
                 {/* Bottom bar */}
                 <div className="flex items-center justify-between pt-2 border-t border-border text-[11px] text-muted-foreground">
                   <span>Last scan: 2 minutes ago</span>
-                  <span className="flex items-center gap-1"><FileSearch className="h-3 w-3" /> 4 modules scanned in 12s</span>
+                  <span className="flex items-center gap-1"><FileSearch className="h-3 w-3" /> 9 modules available · 4 scanned in 12s</span>
                 </div>
               </div>
             </div>
 
             {/* CTA below preview */}
             <div className="mt-8 text-center">
-              <p className="text-muted-foreground mb-4">Explore ShieldX with a free demo account</p>
+              <p className="text-muted-foreground mb-4">No signup required — try every module with built-in demo data</p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href="/shieldx">
                   <Button size="lg" className="gap-2 rounded-xl shadow-lg shadow-primary/20">
@@ -437,36 +434,36 @@ export default function HomePage() {
       <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            badge="For Startups"
-            title="Security Scanning Developers Can Run in 60 Seconds"
-            description="ShieldX is built for startups that need real security fast: faster rollout, lower cost, and less process than traditional enterprise AppSec stacks."
+            badge="Why ShieldX"
+            title="Security That Developers Actually Ship With"
+            description="Built for teams that move fast. ShieldX replaces fragmented point tools with one platform — zero onboarding friction, real findings in seconds, not weeks."
           />
 
           <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
             {[
               {
                 icon: Zap,
-                title: "Fast To Value",
-                desc: "Open the demo in seconds and move into real scans without weeks of onboarding, procurement, or training overhead.",
-                highlight: "60 Seconds",
+                title: "Results in 60 Seconds",
+                desc: "Paste code, click scan, get findings with code snippets, CWE/OWASP references, and exploit PoCs — no setup needed.",
+                highlight: "Instant Feedback",
               },
               {
-                icon: Users,
-                title: "Developer-First",
-                desc: "Security that developers actually want to use, with one product instead of scattered point tools and handoffs.",
-                highlight: "Built For Builders",
+                icon: Fingerprint,
+                title: "80+ Vulnerability Checks",
+                desc: "AST-based taint analysis, inter-procedural tracking, and 25+ vulnerability categories — from SQL injection to prototype pollution.",
+                highlight: "Deep Analysis",
               },
               {
                 icon: Shield,
-                title: "No Security Team Required",
-                desc: "Run secrets, dependency, SAST, API, cloud, log, and CI/CD checks from one ShieldX workspace even if your team is small.",
-                highlight: "Startup Friendly",
+                title: "9 Modules, One Platform",
+                desc: "Secrets, dependencies, SAST, API, cloud, logs, CI/CD, license compliance, and security scoring — all in one workspace.",
+                highlight: "Complete Coverage",
               },
               {
                 icon: Lock,
-                title: "Lower Annual Cost",
-                desc: "ShieldX Pro starts at $348 per year and Enterprise at $1,188 per year, compared with traditional security suites that often start above $50K.",
-                highlight: "Cheaper Than Legacy",
+                title: "$348/yr vs $50K+ Stacks",
+                desc: "Enterprise-grade scanning at startup pricing. Your code is analyzed in memory and immediately discarded — zero storage.",
+                highlight: "10x Cheaper",
               },
             ].map((item, i) => (
               <motion.div
@@ -536,9 +533,9 @@ export default function HomePage() {
       <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            badge="Features"
-            title="Everything You Need for Application Security"
-            description="A comprehensive suite of products, security resources, and expert services to help you build and maintain secure applications."
+            badge="Platform"
+            title="Security Resources Beyond Scanning"
+            description="Research, learn, and stay ahead — a curated library of AppSec blogs, secure code patterns, vulnerability data, and expert services alongside ShieldX."
           />
 
           <motion.div
@@ -571,9 +568,9 @@ export default function HomePage() {
       <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            badge="Case Studies"
-            title="Real Results from Real Engagements"
-            description="See how our security reviews protect businesses. All identifying details redacted."
+            badge="Proven Impact"
+            title="Vulnerabilities Found. Breaches Prevented."
+            description="Real findings from real security engagements — the kind of issues ShieldX catches before attackers do."
           />
 
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -684,17 +681,17 @@ export default function HomePage() {
             <div>
               <SectionHeading
                 badge="Why SCR"
-                title="Security-First Development Made Simple"
-                description="We bridge the gap between development speed and application security."
+                title="Ship Secure Code Without Slowing Down"
+                description="One platform replaces fragmented tools — scan, learn, fix, and verify in a single workflow."
                 align="left"
               />
 
               <div className="mt-8 space-y-4">
                   {[
-                    { icon: Eye, text: "Expert-curated vulnerability database with real-world examples" },
-                    { icon: Zap, text: "ShieldX workflows designed for fast startup delivery cycles" },
-                    { icon: CheckCircle2, text: "Battle-tested secure code patterns for modern frameworks" },
-                    { icon: Users, text: "Community-driven security knowledge base" },
+                    { icon: Fingerprint, text: "80+ AST-based SAST checks with taint analysis and exploit PoC generation" },
+                    { icon: Zap, text: "Scan results in under 60 seconds — no setup, no waiting" },
+                    { icon: CheckCircle2, text: "CWE/OWASP-mapped findings with actionable fix guidance" },
+                    { icon: Shield, text: "9 modules covering secrets, dependencies, APIs, cloud, and more" },
                   ].map((item) => (
                   <motion.div
                     key={item.text}
@@ -774,9 +771,9 @@ export default function HomePage() {
       <section className="py-20 bg-muted/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            badge="Insights"
-            title="Cybersecurity By The Numbers"
-            description="Interactive data visualizations showing the evolving threat landscape and industry trends."
+            badge="Threat Landscape"
+            title="Why AppSec Can't Wait"
+            description="Real data from CVE databases and IBM breach reports — the threat landscape is accelerating, and the cost of doing nothing keeps rising."
           />
 
           <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1084,16 +1081,22 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <Badge className="mb-4 bg-primary/10 text-primary border-0">Get Started Today</Badge>
+            <Badge className="mb-4 bg-primary/10 text-primary border-0">Start Scanning Now</Badge>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Ready to Secure Your Application?
+              Your Code Has Vulnerabilities. Find Them Before Attackers Do.
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Open the ShieldX demo, request the right subscription plan for your team, or get a professional security assessment from our experts.
+              80+ checks. 25+ vulnerability categories. AST taint analysis with exploit PoC generation. Try ShieldX free — no signup required for demo scans.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
+              <Link href="/shieldx">
                 <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
+                  <Rocket className="h-5 w-5" />
+                  Try ShieldX Free
+                </Button>
+              </Link>
+              <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
+                <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl">
                   <Shield className="h-5 w-5" />
                   Request Pro Access
                 </Button>

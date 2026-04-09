@@ -108,6 +108,23 @@ const TAINT_SOURCES: { pattern: string[]; label: string }[] = [
   // URLSearchParams
   { pattern: ["searchParams", "get"], label: "URL search param" },
   { pattern: ["searchParams", "getAll"], label: "URL search params" },
+  // Next.js App Router sources
+  { pattern: ["params"], label: "Next.js route parameter" },
+  { pattern: ["searchParams"], label: "Next.js search params" },
+  { pattern: ["cookies", "get"], label: "Next.js cookie" },
+  { pattern: ["headers", "get"], label: "Next.js header" },
+  { pattern: ["formData", "get"], label: "form data field" },
+  { pattern: ["formData", "getAll"], label: "form data fields" },
+  // GraphQL resolvers
+  { pattern: ["args"], label: "GraphQL argument" },
+  { pattern: ["input"], label: "GraphQL input" },
+  { pattern: ["context", "req", "body"], label: "GraphQL context body" },
+  // WebSocket
+  { pattern: ["message", "data"], label: "WebSocket message data" },
+  { pattern: ["ws", "on"], label: "WebSocket event" },
+  // File/Stream sources
+  { pattern: ["readStream", "on"], label: "read stream data" },
+  { pattern: ["readable", "read"], label: "readable stream" },
 ];
 
 /* ── Known Sanitizers — functions that neutralize tainted data ── */
@@ -372,6 +389,36 @@ const DANGEROUS_SINKS: SinkDef[] = [
       ["window", "location", "assign"], ["window", "location", "replace"]],
     argIndex: 0,
     remediation: "Validate redirect URLs against an allowlist. Reject absolute URLs or URLs with different domains.",
+  },
+  // XPath Injection
+  {
+    id: "xpath-injection", name: "XPath Injection", cwe: "CWE-643", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    callPatterns: [["xpath", "select"], ["xpath", "select1"], ["xpath", "evaluate"],
+      ["dom", "evaluate"], ["document", "evaluate"],
+      ["xmldom", "evaluate"]],
+    argIndex: 0,
+    remediation: "Use parameterized XPath queries. Never concatenate user input into XPath expressions.",
+  },
+  // XML External Entity (XXE) via parser
+  {
+    id: "xxe-parser", name: "XML Parser XXE Risk", cwe: "CWE-611", owasp: "A05:2021",
+    severity: "high", category: "Injection",
+    callPatterns: [["xml2js", "parseString"], ["xml2js", "parseStringPromise"],
+      ["DOMParser", "parseFromString"], ["xmldom", "parseFromString"],
+      ["libxmljs", "parseXml"], ["libxmljs", "parseXmlString"],
+      ["fast-xml-parser", "parse"], ["sax", "parser"]],
+    argIndex: 0,
+    remediation: "Disable external entities in XML parser configuration. Use { noent: false, dtdload: false } options.",
+  },
+  // GraphQL Injection
+  {
+    id: "graphql-injection", name: "Dynamic GraphQL Query Construction", cwe: "CWE-943", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    callPatterns: [["graphql"], ["graphqlHTTP"],
+      ["client", "query"], ["client", "mutate"]],
+    argIndex: 0,
+    remediation: "Use parameterized GraphQL variables. Never concatenate user input into GraphQL query strings.",
   },
 ];
 
@@ -2184,6 +2231,817 @@ const PATTERN_CHECKS: PatternCheck[] = [
     },
     remediation: "Enforce minimum 8 character password (12+ recommended). Use bcrypt/argon2 for hashing. Check against breach databases (HaveIBeenPwned API).",
   },
+  // ═══════════ SAST Engine v6 — 25+ NEW CHECKS ═══════════
+  // Race Condition: async without mutex/lock
+  {
+    id: "race-condition-async", name: "Potential Race Condition", cwe: "CWE-362", owasp: "A04:2021",
+    severity: "medium", category: "Concurrency",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "AssignmentExpression" && node.left?.type === "MemberExpression") {
+        const prop = resolveIdentifierName(node.left);
+        if (prop.includes("balance") || prop.includes("count") || prop.includes("quantity") || prop.includes("stock") || prop.includes("credits") || prop.includes("inventory")) {
+          let parent = node;
+          let isAsync = false;
+          for (let i = 0; i < 20; i++) {
+            parent = parent.parent;
+            if (!parent) break;
+            if (parent.async === true || parent.type === "AwaitExpression") { isAsync = true; break; }
+          }
+          if (isAsync) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `Mutable shared state "${prop}" modified in async context without locking — concurrent requests can cause TOCTOU race conditions (e.g., double-spend).`,
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use database transactions (BEGIN/COMMIT) or distributed locks (Redis SETNX) for atomic read-modify-write on shared mutable state.",
+  },
+  // setTimeout/setInterval with string argument (eval-like)
+  {
+    id: "settimeout-string", name: "setTimeout/setInterval with String", cwe: "CWE-95", owasp: "A03:2021",
+    severity: "high", category: "Code Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const name = node.callee?.name || "";
+        if ((name === "setTimeout" || name === "setInterval") && node.arguments.length >= 1) {
+          const arg = node.arguments[0];
+          if (arg?.type === "Literal" && typeof arg.value === "string") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `${name}() called with a string argument — this is equivalent to eval() and executes the string as code.`,
+              confidence: "high",
+            };
+          }
+          if (arg?.type === "TemplateLiteral" || arg?.type === "BinaryExpression") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `${name}() called with a dynamically constructed string — equivalent to eval(). If user-controlled, enables code injection.`,
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Always pass a function reference to setTimeout/setInterval: setTimeout(() => { ... }, 1000). Never pass strings.",
+  },
+  // Unsafe YAML load (yaml.load instead of yaml.safeLoad)
+  {
+    id: "unsafe-yaml-load", name: "Unsafe YAML Deserialization", cwe: "CWE-502", owasp: "A08:2021",
+    severity: "critical", category: "Deserialization",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const method = node.callee.property?.name || "";
+        if ((obj === "yaml" || obj === "YAML" || obj === "jsyaml") && method === "load") {
+          // Check if schema option is provided (safe usage)
+          if (node.arguments.length <= 1) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "yaml.load() without safe schema allows arbitrary object instantiation — attacker can execute commands via YAML tags (!!python/object, !!js/function).",
+              confidence: "high",
+            };
+          }
+          if (node.arguments.length >= 2) {
+            const opts = node.arguments[1];
+            if (opts?.type === "ObjectExpression") {
+              const hasSchema = opts.properties?.some((p: ASTNode) => (p.key?.name || p.key?.value) === "schema");
+              if (!hasSchema) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: "yaml.load() without explicit schema — defaults to DEFAULT_SCHEMA which may allow dangerous types.",
+                  confidence: "medium",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use yaml.load(data, { schema: yaml.SAFE_SCHEMA }) or yaml.safeLoad(). Never deserialize untrusted YAML with default schema.",
+  },
+  // Missing CSRF protection
+  {
+    id: "missing-csrf", name: "Missing CSRF Protection", cwe: "CWE-352", owasp: "A01:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name || "";
+        if ((method === "post" || method === "put" || method === "delete" || method === "patch") && node.arguments.length >= 2) {
+          const pathArg = node.arguments[0];
+          if (pathArg?.type === "Literal" && typeof pathArg.value === "string") {
+            const path = pathArg.value.toLowerCase();
+            const stateChanging = ["/transfer", "/payment", "/delete", "/update", "/change-password", "/change-email", "/withdraw"];
+            if (stateChanging.some(p => path.includes(p))) {
+              const handlers = node.arguments.slice(1);
+              const hasCsrf = handlers.some((h: ASTNode) => {
+                const name = h.name || h.callee?.name || "";
+                return /csrf|xsrf|csurf|csrfProtection/i.test(name);
+              });
+              if (!hasCsrf) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: `State-changing endpoint "${pathArg.value}" has no CSRF middleware — vulnerable to cross-site request forgery.`,
+                  confidence: "medium",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Add CSRF middleware: const csrf = require('csurf'); app.use(csrf()). Use Synchronizer Token or Double Submit Cookie pattern.",
+  },
+  // Zip Slip — path traversal in archive extraction
+  {
+    id: "zip-slip", name: "Zip Slip Vulnerability", cwe: "CWE-22", owasp: "A01:2021",
+    severity: "critical", category: "Path Traversal",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const name = node.callee?.property?.name || node.callee?.name || "";
+        if ((name === "extract" || name === "Extract" || name === "unzip" || name === "decompress") && node.arguments.length >= 1) {
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          if (/zip|tar|archive|gz|extract|decompress/i.test(snippet)) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: "Archive extraction without path validation — malicious archives can write files outside the target directory using ../../../ traversal in entry names.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Validate each entry path before extraction: reject entries containing '../'. Use path.resolve() and verify extracted path starts with target directory.",
+  },
+  // HTTP Response Splitting
+  {
+    id: "response-splitting", name: "HTTP Response Splitting", cwe: "CWE-113", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name || "";
+        if ((method === "setHeader" || method === "writeHead" || method === "set" || method === "header") && node.arguments.length >= 2) {
+          const valueArg = node.arguments[node.arguments.length - 1];
+          if (valueArg?.type === "TemplateLiteral" || valueArg?.type === "BinaryExpression") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "HTTP header value constructed dynamically — if it includes CRLF (\\r\\n) from user input, attacker can inject additional headers or split the response.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Strip \\r and \\n from header values: value.replace(/[\\r\\n]/g, ''). Use a framework that auto-sanitizes headers.",
+  },
+  // Insecure TLS/SSL version
+  {
+    id: "insecure-tls-version", name: "Insecure TLS Version", cwe: "CWE-326", owasp: "A02:2021",
+    severity: "high", category: "Cryptography",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Property" || node.type === "ObjectProperty") {
+        const key = node.key?.name || node.key?.value;
+        if ((key === "secureProtocol" || key === "minVersion" || key === "maxVersion") && node.value?.type === "Literal" && typeof node.value.value === "string") {
+          const val = node.value.value.toLowerCase();
+          if (val.includes("sslv") || val.includes("tlsv1_method") || val.includes("tlsv1.0") || val === "tlsv1" || val.includes("tlsv1_1") || val.includes("tlsv1.1")) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `Insecure TLS/SSL version "${node.value.value}" — SSLv3 and TLS 1.0/1.1 have known vulnerabilities (POODLE, BEAST, CRIME).`,
+              confidence: "high",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Set minimum TLS version to 1.2: { minVersion: 'TLSv1.2' }. Prefer TLS 1.3 where possible.",
+  },
+  // Unsafe Reflection
+  {
+    id: "unsafe-reflection", name: "Unsafe Reflection / Bracket Property Access", cwe: "CWE-470", owasp: "A03:2021",
+    severity: "medium", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "MemberExpression" && node.computed === true && node.property?.type !== "Literal") {
+        const objName = resolveIdentifierName(node.object);
+        if (objName === "global" || objName === "window" || objName === "globalThis" || objName === "this") {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: `Dynamic property access on ${objName} with user-controlled key — attacker can access any global function or property.`,
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use an allowlist of permitted property names. Never use user input as a dynamic key on global/window objects.",
+  },
+  // Missing Input Length Validation
+  {
+    id: "missing-input-length", name: "Missing Input Length Validation", cwe: "CWE-400", owasp: "A06:2021",
+    severity: "medium", category: "Denial of Service",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const name = node.callee?.name || node.callee?.property?.name || "";
+        if ((name === "json" || name === "urlencoded" || name === "raw" || name === "text") && node.callee?.type === "MemberExpression") {
+          const objName = node.callee.object?.name || "";
+          if (objName === "express" || objName === "bodyParser" || objName === "app") {
+            const opts = node.arguments[0];
+            if (!opts || opts.type !== "ObjectExpression") {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `${objName}.${name}() without limit option — accepts unlimited request body size, enabling memory exhaustion DoS attacks.`,
+                confidence: "medium",
+              };
+            }
+            if (opts?.type === "ObjectExpression") {
+              const hasLimit = opts.properties?.some((p: ASTNode) => (p.key?.name || p.key?.value) === "limit");
+              if (!hasLimit) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: `${objName}.${name}() without limit — default 100KB may be too large. Set explicit limits for your use case.`,
+                  confidence: "low",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Set body size limits: app.use(express.json({ limit: '10kb' })). Adjust limit based on expected payload size.",
+  },
+  // Hardcoded Connection String
+  {
+    id: "hardcoded-connection-string", name: "Hardcoded Database Connection String", cwe: "CWE-798", owasp: "A07:2021",
+    severity: "critical", category: "Secrets",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Literal" && typeof node.value === "string") {
+        const val = node.value;
+        // PostgreSQL, MySQL, MSSQL, Redis connection strings with credentials
+        if (/^(postgres|mysql|mssql|redis|amqp|mongodb\+srv):\/\/[^:]+:[^@]+@[^/]+/.test(val)) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Hardcoded database connection string with credentials in source code — extractable by anyone with repo access.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Store connection strings in environment variables: process.env.DATABASE_URL. Use a secrets manager (Vault, AWS Secrets Manager).",
+  },
+  // Missing Subresource Integrity (SRI)
+  {
+    id: "missing-sri", name: "External Script Without SRI", cwe: "CWE-353", owasp: "A08:2021",
+    severity: "medium", category: "Supply Chain",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "JSXOpeningElement" && node.name?.name === "script") {
+        const attrs = node.attributes || [];
+        const srcAttr = attrs.find((a: ASTNode) => a.type === "JSXAttribute" && a.name?.name === "src");
+        if (srcAttr) {
+          const srcValue = srcAttr.value?.value || srcAttr.value?.expression?.value || "";
+          if (typeof srcValue === "string" && (srcValue.startsWith("http://") || srcValue.startsWith("https://") || srcValue.startsWith("//"))) {
+            const hasIntegrity = attrs.some((a: ASTNode) => a.type === "JSXAttribute" && a.name?.name === "integrity");
+            if (!hasIntegrity) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: "External script loaded without integrity attribute — if the CDN is compromised, malicious code will execute in users' browsers.",
+                confidence: "medium",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Add SRI hash: <script src=\"...\" integrity=\"sha384-...\" crossorigin=\"anonymous\">. Generate hashes using srihash.org.",
+  },
+  // Unvalidated URL redirect with string concat
+  {
+    id: "unsafe-redirect-concat", name: "Unsafe Redirect via Concatenation", cwe: "CWE-601", owasp: "A01:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name || "";
+        if (method === "redirect" && node.arguments.length >= 1) {
+          const arg = node.arguments[node.arguments.length - 1];
+          if (arg?.type === "BinaryExpression" && arg.operator === "+") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Redirect URL built via string concatenation — if user input is included, attacker can redirect to malicious sites (phishing).",
+              confidence: "medium",
+            };
+          }
+          if (arg?.type === "TemplateLiteral" && arg.expressions?.length > 0) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Redirect URL built with template literal containing expressions — validate the final URL against an allowlist.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Validate redirect URLs: only allow relative paths or URLs matching your domain. Use a URL allowlist. Reject absolute URLs to external domains.",
+  },
+  // Sensitive data in error messages
+  {
+    id: "error-info-leak", name: "Sensitive Data in Error Response", cwe: "CWE-209", owasp: "A04:2021",
+    severity: "medium", category: "Information Disclosure",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name || "";
+        if ((method === "send" || method === "json") && node.arguments.length >= 1) {
+          const arg = node.arguments[0];
+          if (arg?.type === "ObjectExpression") {
+            for (const p of arg.properties || []) {
+              const key = p.key?.name || p.key?.value || "";
+              if ((key === "error" || key === "message" || key === "detail") && p.value?.type === "MemberExpression") {
+                const valName = resolveIdentifierName(p.value);
+                if (valName.includes("stack") || valName.includes("message")) {
+                  const line = getNodeLine(node, code);
+                  const snippet = getCodeSnippet(lines, line);
+                  if (/err|error|catch|exception/i.test(snippet)) {
+                    return {
+                      line, column: getNodeColumn(node, code),
+                      evidence: snippet,
+                      detail: `Error object property "${valName}" sent in response — may expose stack traces, file paths, or internal details to attackers.`,
+                      confidence: "medium",
+                    };
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Send generic error messages to clients. Log detailed errors server-side. Never expose err.stack or internal error messages in responses.",
+  },
+  // Missing Content-Type validation
+  {
+    id: "missing-content-type-check", name: "Missing Content-Type Validation", cwe: "CWE-436", owasp: "A04:2021",
+    severity: "low", category: "Input Validation",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name || "";
+        if ((method === "post" || method === "put" || method === "patch") && node.arguments.length >= 2) {
+          const handler = node.arguments[node.arguments.length - 1];
+          if (handler?.type === "ArrowFunctionExpression" || handler?.type === "FunctionExpression") {
+            let checksContentType = false;
+            walkAST(handler.body, (n) => {
+              if (n.type === "MemberExpression") {
+                const chain = resolveIdentifierName(n);
+                if (chain.includes("content-type") || chain.includes("Content-Type") || chain.includes("is(")) checksContentType = true;
+              }
+              if (n.type === "CallExpression" && n.callee?.property?.name === "is") checksContentType = true;
+            });
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Validate Content-Type header for state-changing endpoints: if (!req.is('application/json')) return res.status(415).send('Unsupported Media Type').",
+  },
+  // Unsafe Object Spread to DOM (mass assignment in frontend)
+  {
+    id: "unsafe-spread-props", name: "Unsafe Object Spread to Component", cwe: "CWE-915", owasp: "A04:2021",
+    severity: "medium", category: "Mass Assignment",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "JSXSpreadAttribute") {
+        const arg = node.argument;
+        if (arg?.type === "MemberExpression") {
+          const name = resolveIdentifierName(arg);
+          if (name.includes("props") || name.includes("query") || name.includes("params") || name.includes("body") || name.includes("data")) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `Spreading "${name}" as JSX props — may pass unexpected/dangerous attributes (onClick, dangerouslySetInnerHTML, href) to DOM elements.`,
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Destructure and explicitly pass only required props: const { name, email } = data; <Component name={name} email={email} />.",
+  },
+  // Insecure File Permissions (fs.chmod/writeFile with 0o777)
+  {
+    id: "insecure-file-permissions", name: "Insecure File Permissions", cwe: "CWE-732", owasp: "A01:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression") {
+        const name = node.callee?.property?.name || node.callee?.name || "";
+        if ((name === "chmod" || name === "chmodSync" || name === "writeFile" || name === "writeFileSync" || name === "mkdir" || name === "mkdirSync") && node.arguments.length >= 2) {
+          for (const arg of node.arguments) {
+            if (arg?.type === "Literal" && typeof arg.value === "number") {
+              // Check for world-writable or world-readable permissions
+              const mode = arg.value;
+              if (mode === 0o777 || mode === 0o766 || mode === 0o666 || mode === 511 || mode === 438) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: `File permissions set to ${mode.toString(8)} (octal) — world-writable permissions allow any user on the system to read/modify the file.`,
+                  confidence: "high",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use restrictive permissions: 0o600 (owner read/write) for sensitive files, 0o644 for readable config. Never use 0o777.",
+  },
+  // Hardcoded CORS origin: true (allow all)
+  {
+    id: "cors-allow-all", name: "CORS Allows All Origins", cwe: "CWE-942", owasp: "A05:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.name === "cors" && node.arguments.length > 0) {
+        const opts = node.arguments[0];
+        if (opts?.type === "ObjectExpression") {
+          for (const p of opts.properties || []) {
+            const key = p.key?.name || p.key?.value;
+            // origin: true reflects all origins
+            if (key === "origin" && p.value?.type === "Literal" && p.value.value === true) {
+              // Check if credentials is also enabled
+              const hasCreds = opts.properties?.some((cp: ASTNode) => (cp.key?.name || cp.key?.value) === "credentials" && cp.value?.value === true);
+              if (hasCreds) {
+                const line = getNodeLine(node, code);
+                return {
+                  line, column: getNodeColumn(node, code),
+                  evidence: getCodeSnippet(lines, line),
+                  detail: "CORS with origin: true + credentials: true reflects the requester's origin — equivalent to Access-Control-Allow-Origin: * with cookies, enabling credential theft.",
+                  confidence: "high",
+                };
+              }
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Set an explicit origin allowlist: cors({ origin: ['https://app.example.com'], credentials: true }).",
+  },
+  // Environment variable injection
+  {
+    id: "env-var-injection", name: "Environment Variable in Sensitive Context", cwe: "CWE-78", owasp: "A03:2021",
+    severity: "medium", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "TemplateLiteral" && node.expressions?.length > 0) {
+        for (const expr of node.expressions) {
+          const name = resolveIdentifierName(expr);
+          if (name.startsWith("process.env")) {
+            const line = getNodeLine(node, code);
+            const snippet = getCodeSnippet(lines, line);
+            if (/exec|spawn|query|sql|eval|system|command/i.test(snippet)) {
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: snippet,
+                detail: `Environment variable "${name}" interpolated into a potentially dangerous context — if env vars are manipulated, this enables injection.`,
+                confidence: "low",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Validate environment variables before use in sensitive contexts. Use parameterized queries/commands even for env vars.",
+  },
+  // Node.js unhandled rejection (crash DoS)
+  {
+    id: "unhandled-rejection-crash", name: "Missing unhandledRejection Handler", cwe: "CWE-755", owasp: "A06:2021",
+    severity: "low", category: "Denial of Service",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = resolveIdentifierName(node.callee.object);
+        const method = node.callee.property?.name || "";
+        if (obj === "app" && method === "listen" && node.arguments.length >= 1) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "Server starts without process.on('unhandledRejection') — unhandled promise rejections crash the process in Node.js 15+.",
+            confidence: "low",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Add: process.on('unhandledRejection', (err) => { logger.error(err); }). Consider using a process manager (PM2) for auto-restart.",
+  },
+  // Unsafe Regular Expression (ReDoS via user-controlled regex)
+  {
+    id: "user-controlled-regex", name: "User-Controlled Regular Expression", cwe: "CWE-1333", owasp: "A03:2021",
+    severity: "high", category: "Denial of Service",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "NewExpression" && node.callee?.name === "RegExp" && node.arguments.length >= 1) {
+        const arg = node.arguments[0];
+        if (arg?.type === "Identifier" || arg?.type === "MemberExpression" || arg?.type === "TemplateLiteral" || arg?.type === "BinaryExpression") {
+          const argName = resolveIdentifierName(arg);
+          if (!argName.startsWith("process.env")) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "RegExp constructed from dynamic input — attacker can craft a catastrophic backtracking pattern (ReDoS) causing the event loop to hang.",
+              confidence: "medium",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Use a safe regex library (re2, safe-regex). Validate regex complexity before compilation. Set timeout limits for regex execution.",
+  },
+  // Prototype assignment (__proto__)
+  {
+    id: "proto-assignment", name: "__proto__ Property Access", cwe: "CWE-1321", owasp: "A03:2021",
+    severity: "high", category: "Injection",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "MemberExpression" && node.property?.type === "Literal" && node.property.value === "__proto__") {
+        const line = getNodeLine(node, code);
+        return {
+          line, column: getNodeColumn(node, code),
+          evidence: getCodeSnippet(lines, line),
+          detail: "Direct __proto__ access — can be used for prototype pollution to inject properties into all objects.",
+          confidence: "high",
+        };
+      }
+      if (node.type === "MemberExpression" && node.property?.type === "Identifier" && node.property.name === "__proto__") {
+        const line = getNodeLine(node, code);
+        return {
+          line, column: getNodeColumn(node, code),
+          evidence: getCodeSnippet(lines, line),
+          detail: "Direct __proto__ access — can lead to prototype pollution attacks.",
+          confidence: "high",
+        };
+      }
+      return null;
+    },
+    remediation: "Never access __proto__ directly. Use Object.getPrototypeOf/Object.setPrototypeOf if needed. Freeze Object.prototype in security-critical code.",
+  },
+  // Unsafe Object.keys iteration for authorization
+  {
+    id: "mass-assignment-express", name: "Mass Assignment via Object Spread", cwe: "CWE-915", owasp: "A04:2021",
+    severity: "high", category: "Access Control",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "SpreadElement" && node.argument?.type === "MemberExpression") {
+        const name = resolveIdentifierName(node.argument);
+        if (name === "req.body" || name === "request.body" || name === "ctx.request.body") {
+          // Check parent is an ObjectExpression used in DB operation context
+          const line = getNodeLine(node, code);
+          const snippet = getCodeSnippet(lines, line);
+          if (/create|update|save|insert|findOneAndUpdate|set/i.test(snippet)) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: snippet,
+              detail: `Spreading ${name} directly into a database operation — attacker can inject unexpected fields (isAdmin, role, verified, etc.) to escalate privileges.`,
+              confidence: "high",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Destructure only required fields: const { name, email } = req.body. Use allowlists for permitted fields in create/update operations.",
+  },
+  // Unsafe WebSocket connection (ws:// instead of wss://)
+  {
+    id: "insecure-websocket-url", name: "Insecure WebSocket Connection", cwe: "CWE-319", owasp: "A02:2021",
+    severity: "medium", category: "Transport Security",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "NewExpression" && node.callee?.name === "WebSocket" && node.arguments.length >= 1) {
+        const arg = node.arguments[0];
+        if (arg?.type === "Literal" && typeof arg.value === "string" && arg.value.startsWith("ws://") && !arg.value.includes("localhost") && !arg.value.includes("127.0.0.1")) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "WebSocket connection over unencrypted ws:// — data including auth tokens is transmitted in cleartext.",
+            confidence: "high",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use wss:// for WebSocket connections in production to encrypt data in transit.",
+  },
+  // Hardcoded encryption key/IV
+  {
+    id: "hardcoded-crypto-key", name: "Hardcoded Encryption Key/IV", cwe: "CWE-321", owasp: "A02:2021",
+    severity: "critical", category: "Cryptography",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name || "";
+        if ((method === "createCipheriv" || method === "createDecipheriv") && node.arguments.length >= 3) {
+          const keyArg = node.arguments[1];
+          const ivArg = node.arguments[2];
+          if (keyArg?.type === "Literal" && typeof keyArg.value === "string") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Hardcoded encryption key in source code — anyone with repo access can decrypt encrypted data.",
+              confidence: "high",
+            };
+          }
+          if (ivArg?.type === "Literal" && typeof ivArg.value === "string") {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Hardcoded initialization vector (IV) — reusing a static IV with the same key breaks cipher security. Use crypto.randomBytes(16).",
+              confidence: "high",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Generate keys with crypto.randomBytes() and store in env vars/secrets manager. Always use random IVs: crypto.randomBytes(16).",
+  },
+  // Express trust proxy === false behind reverse proxy
+  {
+    id: "missing-helmet", name: "Missing Security Headers Middleware", cwe: "CWE-693", owasp: "A05:2021",
+    severity: "medium", category: "Configuration",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const method = node.callee.property?.name || "";
+        if (method === "listen" && node.arguments.length >= 1) {
+          // This is app.listen() — check if helmet was used anywhere above
+          const line = getNodeLine(node, code);
+          const codeAbove = code.substring(0, node.start);
+          if (!codeAbove.includes("helmet") && !codeAbove.includes("Helmet")) {
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: "Server starts without helmet() middleware — missing security headers (X-Frame-Options, CSP, HSTS, X-Content-Type-Options).",
+              confidence: "low",
+            };
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Install and use helmet: npm install helmet && app.use(helmet()). This sets 15+ security headers with sensible defaults.",
+  },
+  // Unvalidated JSON.parse
+  {
+    id: "unvalidated-json-parse", name: "JSON.parse Without Try-Catch", cwe: "CWE-20", owasp: "A06:2021",
+    severity: "low", category: "Error Handling",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const method = node.callee.property?.name || "";
+        if (obj === "JSON" && method === "parse") {
+          let inTryCatch = false;
+          let parent = node;
+          for (let i = 0; i < 20; i++) {
+            parent = parent.parent;
+            if (!parent) break;
+            if (parent.type === "TryStatement") { inTryCatch = true; break; }
+          }
+          if (!inTryCatch) {
+            const arg = node.arguments[0];
+            if (arg?.type === "Identifier" || arg?.type === "MemberExpression") {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: "JSON.parse() without try-catch — malformed input will throw an unhandled exception that could crash the server.",
+                confidence: "low",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Wrap JSON.parse in try-catch: try { const data = JSON.parse(input); } catch(e) { return res.status(400).json({ error: 'Invalid JSON' }); }",
+  },
+  // Hardcoded AWS/Cloud credentials
+  {
+    id: "hardcoded-cloud-key", name: "Hardcoded Cloud Provider Credentials", cwe: "CWE-798", owasp: "A07:2021",
+    severity: "critical", category: "Secrets",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "Property" || node.type === "ObjectProperty") {
+        const key = (node.key?.name || node.key?.value || "").toLowerCase();
+        if ((key === "accesskeyid" || key === "secretaccesskey" || key === "aws_access_key_id" || key === "aws_secret_access_key") &&
+            node.value?.type === "Literal" && typeof node.value.value === "string" && node.value.value.length >= 16) {
+          const val = node.value.value;
+          if (!val.includes("process.env") && !val.startsWith("${")) {
+            const line = getNodeLine(node, code);
+            return {
+              line, column: getNodeColumn(node, code),
+              evidence: getCodeSnippet(lines, line),
+              detail: `Hardcoded AWS credential "${key}" — grants direct access to cloud resources. Attackers mine public repos for these.`,
+              confidence: "high",
+            };
+          }
+        }
+      }
+      // Also check variable assignments
+      if (node.type === "VariableDeclarator" && node.init?.type === "Literal" && typeof node.init.value === "string") {
+        const varName = (node.id?.name || "").toLowerCase();
+        const val = node.init.value;
+        if (/^akia[0-9a-z]{16}$/i.test(val)) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: "AWS Access Key ID pattern detected (starts with AKIA) — this is a live AWS credential that should never be in source code.",
+            confidence: "high",
+          };
+        }
+        if ((varName.includes("secret") || varName.includes("api_key") || varName.includes("apikey")) && val.length >= 20 && !/^(process|env|config|undefined|null|true|false)/.test(val)) {
+          const line = getNodeLine(node, code);
+          return {
+            line, column: getNodeColumn(node, code),
+            evidence: getCodeSnippet(lines, line),
+            detail: `Variable "${node.id?.name}" appears to contain a hardcoded secret (${val.length} chars) — should be in environment variables.`,
+            confidence: "medium",
+          };
+        }
+      }
+      return null;
+    },
+    remediation: "Use AWS SDK default credential chain (env vars, IAM roles, ~/.aws/credentials). Never hardcode access keys in source code.",
+  },
+  // Server-side console.log of sensitive data
+  {
+    id: "sensitive-data-logging", name: "Sensitive Data in Console Log", cwe: "CWE-532", owasp: "A09:2021",
+    severity: "medium", category: "Logging",
+    detect: (node: ASTNode, code: string, lines: string[]) => {
+      if (node.type === "CallExpression" && node.callee?.type === "MemberExpression") {
+        const obj = node.callee.object?.name || "";
+        const method = node.callee.property?.name || "";
+        if (obj === "console" && (method === "log" || method === "info" || method === "debug" || method === "warn")) {
+          for (const arg of node.arguments) {
+            const name = resolveIdentifierName(arg);
+            if (/password|token|secret|apikey|api_key|credit.?card|ssn|authorization/i.test(name)) {
+              const line = getNodeLine(node, code);
+              return {
+                line, column: getNodeColumn(node, code),
+                evidence: getCodeSnippet(lines, line),
+                detail: `Logging "${name}" — passwords, tokens, and secrets in logs are accessible to anyone with log access.`,
+                confidence: "medium",
+              };
+            }
+          }
+        }
+      }
+      return null;
+    },
+    remediation: "Never log sensitive values. Mask or redact: logger.info('Auth', { token: '***' }). Use structured logging with sensitive field filters.",
+  },
 ];
 
 /* ── AST Helpers ── */
@@ -2934,14 +3792,34 @@ function fallbackRegexScan(code: string): ASTFinding[] {
   return findings;
 }
 
+/* ── Custom Rules Interface ── */
+
+export interface CustomRule {
+  id: string;
+  name: string;
+  ruleType: "false-positive" | "false-negative" | "custom-check";
+  findingId?: string;
+  pattern?: string;
+  patternFlags?: string;
+  severity: Severity;
+  cwe?: string;
+  owasp?: string;
+  category?: string;
+  message: string;
+  remediation?: string;
+  confidence?: "high" | "medium" | "low";
+  suppressPattern?: string;
+}
+
 /* ── Main Analysis Function ── */
 
-export function analyzeCode(code: string): {
+export function analyzeCode(code: string, customRules?: CustomRule[]): {
   findings: ASTFinding[];
   stats: { critical: number; high: number; medium: number; low: number; total: number };
   astParsed: boolean;
   linesAnalyzed: number;
   checksPerformed: number;
+  customRuleMatches: number;
 } {
   const lines = code.split("\n");
   const findings: ASTFinding[] = [];
@@ -2962,7 +3840,8 @@ export function analyzeCode(code: string): {
       stats,
       astParsed: false,
       linesAnalyzed: lines.length,
-      checksPerformed: 15, // fallback checks count
+      checksPerformed: 15,
+      customRuleMatches: 0,
     };
   }
 
@@ -3255,6 +4134,111 @@ export function analyzeCode(code: string): {
     }
   });
 
+  // Phase 4: Custom rules (user-defined false-positive suppressions, false-negative detectors, custom checks)
+  let customRuleMatches = 0;
+  if (customRules && customRules.length > 0) {
+    // Separate rule types
+    const fpRules = customRules.filter(r => r.ruleType === "false-positive");
+    const fnRules = customRules.filter(r => r.ruleType === "false-negative");
+    const ccRules = customRules.filter(r => r.ruleType === "custom-check");
+
+    // Apply false-positive suppressions: remove findings matching the suppressed findingId + optional pattern
+    if (fpRules.length > 0) {
+      const suppressIds = new Set(fpRules.map(r => r.findingId).filter(Boolean));
+      const suppressPatterns = fpRules
+        .filter(r => r.suppressPattern)
+        .map(r => ({ findingId: r.findingId, pattern: new RegExp(r.suppressPattern!, r.patternFlags || "gi") }));
+
+      for (let i = findings.length - 1; i >= 0; i--) {
+        const f = findings[i];
+        // Simple ID-based suppression
+        if (suppressIds.has(f.id)) {
+          // If a suppress pattern is specified, only suppress when the code at that line matches
+          const hasPatternRule = suppressPatterns.find(sp => sp.findingId === f.id);
+          if (hasPatternRule) {
+            const lineCode = f.line > 0 && f.line <= lines.length ? lines[f.line - 1] : "";
+            if (hasPatternRule.pattern.test(lineCode)) {
+              findings.splice(i, 1);
+              customRuleMatches++;
+            }
+          } else {
+            findings.splice(i, 1);
+            customRuleMatches++;
+          }
+        }
+      }
+    }
+
+    // Apply false-negative detectors: regex patterns that scan for missed vulnerabilities
+    for (const rule of fnRules) {
+      if (!rule.pattern) continue;
+      try {
+        const regex = new RegExp(rule.pattern, rule.patternFlags || "gi");
+        for (let i = 0; i < lines.length; i++) {
+          regex.lastIndex = 0;
+          if (regex.test(lines[i])) {
+            // Check this finding isn't already reported at this line
+            const key = `${rule.id}:${i + 1}`;
+            if (!seenFindings.has(key)) {
+              seenFindings.add(key);
+              customRuleMatches++;
+              addFinding({
+                id: rule.id,
+                name: rule.name,
+                severity: rule.severity,
+                confidence: rule.confidence || "medium",
+                line: i + 1,
+                column: 0,
+                category: rule.category || "Custom Rule",
+                cwe: rule.cwe || "",
+                owasp: rule.owasp || "",
+                detail: rule.message,
+                evidence: lines[i].trim(),
+                remediation: rule.remediation || "",
+              });
+            }
+          }
+        }
+      } catch {
+        // Invalid regex — skip silently
+      }
+    }
+
+    // Apply custom checks: same as false-negative but categorized differently
+    for (const rule of ccRules) {
+      if (!rule.pattern) continue;
+      try {
+        const regex = new RegExp(rule.pattern, rule.patternFlags || "gi");
+        for (let i = 0; i < lines.length; i++) {
+          regex.lastIndex = 0;
+          if (regex.test(lines[i])) {
+            const key = `${rule.id}:${i + 1}`;
+            if (!seenFindings.has(key)) {
+              seenFindings.add(key);
+              customRuleMatches++;
+              addFinding({
+                id: rule.id,
+                name: rule.name,
+                severity: rule.severity,
+                confidence: rule.confidence || "medium",
+                line: i + 1,
+                column: 0,
+                category: rule.category || "Custom Check",
+                cwe: rule.cwe || "",
+                owasp: rule.owasp || "",
+                detail: rule.message,
+                evidence: lines[i].trim(),
+                remediation: rule.remediation || "",
+              });
+            }
+          }
+        }
+      } catch {
+        // Invalid regex — skip silently
+      }
+    }
+  }
+
   // Sort by severity
   const order: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
   findings.sort((a, b) => order[a.severity] - order[b.severity] || a.line - b.line);
@@ -3272,7 +4256,8 @@ export function analyzeCode(code: string): {
     stats,
     astParsed: true,
     linesAnalyzed: lines.length,
-    checksPerformed: DANGEROUS_SINKS.length + PATTERN_CHECKS.length,
+    checksPerformed: DANGEROUS_SINKS.length + PATTERN_CHECKS.length + (customRules?.length || 0),
+    customRuleMatches,
   };
 }
 
@@ -3286,12 +4271,16 @@ const { exec } = require("child_process");
 const fs = require("fs");
 const _ = require("lodash");
 const cors = require("cors");
+const yaml = require("js-yaml");
 
 const app = express();
 const pool = new Pool();
 
 // CORS: wildcard with credentials
 app.use(cors({ origin: "*", credentials: true }));
+
+// No body size limit
+app.use(express.json());
 
 // No rate limiter on login
 app.post("/api/login", async (req, res) => {
@@ -3300,11 +4289,14 @@ app.post("/api/login", async (req, res) => {
   // Timing-unsafe comparison
   const storedHash = await getHash(username);
   if (password === storedHash) {
-    // Hardcoded JWT secret
+    // Hardcoded JWT secret, no expiry
     const token = jwt.sign({ user: username }, "my-super-secret-key-123");
+    // Sensitive data logging
+    console.log("User token:", token);
     res.json({ token });
   } else {
-    res.status(401).json({ error: "Invalid" });
+    // Error info leak
+    res.json({ error: storedHash.message, stack: storedHash.stack });
   }
 });
 
@@ -3348,6 +4340,12 @@ function hashPassword(pwd) {
   return crypto.createHash("md5").update(pwd).digest("hex");
 }
 
+// Hardcoded encryption key
+const cipher = crypto.createCipheriv("aes-256-cbc", "hardcoded-secret-key-32bytes!!", "static-iv-16byte");
+
+// Insecure TLS
+const httpsOptions = { secureProtocol: "TLSv1_method" };
+
 // Prototype Pollution
 app.post("/api/settings", (req, res) => {
   const userSettings = req.body;
@@ -3355,7 +4353,16 @@ app.post("/api/settings", (req, res) => {
   res.json(config);
 });
 
-// Regex DoS
+// Mass assignment
+app.post("/api/profile", async (req, res) => {
+  const user = await User.findOneAndUpdate(
+    { _id: req.user.id },
+    { ...req.body }
+  );
+  res.json(user);
+});
+
+// Regex DoS with user-controlled RegExp
 app.get("/api/search-advanced", (req, res) => {
   const pattern = req.query.regex;
   const re = new RegExp(pattern);
@@ -3370,6 +4377,27 @@ app.post("/api/calc", (req, res) => {
   res.json({ result });
 });
 
+// setTimeout with string (eval-like)
+setTimeout("processQueue()", 1000);
+
+// Unsafe YAML deserialization
+app.post("/api/import", (req, res) => {
+  const data = yaml.load(req.body.yamlContent);
+  res.json(data);
+});
+
+// Missing CSRF on state-changing endpoint
+app.post("/api/transfer", async (req, res) => {
+  const { to, amount } = req.body;
+  await transferFunds(req.user.id, to, amount);
+  res.json({ success: true });
+});
+
+// Weak password policy
+if (password.length < 4) {
+  return res.status(400).json({ error: "Too short" });
+}
+
 // NoSQL Injection
 app.get("/api/profile", async (req, res) => {
   const filter = req.query.filter;
@@ -3377,5 +4405,14 @@ app.get("/api/profile", async (req, res) => {
   res.json(user);
 });
 
+// Insecure file permissions
+fs.writeFileSync("/tmp/config.json", data, { mode: 0o777 });
+
+// Unsafe redirect
+app.get("/api/go", (req, res) => {
+  res.redirect(req.query.url);
+});
+
+// Missing Helmet — server starts without security headers
 app.listen(3000);
 `;

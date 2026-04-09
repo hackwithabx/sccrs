@@ -5,10 +5,11 @@ import { rateLimit } from "@/lib/rate-limit";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { generateFix, type Severity } from "@/lib/fix-engine";
-import { analyzeCode, SAST_DEMO_CODE, type ASTFinding } from "@/lib/ast-analyzer";
+import { analyzeCode, SAST_DEMO_CODE, type ASTFinding, type CustomRule } from "@/lib/ast-analyzer";
 import { scanCode, JAVA_DEMO_CODE, CPP_DEMO_CODE, CSHARP_DEMO_CODE, type PatternFinding, type Language } from "@/lib/pattern-scanner";
 import { analyzeMultipleFiles, getReferences, type MultiFileFinding, type FileEntry } from "@/lib/multi-file-analyzer";
 import { generateExploitPoC } from "@/lib/exploit-poc-engine";
+import ShieldXCustomRule from "@/models/ShieldXCustomRule";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -124,7 +125,7 @@ function getDemoCode(lang: ScanLanguage): string {
   }
 }
 
-function runScan(code: string, lang: ScanLanguage) {
+function runScan(code: string, lang: ScanLanguage, customRules?: CustomRule[]) {
   if (lang === "java" || lang === "cpp" || lang === "csharp") {
     const result = scanCode(code, lang as Language);
     return {
@@ -135,10 +136,11 @@ function runScan(code: string, lang: ScanLanguage) {
       linesAnalyzed: result.linesAnalyzed,
       checksPerformed: result.checksPerformed,
       language: result.language,
+      customRuleMatches: 0,
     };
   }
   // JS/TS — AST-based
-  const result = analyzeCode(code);
+  const result = analyzeCode(code, customRules);
   return {
     findings: result.findings,
     stats: result.stats,
@@ -147,6 +149,7 @@ function runScan(code: string, lang: ScanLanguage) {
     linesAnalyzed: result.linesAnalyzed,
     checksPerformed: result.checksPerformed,
     language: lang,
+    customRuleMatches: result.customRuleMatches,
   };
 }
 
@@ -348,6 +351,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 403 });
     }
 
+    // Load custom rules for this user
+    await dbConnect();
+    let userCustomRules: CustomRule[] = [];
+    try {
+      const dbRules = await ShieldXCustomRule.find({ userId: sessionUser.id, enabled: true }).lean();
+      userCustomRules = dbRules.map((r) => ({
+        id: `custom-${r._id}`,
+        name: r.name,
+        ruleType: r.ruleType as CustomRule["ruleType"],
+        findingId: r.findingId,
+        pattern: r.pattern,
+        patternFlags: r.patternFlags,
+        severity: r.severity as CustomRule["severity"],
+        cwe: r.cwe,
+        owasp: r.owasp,
+        category: r.category,
+        message: r.message,
+        remediation: r.remediation,
+        confidence: r.confidence as CustomRule["confidence"],
+        suppressPattern: r.suppressPattern,
+      }));
+    } catch {
+      // Custom rules are non-critical — continue without them
+    }
+
     // ── Multi-file scan (Pro/Enterprise only) ──
     if (isMultiFile && files) {
       const totalSize = files.reduce((s, f) => s + f.content.length, 0);
@@ -388,10 +416,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Input too large. Maximum 5MB per file." }, { status: 400 });
     }
 
-    const result = runScan(code, language);
+    const result = runScan(code, language, userCustomRules.length > 0 ? userCustomRules : undefined);
     const enriched = enrichFindings(result.findings);
 
-    await dbConnect();
     await User.findByIdAndUpdate(sessionUser.id, { $inc: { shieldxScanCount: 1 } });
 
     return NextResponse.json({
@@ -403,6 +430,7 @@ export async function POST(request: NextRequest) {
       linesAnalyzed: result.linesAnalyzed,
       checksPerformed: result.checksPerformed,
       language: result.language,
+      customRuleMatches: result.customRuleMatches || 0,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

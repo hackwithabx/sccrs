@@ -9,6 +9,10 @@ import { tier2ArticlesPart2 } from "./articles-tier2-part2";
 import { vulnerabilityDeepDives } from "./articles-vulnerability-deep-dives";
 import { trendingSecurityArticles } from "./articles-trending-security";
 import { axiosVulnerabilityArticles } from "./articles-axios-vulnerability";
+import { trafficBatch1Articles } from "./articles-traffic-batch1";
+import { trafficBatch2Articles } from "./articles-traffic-batch2";
+import { trafficBatch3Articles } from "./articles-traffic-batch3";
+import { trafficBatch4Articles } from "./articles-traffic-batch4";
 
 export interface BlogPost {
   slug: string;
@@ -3744,4 +3748,9 @@ app.post('/api/refresh', async (req, res) => {
   ...trendingSecurityArticles,
   // Axios supply chain vulnerability analysis
   ...axiosVulnerabilityArticles,
+  // High-traffic SEO articles (2026)
+  ...trafficBatch1Articles,
+  ...trafficBatch2Articles,
+  ...trafficBatch3Articles,
+  ...trafficBatch4Articles,
 ];

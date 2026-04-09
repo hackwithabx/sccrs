@@ -44,6 +44,11 @@ import {
   Server,
   Code2,
   Activity,
+  Plus,
+  Edit,
+  Power,
+  BookOpen,
+  Copy,
 } from "lucide-react";
 import {
   PieChart,
@@ -1111,11 +1116,12 @@ export default function ShieldXWorkspacePage() {
         )}
 
         <Tabs defaultValue="modules" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
             <TabsTrigger value="modules">Modules</TabsTrigger>
             <TabsTrigger value="history">
               History {mergedHistory.length > 0 && <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">{mergedHistory.length}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="custom-rules">Custom Rules</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
 
@@ -2140,26 +2146,28 @@ export default function ShieldXWorkspacePage() {
                                   </CardContent>
                                 </Card>
 
-                                {/* Stats grid */}
+                                {/* Stats grid — Enhanced Executive Summary */}
                                 <div className="flex flex-col sm:flex-row gap-4 items-start">
                                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-1">
-                                    <div className="rounded-lg border p-3 text-center">
+                                    <div className="rounded-lg border p-3 text-center bg-gradient-to-b from-background to-muted/20">
                                       <div className="text-2xl font-bold">{scanResults.stats?.total || 0}</div>
                                       <div className="text-xs text-muted-foreground">Total Findings</div>
                                     </div>
-                                    <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                    <div className="rounded-lg border p-3 text-center border-red-500/20 bg-gradient-to-b from-red-500/5 to-transparent">
                                       <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
                                       <div className="text-xs text-muted-foreground">Critical</div>
+                                      {(scanResults.stats?.critical || 0) > 0 && <div className="text-[9px] text-red-500 font-medium mt-0.5">Fix immediately</div>}
                                     </div>
-                                    <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                    <div className="rounded-lg border p-3 text-center border-orange-500/20 bg-gradient-to-b from-orange-500/5 to-transparent">
                                       <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
                                       <div className="text-xs text-muted-foreground">High</div>
+                                      {(scanResults.stats?.high || 0) > 0 && <div className="text-[9px] text-orange-500 font-medium mt-0.5">Fix this sprint</div>}
                                     </div>
-                                    <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                    <div className="rounded-lg border p-3 text-center border-amber-500/20 bg-gradient-to-b from-amber-500/5 to-transparent">
                                       <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
                                       <div className="text-xs text-muted-foreground">Medium</div>
                                     </div>
-                                    <div className="rounded-lg border p-3 text-center">
+                                    <div className="rounded-lg border p-3 text-center border-blue-500/20 bg-gradient-to-b from-blue-500/5 to-transparent">
                                       <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
                                       <div className="text-xs text-muted-foreground">Low</div>
                                     </div>
@@ -2244,6 +2252,37 @@ export default function ShieldXWorkspacePage() {
 
                                 {scanResults.findings?.length > 0 ? (
                                   <div className="space-y-3">
+                                    {/* Category breakdown summary */}
+                                    {(() => {
+                                      const cats: Record<string, { count: number; critical: number; high: number }> = {};
+                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                      scanResults.findings.forEach((f: any) => {
+                                        if (!cats[f.category]) cats[f.category] = { count: 0, critical: 0, high: 0 };
+                                        cats[f.category].count++;
+                                        if (f.severity === "critical") cats[f.category].critical++;
+                                        if (f.severity === "high") cats[f.category].high++;
+                                      });
+                                      const sorted = Object.entries(cats).sort((a, b) => (b[1].critical * 10 + b[1].high * 5 + b[1].count) - (a[1].critical * 10 + a[1].high * 5 + a[1].count));
+                                      return (
+                                        <Card className="border-primary/10">
+                                          <CardContent className="p-3">
+                                            <p className="text-xs font-semibold mb-2 flex items-center gap-1.5">
+                                              <BarChart3 className="h-3.5 w-3.5 text-primary" /> Vulnerability Categories ({sorted.length})
+                                            </p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                              {sorted.map(([cat, info]) => (
+                                                <div key={cat} className={`inline-flex items-center gap-1.5 text-[10px] rounded-full px-2.5 py-1 border ${info.critical > 0 ? "border-red-500/30 bg-red-500/5 text-red-700 dark:text-red-400" : info.high > 0 ? "border-orange-500/30 bg-orange-500/5 text-orange-700 dark:text-orange-400" : "border-border bg-muted/30 text-muted-foreground"}`}>
+                                                  <span className="font-medium">{cat}</span>
+                                                  <span className="font-bold">{info.count}</span>
+                                                  {info.critical > 0 && <span className="text-red-500">({info.critical} crit)</span>}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                      );
+                                    })()}
+
                                     {/* Severity filter bar */}
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <span className="text-xs text-muted-foreground">Filter:</span>
@@ -2259,14 +2298,17 @@ export default function ShieldXWorkspacePage() {
                                     <div className="space-y-3 max-h-[600px] overflow-y-auto">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {scanResults.findings.filter((f: any) => (severityFilter === "all" || f.severity === severityFilter) && !suppressedFindings.has(`${f.id}:${f.line}:${f.file || ""}`)).map((f: any, idx: number) => (
-                                      <Card key={idx} className={`${f.severity === "critical" ? "border-red-500/30" : f.severity === "high" ? "border-orange-500/30" : f.severity === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`}>
+                                      <Card key={idx} className={`transition-all ${f.severity === "critical" ? "border-red-500/30 bg-red-500/[0.02] border-l-4 border-l-red-500" : f.severity === "high" ? "border-orange-500/30 bg-orange-500/[0.02] border-l-4 border-l-orange-500" : f.severity === "medium" ? "border-amber-500/30 border-l-4 border-l-amber-500" : "border-blue-500/30 border-l-4 border-l-blue-500"}`}>
                                         <CardContent className="p-4">
-                                          <div className="flex items-start justify-between gap-3 mb-2">
+                                          {/* Finding header with severity indicator */}
+                                          <div className="flex items-start justify-between gap-3 mb-3">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                              <Badge variant={f.severity === "critical" ? "destructive" : f.severity === "high" ? "destructive" : "secondary"} className="text-[10px] capitalize">{f.severity}</Badge>
+                                              <div className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${f.severity === "critical" ? "bg-red-500/15 text-red-600 dark:text-red-400" : f.severity === "high" ? "bg-orange-500/15 text-orange-600 dark:text-orange-400" : f.severity === "medium" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" : "bg-blue-500/15 text-blue-600 dark:text-blue-400"}`}>
+                                                {f.severity === "critical" && <AlertTriangle className="h-3 w-3" />}
+                                                {f.severity}
+                                              </div>
                                               <Badge variant="outline" className={`text-[9px] ${f.confidence === "high" ? "border-emerald-500 text-emerald-600" : "border-amber-500 text-amber-600"}`}>{f.confidence} conf.</Badge>
-                                              <span className="font-medium text-sm">{f.name}</span>
-                                              <Badge variant="outline" className="text-[9px]">{f.category}</Badge>
+                                              <span className="font-semibold text-sm">{f.name}</span>
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                               {isPaid && (
@@ -2275,34 +2317,45 @@ export default function ShieldXWorkspacePage() {
                                                 </Button>
                                               )}
                                               {f.fix?.riskScore > 0 && <span className="text-[10px] text-muted-foreground">Risk: {f.fix.riskScore}/100</span>}
-                                              {f.file && <Badge variant="outline" className="text-[9px] font-mono">{f.file.length > 30 ? `...${f.file.slice(-27)}` : f.file}</Badge>}
-                                              <span className="text-xs text-muted-foreground">Line {f.line}</span>
                                             </div>
                                           </div>
-                                          <p className="text-xs text-muted-foreground mb-2">{f.detail}</p>
+
+                                          {/* Location + Category badges */}
+                                          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                                            <Badge variant="outline" className="text-[9px] bg-muted/30">{f.category}</Badge>
+                                            {f.file && <Badge variant="outline" className="text-[9px] font-mono bg-muted/30">{f.file.length > 30 ? `...${f.file.slice(-27)}` : f.file}</Badge>}
+                                            <span className="text-[10px] text-muted-foreground font-mono">Line {f.line}{f.column ? `:${f.column}` : ""}</span>
+                                          </div>
+
+                                          {/* What it means — explanation */}
+                                          <div className="mb-3 p-2 rounded-md bg-muted/30 border border-border/50">
+                                            <p className="text-[10px] font-semibold text-muted-foreground mb-0.5 uppercase tracking-wide">What This Means</p>
+                                            <p className="text-xs text-foreground/80">{f.detail}</p>
+                                          </div>
+
                                           {/* Code Snippet with line numbers */}
                                           {f.codeSnippet?.length > 0 ? (
-                                            <div className="mb-2 rounded overflow-hidden border border-muted">
-                                              <div className="bg-muted/70 px-3 py-1 flex items-center justify-between">
-                                                <span className="text-[10px] font-semibold text-muted-foreground">{f.file ? `📄 ${f.file}` : "📄 Code"} — Vulnerability at Line {f.line}</span>
-                                                <span className="text-[10px] text-muted-foreground">Col {f.column}</span>
+                                            <div className="mb-3 rounded-lg overflow-hidden border border-muted shadow-sm">
+                                              <div className="bg-zinc-900 dark:bg-zinc-950 px-3 py-1.5 flex items-center justify-between">
+                                                <span className="text-[10px] font-semibold text-zinc-400">{f.file ? `📄 ${f.file}` : "📄 Code"} — Vulnerability at Line {f.line}</span>
+                                                <span className="text-[10px] text-zinc-500">Col {f.column}</span>
                                               </div>
-                                              <div className="overflow-x-auto">
+                                              <div className="overflow-x-auto bg-zinc-950">
                                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                 {f.codeSnippet.map((sl: any, si: number) => (
-                                                  <div key={si} className={`flex text-[11px] font-mono ${sl.isHighlighted ? "bg-red-500/10 border-l-2 border-red-500" : "border-l-2 border-transparent"}`}>
-                                                    <span className={`select-none shrink-0 w-10 text-right pr-3 py-0.5 ${sl.isHighlighted ? "text-red-500 font-bold bg-red-500/5" : "text-muted-foreground/50"}`}>{sl.lineNum}</span>
-                                                    <pre className="py-0.5 pl-2 pr-3 whitespace-pre overflow-x-auto flex-1">{sl.code || " "}</pre>
+                                                  <div key={si} className={`flex text-[11px] font-mono ${sl.isHighlighted ? "bg-red-500/15 border-l-2 border-red-500" : "border-l-2 border-transparent"}`}>
+                                                    <span className={`select-none shrink-0 w-10 text-right pr-3 py-0.5 ${sl.isHighlighted ? "text-red-400 font-bold" : "text-zinc-600"}`}>{sl.lineNum}</span>
+                                                    <pre className="py-0.5 pl-2 pr-3 whitespace-pre overflow-x-auto flex-1 text-zinc-300">{sl.code || " "}</pre>
                                                   </div>
                                                 ))}
                                               </div>
                                             </div>
                                           ) : (
-                                            f.evidence && <code className="block text-xs bg-muted/50 rounded p-2 font-mono break-all mb-2">{f.evidence}</code>
+                                            f.evidence && <code className="block text-xs bg-zinc-900 dark:bg-zinc-950 text-zinc-300 rounded-lg p-2.5 font-mono break-all mb-3">{f.evidence}</code>
                                           )}
                                           {/* Attack Vector / Dataflow trace */}
                                           {f.dataflow?.length > 0 && (
-                                            <div className="mb-2 p-2.5 rounded bg-blue-500/5 border border-blue-500/20">
+                                            <div className="mb-3 p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/20">
                                               <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 mb-1.5">🔗 Attack Vector Flow</p>
                                               <div className="space-y-0">
                                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -2398,11 +2451,15 @@ export default function ShieldXWorkspacePage() {
                                           )}
                                           {/* Fix guidance */}
                                           {f.fix && (
-                                            <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
-                                              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">🔧 Fix:</p>
+                                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5 flex items-center gap-1">
+                                                <CheckCircle2 className="h-3.5 w-3.5" /> How To Fix
+                                              </p>
                                               <p className="text-xs text-emerald-600 dark:text-emerald-300">{f.fix.fix || f.remediation}</p>
-                                              {f.fix.codeExample && <pre className="text-xs font-mono bg-muted/50 rounded px-2 py-1 mt-1 overflow-x-auto whitespace-pre-wrap">{f.fix.codeExample}</pre>}
-                                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                              {f.fix.codeExample && (
+                                                <pre className="text-[11px] font-mono bg-zinc-900 text-emerald-300 dark:bg-zinc-950 rounded-md px-3 py-2 mt-2 overflow-x-auto whitespace-pre-wrap">{f.fix.codeExample}</pre>
+                                              )}
+                                              <div className="flex items-center gap-2 mt-2 flex-wrap">
                                                 {f.fix.effort && <Badge variant="secondary" className={`text-[9px] ${f.fix.effort === "low" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : f.fix.effort === "medium" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>Effort: {f.fix.effort}</Badge>}
                                                 {f.fix.compliance?.map((c: string, ci: number) => (
                                                   <Badge key={ci} variant="outline" className="text-[8px] font-normal">{c}</Badge>
@@ -2410,7 +2467,14 @@ export default function ShieldXWorkspacePage() {
                                               </div>
                                             </div>
                                           )}
-                                          {!f.fix && f.remediation && <p className="text-xs text-emerald-600 mt-2 flex items-start gap-1"><CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> {f.remediation}</p>}
+                                          {!f.fix && f.remediation && (
+                                            <div className="p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
+                                              <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-start gap-1.5">
+                                                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                                <span><strong>Fix:</strong> {f.remediation}</span>
+                                              </p>
+                                            </div>
+                                          )}
                                         </CardContent>
                                       </Card>
                                     ))}
