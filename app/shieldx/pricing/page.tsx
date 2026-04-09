@@ -485,6 +485,67 @@ export default function ShieldXPricingPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mx-auto mt-16 max-w-5xl"
+        >
+          <h2 className="mb-3 text-center text-2xl font-bold">
+            How ShieldX Compares
+          </h2>
+          <p className="mx-auto mb-8 max-w-2xl text-center text-sm text-muted-foreground">
+            ShieldX delivers 7 scanners + exploit PoC generation at a fraction of what others charge for fewer capabilities.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-3 text-left font-semibold">Capability</th>
+                  <th className="px-4 py-3 text-center font-semibold text-primary">ShieldX Pro $49/mo</th>
+                  <th className="px-4 py-3 text-center font-semibold">Snyk Team $25/dev/mo</th>
+                  <th className="px-4 py-3 text-center font-semibold">Semgrep Teams $30/dev/mo</th>
+                  <th className="px-4 py-3 text-center font-semibold">SonarQube Team $32/mo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { cap: "SAST (Code Analysis)", shieldx: true, snyk: true, semgrep: true, sonar: true },
+                  { cap: "Secrets Detection", shieldx: true, snyk: false, semgrep: "$15/dev add-on", sonar: true },
+                  { cap: "Dependency / SCA Scanning", shieldx: true, snyk: "$25/dev add-on", semgrep: true, sonar: false },
+                  { cap: "Cloud Security Audit", shieldx: true, snyk: false, semgrep: false, sonar: false },
+                  { cap: "API Security Scanner", shieldx: true, snyk: false, semgrep: false, sonar: false },
+                  { cap: "Threat Log Analyzer", shieldx: true, snyk: false, semgrep: false, sonar: false },
+                  { cap: "Exploit PoC Generator", shieldx: true, snyk: false, semgrep: false, sonar: false },
+                  { cap: "Custom Rules", shieldx: true, snyk: "Enterprise only", semgrep: true, sonar: true },
+                  { cap: "License Compliance", shieldx: true, snyk: "Team+", semgrep: true, sonar: false },
+                  { cap: "CI/CD Integration", shieldx: true, snyk: true, semgrep: true, sonar: true },
+                  { cap: "Unlimited Scans", shieldx: true, snyk: "1,000/mo cap", semgrep: true, sonar: true },
+                  { cap: "Cost for 3 Developers", shieldx: "$49 total", snyk: "$75–$315", semgrep: "$90–$135", sonar: "$32+" },
+                ].map((row) => (
+                  <tr key={row.cap} className="border-b border-border/50 transition-colors hover:bg-muted/30">
+                    <td className="px-4 py-2.5 font-medium">{row.cap}</td>
+                    {[row.shieldx, row.snyk, row.semgrep, row.sonar].map((val, i) => (
+                      <td key={i} className={`px-4 py-2.5 text-center ${i === 0 ? "bg-primary/5" : ""}`}>
+                        {val === true ? (
+                          <CheckCircle2 className="mx-auto h-4 w-4 text-emerald-500" />
+                        ) : val === false ? (
+                          <XCircle className="mx-auto h-4 w-4 text-muted-foreground/40" />
+                        ) : (
+                          <span className="text-xs text-amber-600 dark:text-amber-400">{val}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Competitor pricing from public pricing pages as of April 2026. Per-developer pricing means costs multiply with each team member.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="mx-auto mt-16 max-w-3xl"
         >
@@ -520,6 +581,14 @@ export default function ShieldXPricingPage() {
               {
                 q: "Do you offer annual billing?",
                 a: "The standard flow is monthly. If you need annual billing or a larger rollout, send a subscription request and we can scope it with you.",
+              },
+              {
+                q: "Why is ShieldX so much cheaper than Snyk or Semgrep?",
+                a: "Most competitors charge per-developer per-product ($25–$105/dev/month). ShieldX uses flat pricing — Pro at $49/month covers up to 3 developers across all 7 scanners plus exploit PoC generation. Enterprise at $199/month includes 25 seats. We believe comprehensive security shouldn't be priced out of reach for small teams.",
+              },
+              {
+                q: "What makes ShieldX different from other SAST tools?",
+                a: "ShieldX is a unified platform with 7 scanners (SAST, Secrets, Dependencies, Cloud, API, Logs, License) plus a unique Exploit PoC Generator that shows real attack impact. Competitors typically require separate products or add-ons for each capability.",
               },
             ].map((faq) => (
               <Card key={faq.q}>
