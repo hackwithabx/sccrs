@@ -83,9 +83,9 @@ const plans = [
   {
     key: "pro" as const,
     name: "Pro",
-    price: "$29",
+    price: "$49",
     period: "/month",
-    description: "All scanners including AST-based SAST for solo devs and small teams.",
+    description: "All 7 scanners, exploit PoC generator, and unlimited scans for up to 3 developers.",
     badge: "Most Popular",
     cta: "Request Pro Access",
     highlight: true,
@@ -94,9 +94,9 @@ const plans = [
   {
     key: "enterprise" as const,
     name: "Enterprise",
-    price: "$99",
+    price: "$199",
     period: "/month",
-    description: "Team seats, CI/CD pipeline gate, onboarding, and priority support.",
+    description: "25 team seats, CI/CD pipeline gate, priority support, onboarding, and white-labeling.",
     badge: "Built for Teams",
     cta: "Request Enterprise Plan",
     highlight: false,
