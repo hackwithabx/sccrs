@@ -174,7 +174,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-              9 security modules. 80+ SAST vulnerability checks. Taint analysis, exploit PoC generation, and cross-file dataflow tracing — all in under 60 seconds. The most powerful security scanner built for developers and startups.
+              7 scanners. 80+ SAST checks. Exploit PoC generation and cross-file dataflow tracing — all in under 60 seconds. More coverage than Snyk + Semgrep combined, at 1/3 the price.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -239,7 +239,7 @@ export default function HomePage() {
             {[ 
               { value: "9", label: "Security Modules" },
               { value: "80+", label: "SAST Vulnerability Checks" },
-              { value: "$348", label: "Pro Per Year" },
+              { value: "$49", label: "Pro Per Month" },
               { value: "60s", label: "To First Scan Results" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
@@ -461,8 +461,8 @@ export default function HomePage() {
               },
               {
                 icon: Lock,
-                title: "$348/yr vs $50K+ Stacks",
-                desc: "Enterprise-grade scanning at startup pricing. Your code is analyzed in memory and immediately discarded — zero storage.",
+                title: "$49/mo vs $50K+ Stacks",
+                desc: "7 scanners for $49/mo flat — Snyk charges $25/dev/mo for just one. Your code is analyzed in memory and immediately discarded.",
                 highlight: "10x Cheaper",
               },
             ].map((item, i) => (
@@ -495,9 +495,9 @@ export default function HomePage() {
                 traditional: "Often weeks of setup and handoff",
               },
               {
-                label: "Starting annual cost",
-                shieldx: "From $348 per year",
-                traditional: "Often $50,000+ per year",
+                label: "Starting cost",
+                shieldx: "$49/mo flat — all 7 scanners",
+                traditional: "$25–$105/dev/mo per product",
               },
               {
                 label: "Who can run it",
@@ -524,6 +524,67 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ HOW SHIELDX DIFFERS ═══ */}
+      <section className="py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            badge="What Sets Us Apart"
+            title="How ShieldX Differs From Other SAST Tools"
+            description="Most scanners solve one piece of the puzzle. ShieldX was built to replace the entire fragmented toolchain."
+          />
+
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                icon: Lock,
+                label: "vs Cloud-Based SAST Platforms",
+                title: "Zero Code Storage",
+                desc: "Your source code is analyzed in memory and immediately discarded. It never hits a database, never leaves your session. No vendor lock-in on your intellectual property.",
+              },
+              {
+                icon: Fingerprint,
+                label: "vs Pattern-Based Scanners",
+                title: "Full Taint Tracking With Visual Dataflow",
+                desc: "ShieldX traces data from user input to dangerous sink across functions and files — not just regex pattern matching. You see the exact path an attacker's payload travels.",
+              },
+              {
+                icon: Code,
+                label: "vs Code Quality Tools",
+                title: "Cross-File Analysis With Auto-Generated Fixes",
+                desc: "Every finding includes CWE/OWASP references, auto-generated fix code with effort estimates, and compliance mapping to SOC 2, PCI-DSS, and ISO 27001.",
+              },
+              {
+                icon: Zap,
+                label: "vs Every Other SAST Tool",
+                title: "Exploit PoC Generator",
+                desc: "ShieldX generates real exploit payloads showing exactly how attackers would exploit each vulnerability — with attack complexity, steps to reproduce, and verification commands. No other SAST tool does this.",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+              >
+                <Card className="h-full border border-border hover:border-primary/40 hover:shadow-lg transition-all duration-300">
+                  <CardContent className="p-7">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="inline-flex rounded-xl bg-primary/10 p-2.5 text-primary">
+                        <item.icon className="h-5 w-5" />
+                      </div>
+                      <Badge variant="outline" className="text-xs text-muted-foreground">{item.label}</Badge>
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -1086,7 +1147,7 @@ export default function HomePage() {
               Your Code Has Vulnerabilities. Find Them Before Attackers Do.
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              80+ checks. 25+ vulnerability categories. AST taint analysis with exploit PoC generation. Try ShieldX free — no signup required for demo scans.
+              7 scanners. 80+ checks. Exploit PoC generation. $49/mo flat — not per developer, not per product. Try ShieldX free or request Pro access.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/shieldx">
