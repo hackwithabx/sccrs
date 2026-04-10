@@ -97,6 +97,9 @@ const ShieldXScanSchema = new mongoose.Schema(
   }
 );
 
+ShieldXScanSchema.index({ userId: 1, createdAt: -1 });
+ShieldXScanSchema.index({ userId: 1, scanType: 1, createdAt: -1 });
+
 export default mongoose.models.ShieldXScan ||
   mongoose.model("ShieldXScan", ShieldXScanSchema);
 

@@ -5,7 +5,6 @@ import {
   getShieldXSessionUser,
   hasShieldXAccess,
 } from "@/lib/shieldx-access";
-import { sendShieldXScanAlerts } from "@/lib/shieldx-alerts";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -106,13 +105,26 @@ export async function GET(request: NextRequest) {
       Math.max(parseInt(searchParams.get("limit") || "10", 10), 1),
       50
     );
+    const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
+    const skip = (page - 1) * limit;
 
-    const scans = await ShieldXScan.find({ userId: sessionUser.id })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
+    const filter = { userId: sessionUser.id };
+    const [scans, total] = await Promise.all([
+      ShieldXScan.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      ShieldXScan.countDocuments(filter),
+    ]);
 
-    return NextResponse.json({ scans });
+    return NextResponse.json({
+      scans,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     console.error("Failed to fetch ShieldX history:", error);
     return NextResponse.json(
@@ -199,21 +211,8 @@ export async function POST(request: NextRequest) {
         body?.metadata && typeof body.metadata === "object" ? body.metadata : {},
     });
 
-    const alertDelivery = await sendShieldXScanAlerts({
-      userId: sessionUser.id,
-      userEmail: sessionUser.email,
-      userName: sessionUser.name,
-      scanType,
-      title: title.slice(0, 120),
-      target: target.slice(0, 240),
-      overallScore,
-      summary: summary.slice(0, 500),
-      counts,
-      findings,
-    });
-
     return NextResponse.json(
-      { success: true, scan, alertDelivery },
+      { success: true, scan },
       { status: 201 }
     );
   } catch (error) {
