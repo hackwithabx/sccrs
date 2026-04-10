@@ -1,16 +1,18 @@
 /**
- * ShieldX AI Provider — Lightweight abstraction over Google Gemini & OpenAI
+ * ShieldX AI Provider — Lightweight abstraction over Anthropic Claude, Google Gemini & OpenAI
  *
  * Uses direct fetch (zero dependencies). Supports:
- *   - Google Gemini (default, free tier available)
+ *   - Anthropic Claude (default — same model powering this agent)
+ *   - Google Gemini (fallback)
  *   - OpenAI GPT-4o-mini (fallback)
  *
  * Set env vars:
- *   GOOGLE_AI_API_KEY   → Gemini
+ *   ANTHROPIC_API_KEY   → Claude (preferred)
+ *   GOOGLE_AI_API_KEY   → Gemini fallback
  *   OPENAI_API_KEY      → OpenAI fallback
  */
 
-type Provider = "gemini" | "openai";
+type Provider = "anthropic" | "gemini" | "openai";
 
 interface AIResponse {
   text: string;
@@ -20,13 +22,50 @@ interface AIResponse {
 }
 
 function getProvider(): { provider: Provider; apiKey: string } {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (anthropicKey) return { provider: "anthropic", apiKey: anthropicKey };
+
   const geminiKey = process.env.GOOGLE_AI_API_KEY;
   if (geminiKey) return { provider: "gemini", apiKey: geminiKey };
 
   const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) return { provider: "openai", apiKey: openaiKey };
 
-  throw new Error("No AI API key configured. Set GOOGLE_AI_API_KEY or OPENAI_API_KEY in your environment.");
+  throw new Error("No AI API key configured. Set ANTHROPIC_API_KEY, GOOGLE_AI_API_KEY, or OPENAI_API_KEY in your environment.");
+}
+
+async function callAnthropic(apiKey: string, systemPrompt: string, userPrompt: string, model = "claude-sonnet-4-20250514"): Promise<AIResponse> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+      temperature: 0.3,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Anthropic API error (${res.status}): ${err}`);
+  }
+
+  const data = await res.json();
+  const text = data.content?.[0]?.text;
+  if (!text) throw new Error("Empty response from Claude");
+
+  return {
+    text,
+    provider: "anthropic",
+    model,
+    tokensUsed: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+  };
 }
 
 async function callGemini(apiKey: string, systemPrompt: string, userPrompt: string, model = "gemini-2.0-flash"): Promise<AIResponse> {
@@ -101,6 +140,10 @@ async function callOpenAI(apiKey: string, systemPrompt: string, userPrompt: stri
 export async function generateAIText(systemPrompt: string, userPrompt: string): Promise<AIResponse> {
   const { provider, apiKey } = getProvider();
 
+  if (provider === "anthropic") {
+    return callAnthropic(apiKey, systemPrompt, userPrompt);
+  }
+
   if (provider === "gemini") {
     return callGemini(apiKey, systemPrompt, userPrompt);
   }
@@ -109,5 +152,5 @@ export async function generateAIText(systemPrompt: string, userPrompt: string): 
 }
 
 export function isAIConfigured(): boolean {
-  return !!(process.env.GOOGLE_AI_API_KEY || process.env.OPENAI_API_KEY);
+  return !!(process.env.ANTHROPIC_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.OPENAI_API_KEY);
 }

@@ -223,7 +223,7 @@ Advanced:
 
 The best hackers aren't the ones with the most tools — they're the ones who understand how applications work at a fundamental level and can spot where developers made assumptions.`,
     date: "2026-04-07",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["ethical hacking", "penetration testing", "bug bounty", "beginners", "oscp", "burp suite"],
     readTime: "18 min read",
@@ -419,7 +419,7 @@ The industry is moving toward AI assistants that integrate security:
 
 Until then, treat AI-generated code the same way you'd treat code from a junior developer — review everything, trust nothing, and always run security scans.`,
     date: "2026-04-05",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["ai coding", "vibe coding", "cursor", "copilot", "code security", "sast", "ai vulnerabilities"],
     readTime: "15 min read",
@@ -694,7 +694,7 @@ export async function GET(
 - [ ] Error responses don't leak stack traces or internal details
 - [ ] Dependencies audited (\`npm audit\`, Snyk, or ShieldX)`,
     date: "2026-04-03",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["nextjs", "react", "server components", "server actions", "web security", "javascript"],
     readTime: "16 min read",
@@ -904,7 +904,7 @@ npm install --save-exact @author/mcp-server@1.2.3
 
 The MCP ecosystem is moving fast. Security controls need to keep pace — or AI agents will become the most powerful attack vector in your organization.`,
     date: "2026-04-01",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["mcp", "model context protocol", "ai agents", "ai security", "llm", "cursor", "claude"],
     readTime: "14 min read",
@@ -1134,7 +1134,7 @@ function validateScopes(requestedScopes: string[]): string[] {
 - [ ] Rate limiting on token endpoint
 - [ ] Monitor for token reuse and code replay attacks`,
     date: "2026-03-28",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["oauth", "oauth2", "authentication", "sso", "pkce", "authorization", "token security"],
     readTime: "16 min read",

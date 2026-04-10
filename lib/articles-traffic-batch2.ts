@@ -257,7 +257,7 @@ async function tieredRateLimit(req: Request, res: Response, next: NextFunction) 
 4. **Client-side rate limiting only** — Trivially bypassed with curl.
 5. **Forgetting WebSocket endpoints** — Rate limit connection attempts and message frequency.`,
     date: "2026-03-25",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["rate limiting", "api security", "nodejs", "express", "redis", "ddos protection", "token bucket"],
     readTime: "14 min read",
@@ -478,7 +478,7 @@ const dbPassword = fs.readFileSync('/run/secrets/db_password', 'utf8').trim();
 - [ ] Health checks configured
 - [ ] Regularly rebuild images to pick up base image patches`,
     date: "2026-03-22",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Cloud Security",
     tags: ["docker", "containers", "trivy", "security scanning", "devops", "kubernetes", "image hardening"],
     readTime: "15 min read",
@@ -678,7 +678,7 @@ async function validatePassword(password: string): Promise<string[]> {
 
 The most important takeaway: **Use Argon2id, enforce minimum length, check breached lists, and stop requiring special characters.** That's it.`,
     date: "2026-03-19",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["password cracking", "hashcat", "bcrypt", "argon2", "rainbow tables", "password security", "hashing"],
     readTime: "15 min read",
@@ -910,7 +910,7 @@ resource "aws_s3_bucket_versioning" "secure" {
 - [ ] Lifecycle policies to expire/transition old objects
 - [ ] Regular audits with AWS Config rules or ScoutSuite`,
     date: "2026-03-16",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Cloud Security",
     tags: ["aws", "s3", "cloud security", "misconfiguration", "data breach", "bucket policy", "terraform"],
     readTime: "14 min read",
@@ -1129,7 +1129,7 @@ Install from **Extender → BApp Store**:
 
 The best way to learn Burp Suite is to practice. Start with PortSwigger Web Security Academy labs — they're free, browser-based, and cover every OWASP vulnerability with step-by-step solutions.`,
     date: "2026-03-13",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["burp suite", "web hacking", "penetration testing", "proxy", "owasp", "tutorial", "beginners"],
     readTime: "16 min read",

@@ -2,7 +2,7 @@
 
 **Version:** 1.0  
 **Date:** February 14, 2026  
-**Author:** Abhishek Tiwari  
+**Author:** SCRs Team  
 **Website:** https://securecodereviews.com  
 **Repository:** https://github.com/hackwithabx/sccrs (Private)
 

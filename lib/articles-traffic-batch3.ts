@@ -237,7 +237,7 @@ app.use(doubleCsrfProtection);
 - [ ] Content-Type validation rejects unexpected \`text/plain\` submissions
 - [ ] WebSocket connections verify origin header`,
     date: "2026-03-10",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["csrf", "cross-site request forgery", "samesite", "cookies", "web security", "tokens"],
     readTime: "14 min read",
@@ -513,7 +513,7 @@ grep -rli 'password' /etc/ /opt/ /var/ 2>/dev/null
 
 Understanding these techniques helps defenders identify weaknesses before attackers do. Always practice on authorized systems like HackTheBox, TryHackMe, or your own lab machines.`,
     date: "2026-03-07",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["linux", "privilege escalation", "penetration testing", "suid", "kernel exploit", "ctf", "red team"],
     readTime: "16 min read",
@@ -750,7 +750,7 @@ For third-party access ("Login with Google") or when external apps need to call 
 
 The safest option for most web applications: **Server-side sessions with Redis**. If you need stateless tokens for mobile/SPA: **JWT in HttpOnly cookies with short expiry and refresh rotation.**`,
     date: "2026-03-04",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["jwt", "session", "oauth", "authentication", "api security", "cookies", "tokens"],
     readTime: "16 min read",
@@ -920,7 +920,7 @@ grep -r '/dev/tcp' /proc/*/fd/ 2>/dev/null
 5. **Container isolation** — Run applications in containers with minimal tools
 6. **WAF rules** — Block payloads containing reverse shell patterns`,
     date: "2026-03-01",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["reverse shell", "penetration testing", "bash", "python", "powershell", "cheat sheet", "red team"],
     readTime: "13 min read",
@@ -1130,7 +1130,7 @@ User.findOne({ username: { $eq: userInput } });
 - [ ] Parameterize all query values
 - [ ] Log and alert on queries containing operators in user input`,
     date: "2026-02-26",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["mongodb", "nosql injection", "express", "mongoose", "database security", "injection", "node.js"],
     readTime: "14 min read",

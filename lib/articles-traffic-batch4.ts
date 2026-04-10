@@ -245,7 +245,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 - [ ] No execution permissions on upload directory
 - [ ] Rate limiting on upload endpoints`,
     date: "2026-02-23",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["file upload", "web shell", "bypass", "rce", "xss", "svg", "upload security"],
     readTime: "14 min read",
@@ -493,7 +493,7 @@ jobs:
 - [ ] Enable Dependabot for GitHub Actions dependencies
 - [ ] Audit workflow runs for unexpected commands`,
     date: "2026-02-20",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "DevSecOps",
     tags: ["github actions", "ci/cd", "supply chain", "script injection", "devops security", "secrets"],
     readTime: "15 min read",
@@ -709,7 +709,7 @@ curl -sI https://target.com | grep -i 'cache\\|age\\|x-cache\\|cf-cache\\|vary'
 - [ ] Test with tools like Param Miner to find unkeyed inputs
 - [ ] Use \`Surrogate-Control\` or \`CDN-Cache-Control\` for CDN-specific cache rules`,
     date: "2026-02-17",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["cache poisoning", "cdn", "cloudflare", "web security", "xss", "reverse proxy", "headers"],
     readTime: "14 min read",
@@ -940,7 +940,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - [ ] GitHub secret scanning alerts enabled
 - [ ] Pre-commit hooks to detect secrets (gitleaks, trufflehog)`,
     date: "2026-02-14",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "DevSecOps",
     tags: ["env files", "environment variables", "secrets management", "gitignore", "vault", "dotenv", "12-factor"],
     readTime: "14 min read",
@@ -1182,7 +1182,7 @@ Even if an XSS payload bypasses the WAF, CSP prevents script execution.
 
 Treat your WAF as a noisy alarm system, not a locked door. The real security lives in your code.`,
     date: "2026-02-11",
-    author: "Abhishek Tiwari",
+    author: "SCRs Team",
     category: "Application Security",
     tags: ["waf", "bypass", "web application firewall", "xss", "sql injection", "cloudflare", "modsecurity"],
     readTime: "15 min read",
