@@ -688,6 +688,10 @@ export default function ShieldXWorkspacePage() {
           endpoint = "/api/shieldx/ai-review";
           payload = { code: scanInput, language: aiReviewLanguage };
           break;
+        case "license":
+          endpoint = "/api/shieldx/scan-license";
+          payload = isDemo ? { demo: true } : { input: scanInput };
+          break;
         case "cicd":
           endpoint = "/api/shieldx/ci-scan";
           payload = {
@@ -861,6 +865,20 @@ export default function ShieldXWorkspacePage() {
           findings,
         };
       }
+      case "license": {
+        const findings = (data.findings || []).map((f: any) => ({
+          category: f.category || "License Compliance", status: f.risk === "critical" || f.risk === "high" ? "fail" : "warn",
+          finding: `${f.package}@${f.version}: ${f.license} (${f.risk})`, recommendation: f.recommendation,
+          severity: f.risk === "critical" ? "critical" : f.risk === "high" ? "high" : f.risk === "medium" ? "medium" : "low",
+        }));
+        return {
+          scanType: "license", title, source: "manual", status: "completed", target,
+          overallScore: data.score || 0,
+          summary: `Scanned ${data.totalPackages || 0} packages (${data.ecosystem || "unknown"}). ${data.findings?.length || 0} license issues found. Score: ${(data.score || 0).toFixed(1)}/10.`,
+          counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.unknown || 0, findingsTotal: data.findings?.length || 0 },
+          findings,
+        };
+      }
       case "cicd": {
         const secretsFindings = (data.secrets?.findings || []).map((f: any) => ({
           category: "Secrets", status: f.severity === "critical" ? "fail" : "warn",
@@ -899,6 +917,8 @@ export default function ShieldXWorkspacePage() {
         return { placeholder: "Paste your Terraform, CloudFormation, or cloud config (JSON/YAML/HCL)...", label: "Cloud Configuration", type: "textarea" as const };
       case "logs":
         return { placeholder: "Paste your server logs, access logs, application logs, or audit logs here...\n\nExample:\n2026-03-20 02:14:33 [INFO] 192.168.1.105 - POST /api/login - 401 Unauthorized - Invalid credentials", label: "Log Data", type: "textarea" as const };
+      case "license":
+        return { placeholder: "Paste your package.json, requirements.txt, go.mod, or build.gradle here...\n\nThe scanner identifies copyleft licenses (AGPL, GPL, SSPL) that pose legal risk, weak-copyleft licenses (LGPL, MPL) that need review, and unknown licenses that require manual verification.", label: "Dependency Manifest", type: "textarea" as const };
       case "sast": {
         const langLabels: Record<string, string> = { javascript: "JavaScript", typescript: "TypeScript", java: "Java", cpp: "C++", csharp: "C#" };
         const langPlaceholders: Record<string, string> = {
@@ -2678,6 +2698,118 @@ export default function ShieldXWorkspacePage() {
                                       <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">AI review found no business logic vulnerabilities — nice work!</p>
                                     </CardContent>
                                   </Card>
+                                )}
+                              </>
+                            )}
+
+                            {/* License Compliance results */}
+                            {activeModule === "license" && (
+                              <>
+                                {/* Score + Stats Banner */}
+                                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 flex-1">
+                                    <div className="rounded-lg border p-3 text-center">
+                                      <div className="text-2xl font-bold">{scanResults.totalPackages || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Packages</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-red-500/20">
+                                      <div className="text-2xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Critical</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-orange-500/20">
+                                      <div className="text-2xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                      <div className="text-xs text-muted-foreground">High</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-amber-500/20">
+                                      <div className="text-2xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Medium</div>
+                                    </div>
+                                    <div className="rounded-lg border p-3 text-center border-blue-500/20">
+                                      <div className="text-2xl font-bold text-blue-500">{scanResults.stats?.unknown || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Unknown</div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Ecosystem: {scanResults.ecosystem || "unknown"} • Score: {(scanResults.score || 0).toFixed(1)}/10 • {scanResults.mode} mode
+                                </p>
+
+                                {scanResults.findings?.length > 0 ? (
+                                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.findings.map((f: any, idx: number) => (
+                                      <Card key={idx} className={`border-l-4 ${f.risk === "critical" ? "border-l-red-500 border-red-500/30" : f.risk === "high" ? "border-l-orange-500 border-orange-500/30" : f.risk === "medium" ? "border-l-amber-500 border-amber-500/30" : "border-l-blue-500 border-blue-500/30"}`}>
+                                        <CardContent className="p-4 space-y-2">
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <Badge className={`text-[9px] uppercase ${f.risk === "critical" ? "bg-red-500/15 text-red-600" : f.risk === "high" ? "bg-orange-500/15 text-orange-600" : f.risk === "medium" ? "bg-amber-500/15 text-amber-600" : "bg-blue-500/15 text-blue-600"}`}>
+                                                {f.risk}
+                                              </Badge>
+                                              <span className="text-sm font-semibold font-mono">{f.package}@{f.version}</span>
+                                            </div>
+                                            <Badge variant="outline" className="text-[9px] shrink-0">{f.license}</Badge>
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5">
+                                            <Badge variant="outline" className="text-[9px] bg-purple-500/5">{f.category}</Badge>
+                                          </div>
+
+                                          <div className="p-2.5 rounded-md bg-muted/30 border border-border/50">
+                                            <p className="text-[10px] font-semibold text-muted-foreground mb-0.5 uppercase tracking-wide">Details</p>
+                                            <p className="text-xs">{f.detail}</p>
+                                          </div>
+
+                                          <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1">
+                                              <CheckCircle2 className="h-3.5 w-3.5" /> Recommendation
+                                            </p>
+                                            <p className="text-xs text-emerald-600 dark:text-emerald-300">{f.recommendation}</p>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card className="border-emerald-500/30 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">All licenses are permissive — no compliance issues detected!</p>
+                                    </CardContent>
+                                  </Card>
+                                )}
+
+                                {/* All packages overview */}
+                                {scanResults.allPackages?.length > 0 && (
+                                  <details className="group">
+                                    <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                                      View all {scanResults.allPackages.length} packages →
+                                    </summary>
+                                    <div className="mt-2 rounded-lg border overflow-hidden">
+                                      <table className="w-full text-xs">
+                                        <thead>
+                                          <tr className="border-b bg-muted/40">
+                                            <th className="text-left p-2 font-medium">Package</th>
+                                            <th className="text-left p-2 font-medium">License</th>
+                                            <th className="text-left p-2 font-medium">Risk</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                          {scanResults.allPackages.map((p: any, i: number) => (
+                                            <tr key={i} className="border-b last:border-0">
+                                              <td className="p-2 font-mono">{p.package}@{p.version}</td>
+                                              <td className="p-2">{p.license}</td>
+                                              <td className="p-2">
+                                                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-medium uppercase ${p.risk === "critical" ? "bg-red-500/15 text-red-600" : p.risk === "high" ? "bg-orange-500/15 text-orange-600" : p.risk === "medium" ? "bg-amber-500/15 text-amber-600" : p.risk === "ok" ? "bg-emerald-500/15 text-emerald-600" : "bg-blue-500/15 text-blue-600"}`}>
+                                                  {p.risk}
+                                                </span>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </details>
                                 )}
                               </>
                             )}
