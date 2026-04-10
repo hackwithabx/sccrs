@@ -49,6 +49,9 @@ import {
   Power,
   BookOpen,
   Copy,
+  Sparkles,
+  Wand2,
+  MessageSquareText,
 } from "lucide-react";
 import {
   PieChart,
@@ -229,6 +232,7 @@ const MODULES = [
   { id: "cloud", name: "Cloud Security Audit", description: "18 cloud security checks for AWS, Azure, and GCP — IAM, encryption, logging, and network rules.", icon: Cloud, plans: ["pro", "enterprise"] },
   { id: "logs", name: "Threat Log Analyzer", description: "Pattern-based log analysis to detect brute-force attacks, injection attempts, privilege escalation, and anomalous traffic.", icon: Brain, plans: ["pro", "enterprise"] },
   { id: "sast", name: "SAST Code Analyzer", description: "Multi-file AST-based static analysis with cross-file taint tracking, exploit PoC generation, and downloadable reports. Detects SQL injection, XSS, SSRF, command injection, and 15+ vulnerability classes across JavaScript, TypeScript, Java, C++, and C#.", icon: FileCode, plans: ["pro", "enterprise"] },
+  { id: "ai-review", name: "AI Security Review", description: "AI-powered deep security review that finds business logic flaws, authorization gaps, IDOR, race conditions, and vulnerabilities that no pattern-based SAST tool can detect. Powered by LLM analysis.", icon: Sparkles, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
   { id: "license", name: "License Compliance Scanner", description: "Scan open-source dependencies for license risks (GPL, AGPL, copyleft). Auto-detect license conflicts that could force source disclosure — critical for startups seeking funding or acquisition.", icon: FileText, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
@@ -274,6 +278,15 @@ export default function ShieldXWorkspacePage() {
   const [sessionScans, setSessionScans] = useState<ScanHistoryItem[]>([]);
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [suppressedFindings, setSuppressedFindings] = useState<Set<string>>(new Set());
+
+  /* ── AI feature state ── */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [aiFixResults, setAiFixResults] = useState<Record<number, any>>({});
+  const [aiFixLoading, setAiFixLoading] = useState<Record<number, boolean>>({});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [aiSummary, setAiSummary] = useState<any>(null);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiReviewLanguage, setAiReviewLanguage] = useState<string>("javascript");
 
   /* ── Admin plan upgrade ── */
   const [upgradingPlan, setUpgradingPlan] = useState(false);
@@ -671,6 +684,10 @@ export default function ShieldXWorkspacePage() {
             payload = isDemo ? { demo: true, language: sastLanguage } : { code: scanInput, language: sastLanguage };
           }
           break;
+        case "ai-review":
+          endpoint = "/api/shieldx/ai-review";
+          payload = { code: scanInput, language: aiReviewLanguage };
+          break;
         case "cicd":
           endpoint = "/api/shieldx/ci-scan";
           payload = {
@@ -893,6 +910,8 @@ export default function ShieldXWorkspacePage() {
         };
         return { placeholder: langPlaceholders[sastLanguage] || langPlaceholders.javascript, label: `${langLabels[sastLanguage] || "JavaScript"} Code`, type: "textarea" as const };
       }
+      case "ai-review":
+        return { placeholder: "Paste your code here for AI-powered deep security review...\n\nUnlike pattern-based SAST, AI Review finds:\n• Missing authorization checks\n• Broken access control (IDOR)\n• Business logic flaws (payment bypass, race conditions)\n• Mass assignment vulnerabilities\n• State management issues\n\nWorks with any language — JavaScript, Python, Go, Rust, Java, etc.", label: "Code for AI Review", type: "textarea" as const };
       default:
         return { placeholder: "", label: "Input", type: "textarea" as const };
     }
@@ -1131,7 +1150,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "license"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd", "score", "license"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
@@ -1177,7 +1196,7 @@ export default function ShieldXWorkspacePage() {
             {/* ── Scan Panel ── */}
             <div ref={scanPanelRef} />
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd", "score", "license"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd", "score", "license"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -1376,6 +1395,36 @@ export default function ShieldXWorkspacePage() {
                           </div>
                         )}
 
+                        {/* AI Security Review Language Selector */}
+                        {activeModule === "ai-review" && (
+                          <div className="space-y-3">
+                            <Card className="border-primary/20 bg-gradient-to-r from-purple-500/5 to-blue-500/5">
+                              <CardContent className="p-4 flex items-start gap-3">
+                                <Sparkles className="h-5 w-5 text-purple-500 shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-sm font-semibold">AI-Powered Deep Security Review</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Goes beyond pattern matching. Finds business logic flaws, missing auth checks, IDOR, race conditions, and vulnerabilities that SAST tools cannot detect.
+                                  </p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Language</label>
+                              <div className="flex gap-2 flex-wrap">
+                                {["javascript", "typescript", "python", "java", "go", "rust", "csharp", "cpp"].map((lang) => {
+                                  const labels: Record<string, string> = { javascript: "JavaScript", typescript: "TypeScript", python: "Python", java: "Java", go: "Go", rust: "Rust", csharp: "C#", cpp: "C++" };
+                                  return (
+                                    <Button key={lang} size="sm" variant={aiReviewLanguage === lang ? "default" : "outline"} onClick={() => setAiReviewLanguage(lang)} className="text-xs">
+                                      {labels[lang] || lang}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Standard module input area */}
                         {activeModule !== "cicd" && activeModule !== "score" && !isDemoOnly && !(activeModule === "sast" && sastMode === "multi") && (
                           <div>
@@ -1424,7 +1473,7 @@ export default function ShieldXWorkspacePage() {
                         {/* Security Score Dashboard */}
                         {activeModule === "score" && (() => {
                           // Merge DB history + session scans, deduplicate by _id
-                          const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "sast", "cicd"];
+                          const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd"];
                           const byModule = moduleTypes.map((type) => {
                             const scans = mergedHistory.filter((s) => s.scanType === type);
                             const latest = scans[0]; // already sorted by date desc
@@ -1575,7 +1624,7 @@ export default function ShieldXWorkspacePage() {
                           </Button>
                           )}
                           {scanResults && (
-                            <Button variant="outline" onClick={() => { setScanResults(null); setScanError(null); }} className="gap-1.5">
+                            <Button variant="outline" onClick={() => { setScanResults(null); setScanError(null); setAiFixResults({}); setAiSummary(null); }} className="gap-1.5">
                               Clear Results
                             </Button>
                           )}
@@ -2475,6 +2524,65 @@ export default function ShieldXWorkspacePage() {
                                               </p>
                                             </div>
                                           )}
+
+                                          {/* AI Fix Button */}
+                                          {isPaid && (
+                                            <div className="mt-2">
+                                              {aiFixResults[idx] ? (
+                                                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 space-y-2">
+                                                  <p className="text-xs font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+                                                    <Sparkles className="h-3.5 w-3.5" /> AI-Generated Fix
+                                                    <Badge variant="secondary" className="text-[8px] ml-1">{aiFixResults[idx].provider}/{aiFixResults[idx].model}</Badge>
+                                                    {aiFixResults[idx].isDropInFix && <Badge variant="outline" className="text-[8px] border-emerald-500 text-emerald-500">Drop-in</Badge>}
+                                                  </p>
+                                                  <p className="text-xs text-purple-600 dark:text-purple-300">{aiFixResults[idx].explanation}</p>
+                                                  {aiFixResults[idx].changes?.length > 0 && (
+                                                    <ul className="text-[10px] text-muted-foreground space-y-0.5 ml-4 list-disc">
+                                                      {aiFixResults[idx].changes.map((c: string, ci: number) => <li key={ci}>{c}</li>)}
+                                                    </ul>
+                                                  )}
+                                                  <pre className="text-[11px] font-mono bg-zinc-900 text-purple-300 dark:bg-zinc-950 rounded-md px-3 py-2 overflow-x-auto whitespace-pre-wrap max-h-[300px] overflow-y-auto">{aiFixResults[idx].fixedCode}</pre>
+                                                  {aiFixResults[idx].importsAdded?.length > 0 && (
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                      <strong>New imports:</strong> {aiFixResults[idx].importsAdded.join(", ")}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  disabled={aiFixLoading[idx]}
+                                                  onClick={async () => {
+                                                    setAiFixLoading(prev => ({ ...prev, [idx]: true }));
+                                                    try {
+                                                      const codeSnippet = f.codeSnippet?.map((s: { code: string }) => s.code).join("\n") || f.evidence || "";
+                                                      const res = await fetch("/api/shieldx/ai-fix", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({
+                                                          name: f.name, category: f.category, severity: f.severity,
+                                                          detail: f.detail, vulnerableCode: codeSnippet,
+                                                          language: scanResults.language || "javascript",
+                                                          cwe: f.cwe, owasp: f.owasp, fileName: f.file,
+                                                          line: f.line, evidence: f.evidence,
+                                                          dataflow: f.dataflow,
+                                                        }),
+                                                      });
+                                                      const data = await res.json();
+                                                      if (res.ok && data.fix) {
+                                                        setAiFixResults(prev => ({ ...prev, [idx]: data.fix }));
+                                                      }
+                                                    } catch { /* silent */ }
+                                                    setAiFixLoading(prev => ({ ...prev, [idx]: false }));
+                                                  }}
+                                                  className="text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+                                                >
+                                                  {aiFixLoading[idx] ? <><Loader2 className="h-3 w-3 animate-spin" /> Generating AI Fix...</> : <><Wand2 className="h-3 w-3" /> AI Fix</>}
+                                                </Button>
+                                              )}
+                                            </div>
+                                          )}
                                         </CardContent>
                                       </Card>
                                     ))}
@@ -2485,6 +2593,89 @@ export default function ShieldXWorkspacePage() {
                                     <CardContent className="p-4 flex items-center gap-3">
                                       <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                                       <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">No vulnerabilities detected — your code looks secure!</p>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </>
+                            )}
+
+                            {/* CI/CD Pipeline Gate results */}
+                            {activeModule === "ai-review" && (
+                              <>
+                                {/* AI Review Summary Banner */}
+                                <Card className={`border-l-4 ${scanResults.riskLevel === "critical" ? "border-l-red-500 border-red-500/30 bg-red-500/5" : scanResults.riskLevel === "high" ? "border-l-orange-500 border-orange-500/30 bg-orange-500/5" : scanResults.riskLevel === "secure" ? "border-l-emerald-500 border-emerald-500/30 bg-emerald-500/5" : "border-l-amber-500 border-amber-500/30 bg-amber-500/5"}`}>
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start gap-3">
+                                      <Sparkles className={`h-5 w-5 shrink-0 mt-0.5 ${scanResults.riskLevel === "critical" ? "text-red-500" : scanResults.riskLevel === "high" ? "text-orange-500" : scanResults.riskLevel === "secure" ? "text-emerald-500" : "text-amber-500"}`} />
+                                      <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <p className="text-sm font-semibold">AI Security Review</p>
+                                          <Badge variant="outline" className={`text-[9px] uppercase ${scanResults.riskLevel === "critical" ? "border-red-500 text-red-500" : scanResults.riskLevel === "high" ? "border-orange-500 text-orange-500" : scanResults.riskLevel === "secure" ? "border-emerald-500 text-emerald-500" : "border-amber-500 text-amber-500"}`}>
+                                            {scanResults.riskLevel} risk
+                                          </Badge>
+                                          <Badge variant="secondary" className="text-[8px]">{scanResults.provider}/{scanResults.model}</Badge>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">{scanResults.summary}</p>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {scanResults.findings?.length > 0 ? (
+                                  <div className="space-y-3">
+                                    <p className="text-xs text-muted-foreground">{scanResults.findingsCount} business logic / authorization issues found</p>
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.findings.map((f: any, idx: number) => (
+                                      <Card key={idx} className={`border-l-4 ${f.severity === "critical" ? "border-l-red-500 border-red-500/30" : f.severity === "high" ? "border-l-orange-500 border-orange-500/30" : f.severity === "medium" ? "border-l-amber-500 border-amber-500/30" : "border-l-blue-500 border-blue-500/30"}`}>
+                                        <CardContent className="p-4 space-y-2">
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <Badge className={`text-[9px] uppercase ${f.severity === "critical" ? "bg-red-500/15 text-red-600" : f.severity === "high" ? "bg-orange-500/15 text-orange-600" : f.severity === "medium" ? "bg-amber-500/15 text-amber-600" : "bg-blue-500/15 text-blue-600"}`}>
+                                                {f.severity}
+                                              </Badge>
+                                              <Badge variant="outline" className="text-[9px]">{f.confidence} conf.</Badge>
+                                              <span className="text-sm font-semibold">{f.name}</span>
+                                            </div>
+                                            <span className="text-[10px] text-muted-foreground font-mono shrink-0">Line {f.line}</span>
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <Badge variant="outline" className="text-[9px] bg-purple-500/5">{f.category}</Badge>
+                                            {f.cwe && <Badge variant="outline" className="text-[8px]">{f.cwe}</Badge>}
+                                            {f.owasp && <Badge variant="outline" className="text-[8px]">{f.owasp}</Badge>}
+                                          </div>
+
+                                          <div className="p-2.5 rounded-md bg-muted/30 border border-border/50">
+                                            <p className="text-[10px] font-semibold text-muted-foreground mb-0.5 uppercase tracking-wide">What This Means</p>
+                                            <p className="text-xs">{f.detail}</p>
+                                          </div>
+
+                                          {f.evidence && (
+                                            <code className="block text-[11px] bg-zinc-900 text-zinc-300 dark:bg-zinc-950 rounded-lg p-2.5 font-mono break-all">{f.evidence}</code>
+                                          )}
+
+                                          {f.businessImpact && (
+                                            <div className="p-2 rounded bg-red-500/5 border border-red-500/20">
+                                              <p className="text-[10px] font-semibold text-red-700 dark:text-red-400 mb-0.5">Business Impact</p>
+                                              <p className="text-xs text-red-600 dark:text-red-300">{f.businessImpact}</p>
+                                            </div>
+                                          )}
+
+                                          <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1">
+                                              <CheckCircle2 className="h-3.5 w-3.5" /> Recommendation
+                                            </p>
+                                            <p className="text-xs text-emerald-600 dark:text-emerald-300">{f.recommendation}</p>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Card className="border-emerald-500/30 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">AI review found no business logic vulnerabilities — nice work!</p>
                                     </CardContent>
                                   </Card>
                                 )}
@@ -2617,6 +2808,102 @@ export default function ShieldXWorkspacePage() {
                                   </Card>
                                 )}
                               </>
+                            )}
+
+                            {/* AI Summary Section — available for all scan types */}
+                            {isPaid && activeModule !== "score" && (
+                              <div className="mt-4 pt-4 border-t">
+                                {aiSummary ? (
+                                  <Card className={`border-l-4 ${aiSummary.riskLevel === "critical" ? "border-l-red-500" : aiSummary.riskLevel === "high" ? "border-l-orange-500" : aiSummary.riskLevel === "minimal" ? "border-l-emerald-500" : "border-l-amber-500"}`}>
+                                    <CardContent className="p-4 space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <MessageSquareText className="h-4 w-4 text-purple-500" />
+                                        <p className="text-sm font-semibold">AI Executive Summary</p>
+                                        <Badge variant="outline" className={`text-[9px] uppercase ${aiSummary.riskLevel === "critical" ? "border-red-500 text-red-500" : aiSummary.riskLevel === "high" ? "border-orange-500 text-orange-500" : aiSummary.riskLevel === "minimal" ? "border-emerald-500 text-emerald-500" : "border-amber-500 text-amber-500"}`}>
+                                          {aiSummary.riskLevel} risk
+                                        </Badge>
+                                        <Badge variant="secondary" className="text-[8px]">{aiSummary.provider}/{aiSummary.model}</Badge>
+                                      </div>
+                                      <p className="text-sm">{aiSummary.executiveSummary}</p>
+                                      {aiSummary.tldr && (
+                                        <p className="text-xs text-muted-foreground italic">{aiSummary.tldr}</p>
+                                      )}
+                                      {aiSummary.prioritizedActions?.length > 0 && (
+                                        <div>
+                                          <p className="text-xs font-semibold mb-1.5">Priority Fix Order:</p>
+                                          <div className="space-y-1.5">
+                                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                            {aiSummary.prioritizedActions.map((a: any, ai: number) => (
+                                              <div key={ai} className="flex items-start gap-2 text-xs">
+                                                <Badge variant="outline" className={`text-[8px] shrink-0 ${a.effort === "quick" ? "border-emerald-500 text-emerald-500" : a.effort === "moderate" ? "border-amber-500 text-amber-500" : "border-red-500 text-red-500"}`}>
+                                                  #{a.priority} {a.effort}
+                                                </Badge>
+                                                <div>
+                                                  <p className="font-medium">{a.action}</p>
+                                                  <p className="text-muted-foreground">{a.reason}</p>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {aiSummary.keyInsights?.length > 0 && (
+                                        <div>
+                                          <p className="text-xs font-semibold mb-1">Key Insights:</p>
+                                          <ul className="list-disc ml-4 space-y-0.5">
+                                            {aiSummary.keyInsights.map((insight: string, ii: number) => (
+                                              <li key={ii} className="text-xs text-muted-foreground">{insight}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={aiSummaryLoading}
+                                    onClick={async () => {
+                                      setAiSummaryLoading(true);
+                                      try {
+                                        const findings = (scanResults.findings || []).map((f: Record<string, unknown>) => ({
+                                          name: f.name || f.pattern || f.finding || "",
+                                          severity: f.severity || "medium",
+                                          category: f.category || activeModule,
+                                          detail: f.detail || f.finding || f.description || "",
+                                          line: f.line,
+                                          file: f.file,
+                                          cwe: f.cwe,
+                                        }));
+                                        const counts = scanResults.stats ? {
+                                          critical: scanResults.stats.critical || 0,
+                                          high: scanResults.stats.high || 0,
+                                          medium: scanResults.stats.medium || 0,
+                                          low: scanResults.stats.low || 0,
+                                          findingsTotal: scanResults.stats.total || findings.length,
+                                        } : { critical: 0, high: 0, medium: 0, low: 0, findingsTotal: findings.length };
+                                        const res = await fetch("/api/shieldx/ai-summary", {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({
+                                            scanType: activeModule,
+                                            overallScore: scanResults.overallScore ?? 5,
+                                            counts,
+                                            findings,
+                                          }),
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok) setAiSummary(data);
+                                      } catch { /* silent */ }
+                                      setAiSummaryLoading(false);
+                                    }}
+                                    className="text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+                                  >
+                                    {aiSummaryLoading ? <><Loader2 className="h-3 w-3 animate-spin" /> Generating Summary...</> : <><MessageSquareText className="h-3 w-3" /> AI Executive Summary</>}
+                                  </Button>
+                                )}
+                              </div>
                             )}
                           </motion.div>
                         )}
