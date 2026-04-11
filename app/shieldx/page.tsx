@@ -52,6 +52,10 @@ import {
   Sparkles,
   Wand2,
   MessageSquareText,
+  Container,
+  Blocks,
+  ClipboardCheck,
+  FileJson,
 } from "lucide-react";
 import {
   PieChart,
@@ -235,6 +239,10 @@ const MODULES = [
   { id: "ai-review", name: "AI Security Review", description: "AI-powered deep security review that finds business logic flaws, authorization gaps, IDOR, race conditions, and vulnerabilities that no pattern-based SAST tool can detect. Powered by LLM analysis.", icon: Sparkles, plans: ["pro", "enterprise"] },
   { id: "cicd", name: "CI/CD Pipeline Gate", description: "Block insecure code from reaching production. Run secrets + dependency scans as a pipeline step in GitHub Actions, GitLab CI, or Jenkins.", icon: GitBranch, plans: ["enterprise"] },
   { id: "license", name: "License Compliance Scanner", description: "Scan open-source dependencies for license risks (GPL, AGPL, copyleft). Auto-detect license conflicts that could force source disclosure — critical for startups seeking funding or acquisition.", icon: FileText, plans: ["pro", "enterprise"] },
+  { id: "docker", name: "Container Security", description: "Scan Dockerfiles for 15+ security misconfigurations — running as root, secrets in ENV/ARG, curl|bash, open ports, chmod 777, missing HEALTHCHECK. Based on CIS Docker Benchmark.", icon: Container, plans: ["pro", "enterprise"] },
+  { id: "iac", name: "IaC Scanner", description: "Scan Terraform, CloudFormation, and Kubernetes manifests for security misconfigurations — public S3 buckets, open security groups, IAM wildcards, privileged containers, missing encryption. Shift-left infrastructure security.", icon: Blocks, plans: ["pro", "enterprise"] },
+  { id: "sbom", name: "SBOM Generator", description: "Generate CycloneDX 1.5 Software Bill of Materials from package.json, requirements.txt, go.mod, or build.gradle. Regulatory-ready inventory of all software components with license metadata.", icon: FileJson, plans: ["pro", "enterprise"] },
+  { id: "compliance", name: "Compliance Report", description: "Map all scan findings to SOC 2, ISO 27001, PCI-DSS, HIPAA, NIST 800-53, CIS Benchmarks, and GDPR. Generate per-framework compliance posture scores with actionable remediation guidance.", icon: ClipboardCheck, plans: ["pro", "enterprise"] },
   { id: "score", name: "Security Score", description: "Composite 0–10 security score dashboard with real scan data, severity breakdown, and trend tracking.", icon: BarChart3, plans: ["free", "pro", "enterprise"], },
 ];
 
@@ -692,6 +700,22 @@ export default function ShieldXWorkspacePage() {
           endpoint = "/api/shieldx/scan-license";
           payload = isDemo ? { demo: true } : { input: scanInput };
           break;
+        case "docker":
+          endpoint = "/api/shieldx/scan-docker";
+          payload = isDemo ? { demo: true } : { input: scanInput };
+          break;
+        case "iac":
+          endpoint = "/api/shieldx/scan-iac";
+          payload = isDemo ? { demo: true } : { input: scanInput };
+          break;
+        case "sbom":
+          endpoint = "/api/shieldx/scan-sbom";
+          payload = isDemo ? { demo: true } : { input: scanInput };
+          break;
+        case "compliance":
+          endpoint = "/api/shieldx/compliance";
+          payload = isDemo ? { demo: true } : { findings: sessionScans.flatMap((s: any) => (s.findings || []).map((f: any) => ({ scanType: s.scanType, severity: f.severity || "medium" }))) };
+          break;
         case "cicd":
           endpoint = "/api/shieldx/ci-scan";
           payload = {
@@ -879,6 +903,58 @@ export default function ShieldXWorkspacePage() {
           findings,
         };
       }
+      case "docker": {
+        const findings = (data.findings || []).map((f: any) => ({
+          category: f.category || "Container Security", status: f.severity === "critical" || f.severity === "high" ? "fail" : "warn",
+          finding: `${f.name}: ${f.detail}`, recommendation: f.recommendation,
+          severity: f.severity,
+        }));
+        return {
+          scanType: "docker", title, source: "manual", status: "completed", target,
+          overallScore: data.score || 0,
+          summary: `Scanned Dockerfile (${data.linesAnalyzed || 0} lines, ${data.checksPerformed || 0} checks). ${data.stats?.total || 0} issues found. Base: ${data.baseImage || "unknown"}.`,
+          counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.stats?.total || 0 },
+          findings,
+        };
+      }
+      case "iac": {
+        const findings = (data.findings || []).map((f: any) => ({
+          category: f.category || "IaC Security", status: f.severity === "critical" || f.severity === "high" ? "fail" : "warn",
+          finding: `${f.name}: ${f.detail}`, recommendation: f.recommendation,
+          severity: f.severity,
+        }));
+        return {
+          scanType: "iac", title, source: "manual", status: "completed", target,
+          overallScore: data.score || 0,
+          summary: `IaC scan (${data.format}): ${data.linesAnalyzed || 0} lines, ${data.resourceCount || 0} resources. ${data.stats?.total || 0} misconfigurations found.`,
+          counts: { critical: data.stats?.critical || 0, high: data.stats?.high || 0, medium: data.stats?.medium || 0, low: data.stats?.low || 0, findingsTotal: data.stats?.total || 0 },
+          findings,
+        };
+      }
+      case "sbom": {
+        return {
+          scanType: "sbom", title, source: "manual", status: "completed", target,
+          overallScore: data.score || 0,
+          summary: `Generated SBOM: ${data.stats?.totalComponents || 0} components across ${(data.stats?.ecosystems || []).join(", ")}. ${Object.keys(data.stats?.licenses || {}).length} unique licenses.`,
+          counts: { critical: data.stats?.riskSummary?.critical || 0, high: data.stats?.riskSummary?.high || 0, medium: data.stats?.riskSummary?.medium || 0, low: data.stats?.riskSummary?.low || 0, findingsTotal: data.stats?.totalComponents || 0 },
+          findings: [],
+        };
+      }
+      case "compliance": {
+        const frameworkFindings = (data.frameworks || []).filter((f: any) => f.controlsFailed > 0).map((f: any) => ({
+          category: "Compliance", status: f.complianceScore < 50 ? "fail" : "warn",
+          finding: `${f.framework.name}: ${f.controlsFailed} failed controls (${f.complianceScore}% compliant)`,
+          recommendation: f.failedControls?.[0]?.requirement || "Review compliance controls",
+          severity: f.complianceScore < 30 ? "critical" : f.complianceScore < 60 ? "high" : "medium",
+        }));
+        return {
+          scanType: "compliance", title, source: "manual", status: "completed", target,
+          overallScore: (data.overallScore || 0) / 10,
+          summary: `Compliance posture: ${data.overallScore || 0}% across ${(data.frameworks || []).length} frameworks. ${data.totalFindings || 0} findings mapped.`,
+          counts: { critical: frameworkFindings.filter((f: any) => f.severity === "critical").length, high: frameworkFindings.filter((f: any) => f.severity === "high").length, medium: frameworkFindings.filter((f: any) => f.severity === "medium").length, low: 0, findingsTotal: frameworkFindings.length },
+          findings: frameworkFindings,
+        };
+      }
       case "cicd": {
         const secretsFindings = (data.secrets?.findings || []).map((f: any) => ({
           category: "Secrets", status: f.severity === "critical" ? "fail" : "warn",
@@ -932,6 +1008,14 @@ export default function ShieldXWorkspacePage() {
       }
       case "ai-review":
         return { placeholder: "Paste your code here for AI-powered deep security review...\n\nUnlike pattern-based SAST, AI Review finds:\n• Missing authorization checks\n• Broken access control (IDOR)\n• Business logic flaws (payment bypass, race conditions)\n• Mass assignment vulnerabilities\n• State management issues\n\nWorks with any language — JavaScript, Python, Go, Rust, Java, etc.", label: "Code for AI Review", type: "textarea" as const };
+      case "docker":
+        return { placeholder: "Paste your Dockerfile here...\n\nThe scanner checks for:\n• Running as root (no USER instruction)\n• Secrets in ENV/ARG instructions\n• curl|bash patterns (supply chain risk)\n• chmod 777 (overly permissive)\n• Missing HEALTHCHECK\n• Unnecessary port exposure (SSH, DB ports)\n• Full base images (not alpine/slim/distroless)", label: "Dockerfile", type: "textarea" as const };
+      case "iac":
+        return { placeholder: "Paste your Terraform, CloudFormation, or Kubernetes YAML here...\n\nDetects:\n• Public S3 buckets & open security groups\n• SSH port open to 0.0.0.0/0\n• RDS publicly accessible\n• IAM wildcard policies\n• Privileged Kubernetes containers\n• Missing encryption (EBS, RDS)\n• Hardcoded secrets in IaC", label: "Infrastructure Code (Terraform / CloudFormation / K8s)", type: "textarea" as const };
+      case "sbom":
+        return { placeholder: "Paste your package.json, requirements.txt, go.mod, or build.gradle here...\n\nGenerates a CycloneDX 1.5 Software Bill of Materials with:\n• Package URL (PURL) for each component\n• License identification\n• Ecosystem classification\n• Component scope (required/dev/optional)", label: "Dependency Manifest", type: "textarea" as const };
+      case "compliance":
+        return { placeholder: "Run scans on other modules first, then generate a compliance report.\n\nMaps your findings to SOC 2, ISO 27001, PCI-DSS, HIPAA, NIST 800-53, CIS Benchmarks, GDPR, and OWASP Top 10.\n\nIn demo mode, click 'Run Scan' to see a sample compliance report.", label: "Compliance Report", type: "textarea" as const };
       default:
         return { placeholder: "", label: "Input", type: "textarea" as const };
     }
@@ -2810,6 +2894,319 @@ export default function ShieldXWorkspacePage() {
                                       </table>
                                     </div>
                                   </details>
+                                )}
+                              </>
+                            )}
+
+                            {/* Container/Docker Security results */}
+                            {activeModule === "docker" && (
+                              <>
+                                {/* Score + Stats */}
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className={`text-xl font-bold ${(scanResults.score || 0) >= 7 ? "text-emerald-500" : (scanResults.score || 0) >= 4 ? "text-amber-500" : "text-red-500"}`}>{scanResults.score?.toFixed(1)}/10</div>
+                                    <div className="text-xs text-muted-foreground">Security Score</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Critical</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                    <div className="text-xs text-muted-foreground">High</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Medium</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold text-blue-500">{scanResults.stats?.low || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Low</div>
+                                  </div>
+                                </div>
+                                {/* Base image info */}
+                                {scanResults.baseImage && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Container className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-muted-foreground">Base Image:</span>
+                                    <code className="px-2 py-0.5 bg-muted rounded text-xs font-mono">{scanResults.baseImage}</code>
+                                    {scanResults.stages > 1 && <Badge variant="secondary" className="text-[9px]">{scanResults.stages}-stage build</Badge>}
+                                  </div>
+                                )}
+                                {/* Finding cards */}
+                                {scanResults.findings?.length > 0 && (
+                                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.findings.map((f: any, idx: number) => (
+                                      <Card key={idx} className={`border-l-4 ${f.severity === "critical" ? "border-l-red-500" : f.severity === "high" ? "border-l-orange-500" : f.severity === "medium" ? "border-l-amber-500" : "border-l-blue-500"}`}>
+                                        <CardContent className="p-3 space-y-1.5">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={f.severity === "critical" ? "destructive" : "secondary"} className="text-[9px] uppercase">{f.severity}</Badge>
+                                              <span className="text-sm font-semibold">{f.name}</span>
+                                              <Badge variant="outline" className="text-[8px]">{f.category}</Badge>
+                                            </div>
+                                            <span className="text-[10px] text-muted-foreground">Line {f.line}</span>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground">{f.detail}</p>
+                                          <div className="text-xs bg-muted/50 rounded p-2">
+                                            <span className="font-medium text-emerald-600">Fix:</span> {f.recommendation}
+                                          </div>
+                                          {f.instruction && (
+                                            <code className="text-[10px] text-muted-foreground block truncate">{f.instruction}</code>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                )}
+                                {scanResults.findings?.length === 0 && (
+                                  <Card className="border-emerald-500/20 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Dockerfile passes all security checks!</p>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </>
+                            )}
+
+                            {/* IaC Scanner results */}
+                            {activeModule === "iac" && (
+                              <>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className={`text-xl font-bold ${(scanResults.score || 0) >= 7 ? "text-emerald-500" : (scanResults.score || 0) >= 4 ? "text-amber-500" : "text-red-500"}`}>{scanResults.score?.toFixed(1)}/10</div>
+                                    <div className="text-xs text-muted-foreground">Security Score</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold text-red-500">{scanResults.stats?.critical || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Critical</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold text-orange-500">{scanResults.stats?.high || 0}</div>
+                                    <div className="text-xs text-muted-foreground">High</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold text-amber-500">{scanResults.stats?.medium || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Medium</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold">{scanResults.resourceCount || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Resources</div>
+                                  </div>
+                                </div>
+                                {/* Format + provider info */}
+                                <div className="flex items-center gap-2 text-sm flex-wrap">
+                                  <Blocks className="h-4 w-4 text-muted-foreground" />
+                                  <Badge variant="secondary" className="text-[9px] uppercase">{scanResults.format}</Badge>
+                                  {(scanResults.providers || []).map((p: string, i: number) => (
+                                    <Badge key={i} variant="outline" className="text-[9px]">{p}</Badge>
+                                  ))}
+                                  <span className="text-xs text-muted-foreground">{scanResults.checksPerformed} checks · {scanResults.linesAnalyzed} lines</span>
+                                </div>
+                                {/* Finding cards */}
+                                {scanResults.findings?.length > 0 && (
+                                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.findings.map((f: any, idx: number) => (
+                                      <Card key={idx} className={`border-l-4 ${f.severity === "critical" ? "border-l-red-500" : f.severity === "high" ? "border-l-orange-500" : f.severity === "medium" ? "border-l-amber-500" : "border-l-blue-500"}`}>
+                                        <CardContent className="p-3 space-y-1.5">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant={f.severity === "critical" ? "destructive" : "secondary"} className="text-[9px] uppercase">{f.severity}</Badge>
+                                              <span className="text-sm font-semibold">{f.name}</span>
+                                              <Badge variant="outline" className="text-[8px]">{f.category}</Badge>
+                                              <Badge variant="outline" className="text-[8px]">{f.provider}</Badge>
+                                            </div>
+                                            <span className="text-[10px] text-muted-foreground">Line {f.line}</span>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground">{f.detail}</p>
+                                          <div className="text-xs bg-muted/50 rounded p-2">
+                                            <span className="font-medium text-emerald-600">Fix:</span> {f.recommendation}
+                                          </div>
+                                          {f.resource !== "unknown" && (
+                                            <code className="text-[10px] text-muted-foreground">Resource: {f.resource}</code>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                )}
+                                {scanResults.findings?.length === 0 && (
+                                  <Card className="border-emerald-500/20 bg-emerald-500/5">
+                                    <CardContent className="p-4 flex items-center gap-3">
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Infrastructure configuration passes all security checks!</p>
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </>
+                            )}
+
+                            {/* SBOM Generator results */}
+                            {activeModule === "sbom" && (
+                              <>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold">{scanResults.stats?.totalComponents || 0}</div>
+                                    <div className="text-xs text-muted-foreground">Components</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold">{Object.keys(scanResults.stats?.licenses || {}).length}</div>
+                                    <div className="text-xs text-muted-foreground">Unique Licenses</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className="text-xl font-bold">{(scanResults.stats?.ecosystems || []).join(", ")}</div>
+                                    <div className="text-xs text-muted-foreground">Ecosystem</div>
+                                  </div>
+                                  <div className="rounded-lg border p-3 text-center">
+                                    <div className={`text-xl font-bold ${(scanResults.score || 0) >= 7 ? "text-emerald-500" : "text-amber-500"}`}>{scanResults.score?.toFixed(1)}/10</div>
+                                    <div className="text-xs text-muted-foreground">Score</div>
+                                  </div>
+                                </div>
+                                {/* CycloneDX metadata */}
+                                <div className="flex items-center gap-2 text-sm flex-wrap">
+                                  <FileJson className="h-4 w-4 text-muted-foreground" />
+                                  <Badge variant="secondary" className="text-[9px]">CycloneDX 1.5</Badge>
+                                  <span className="text-xs text-muted-foreground font-mono">{scanResults.serialNumber?.slice(0, 30)}...</span>
+                                </div>
+                                {/* License breakdown */}
+                                {scanResults.stats?.licenses && Object.keys(scanResults.stats.licenses).length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-medium mb-2">License Distribution</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {Object.entries(scanResults.stats.licenses as Record<string, number>).sort(([,a], [,b]) => (b as number) - (a as number)).map(([license, count]) => (
+                                        <Badge key={license} variant={license === "Unknown" ? "destructive" : "outline"} className="text-[9px]">
+                                          {license}: {count as number}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Components table */}
+                                {scanResults.components?.length > 0 && (
+                                  <details className="group" open>
+                                    <summary className="text-xs font-medium cursor-pointer hover:text-foreground transition-colors">
+                                      View all {scanResults.components.length} components →
+                                    </summary>
+                                    <div className="mt-2 rounded-lg border overflow-hidden max-h-[400px] overflow-y-auto">
+                                      <table className="w-full text-xs">
+                                        <thead className="sticky top-0 bg-background">
+                                          <tr className="border-b bg-muted/40">
+                                            <th className="text-left p-2 font-medium">Component</th>
+                                            <th className="text-left p-2 font-medium">Version</th>
+                                            <th className="text-left p-2 font-medium">License</th>
+                                            <th className="text-left p-2 font-medium">Scope</th>
+                                            <th className="text-left p-2 font-medium">PURL</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                          {scanResults.components.map((c: any, i: number) => (
+                                            <tr key={i} className="border-b last:border-0 hover:bg-muted/20">
+                                              <td className="p-2 font-mono font-medium">{c.name}</td>
+                                              <td className="p-2 font-mono">{c.version}</td>
+                                              <td className="p-2">
+                                                <Badge variant={c.license ? "outline" : "destructive"} className="text-[8px]">{c.license || "Unknown"}</Badge>
+                                              </td>
+                                              <td className="p-2">
+                                                <Badge variant="secondary" className="text-[8px]">{c.scope}</Badge>
+                                              </td>
+                                              <td className="p-2 text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">{c.purl}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </details>
+                                )}
+                                {/* Download SBOM button */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-2"
+                                  onClick={() => {
+                                    const blob = new Blob([JSON.stringify(scanResults, null, 2)], { type: "application/json" });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement("a");
+                                    a.href = url;
+                                    a.download = `sbom-cyclonedx-${new Date().toISOString().slice(0, 10)}.json`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                  }}
+                                >
+                                  <Download className="h-3.5 w-3.5" /> Download CycloneDX SBOM (JSON)
+                                </Button>
+                              </>
+                            )}
+
+                            {/* Compliance Report results */}
+                            {activeModule === "compliance" && (
+                              <>
+                                {/* Overall score */}
+                                <Card className={`${(scanResults.overallScore || 0) >= 70 ? "border-emerald-500/30 bg-emerald-500/5" : (scanResults.overallScore || 0) >= 40 ? "border-amber-500/30 bg-amber-500/5" : "border-red-500/30 bg-red-500/5"}`}>
+                                  <CardContent className="p-5 flex items-center gap-4">
+                                    <ClipboardCheck className={`h-10 w-10 ${(scanResults.overallScore || 0) >= 70 ? "text-emerald-500" : (scanResults.overallScore || 0) >= 40 ? "text-amber-500" : "text-red-500"}`} />
+                                    <div>
+                                      <p className="text-2xl font-bold">{scanResults.overallScore || 0}%</p>
+                                      <p className="text-sm text-muted-foreground">Overall Compliance Posture ({scanResults.totalFindings || 0} findings mapped)</p>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                                {/* Framework breakdown */}
+                                {scanResults.frameworks?.length > 0 && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {scanResults.frameworks.map((fw: any, idx: number) => (
+                                      <Card key={idx} className={`border-l-4 ${fw.complianceScore >= 70 ? "border-l-emerald-500" : fw.complianceScore >= 40 ? "border-l-amber-500" : "border-l-red-500"}`}>
+                                        <CardContent className="p-3 space-y-2">
+                                          <div className="flex items-center justify-between">
+                                            <div>
+                                              <p className="text-sm font-semibold">{fw.framework.name}</p>
+                                              <p className="text-[10px] text-muted-foreground">{fw.framework.description}</p>
+                                            </div>
+                                            <div className={`text-lg font-bold ${fw.complianceScore >= 70 ? "text-emerald-500" : fw.complianceScore >= 40 ? "text-amber-500" : "text-red-500"}`}>
+                                              {fw.complianceScore}%
+                                            </div>
+                                          </div>
+                                          <div className="flex gap-2 text-[10px]">
+                                            <span className="text-emerald-600">✓ {fw.controlsPassed} passed</span>
+                                            <span className="text-red-600">✗ {fw.controlsFailed} failed</span>
+                                            <span className="text-muted-foreground">{fw.controlsChecked} checked</span>
+                                          </div>
+                                          {fw.failedControls?.length > 0 && (
+                                            <details>
+                                              <summary className="text-[10px] text-muted-foreground cursor-pointer">View failed controls →</summary>
+                                              <div className="mt-1 space-y-1">
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                                {fw.failedControls.map((c: any, i: number) => (
+                                                  <div key={i} className="text-[10px] bg-red-500/5 rounded p-1.5">
+                                                    <span className="font-mono font-medium">{c.controlId}</span> — {c.controlName}
+                                                    <p className="text-muted-foreground mt-0.5">{c.requirement}</p>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </details>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                )}
+                                {/* Recommendations */}
+                                {scanResults.recommendations?.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-medium mb-2">Actionable Recommendations</p>
+                                    <div className="space-y-1.5">
+                                      {scanResults.recommendations.map((rec: string, i: number) => (
+                                        <div key={i} className="flex items-start gap-2 text-xs">
+                                          <ArrowRight className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                                          <span>{rec}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </>
                             )}

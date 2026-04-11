@@ -26,7 +26,7 @@ export interface FixResult {
 }
 
 export interface FindingInput {
-  scanType: "secrets" | "deps" | "api" | "cloud" | "logs" | "cicd" | "sast";
+  scanType: "secrets" | "deps" | "api" | "cloud" | "logs" | "cicd" | "sast" | "docker" | "iac";
   id: string;
   title: string;
   severity: Severity;
@@ -202,6 +202,46 @@ const COMPLIANCE_MAP: Record<string, string[]> = {
   "off-hours-activity": ["OWASP A07:2021", "SOC2 CC7.2"],
   "error-spike": ["OWASP A09:2021", "SOC2 CC7.2"],
   "sensitive-data-exposure": ["OWASP A02:2021", "SOC2 CC6.1", "ISO27001 A.8.2.3", "PCI-DSS 3.4"],
+
+  // Docker / Container Security
+  "docker-no-user": ["CIS Docker 4.1", "SOC2 CC6.1", "NIST AC-6"],
+  "docker-latest-tag": ["CIS Docker 4.7", "SOC2 CC7.1"],
+  "docker-secret-in-env": ["OWASP A07:2021", "SOC2 CC6.1", "CIS Docker 4.5", "PCI-DSS 3.4"],
+  "docker-secret-in-arg": ["OWASP A07:2021", "SOC2 CC6.1", "CIS Docker 4.5"],
+  "docker-curl-bash": ["CIS Docker 4.9", "SOC2 CC7.1", "NIST SI-7"],
+  "docker-chmod-777": ["CIS Docker 4.8", "SOC2 CC6.1", "NIST AC-6"],
+  "docker-expose-wide": ["CIS Docker 4.4", "SOC2 CC6.6", "ISO27001 A.13.1.1"],
+  "docker-copy-all": ["CIS Docker 4.10", "SOC2 CC6.1"],
+  "docker-no-healthcheck": ["CIS Docker 4.6"],
+  "docker-add-instead-copy": ["CIS Docker 4.9"],
+  "docker-no-version-pin": ["CIS Docker 4.7", "SOC2 CC7.1"],
+  "docker-apt-no-clean": ["CIS Docker 4.2"],
+  "docker-sudo-usage": ["CIS Docker 4.1", "NIST AC-6"],
+  "docker-large-base": ["CIS Docker 4.2", "NIST CM-7"],
+  "docker-no-workdir": ["CIS Docker 4.3"],
+
+  // IaC — Terraform / CloudFormation / Kubernetes
+  "iac-s3-public": ["CIS AWS 2.1.2", "SOC2 CC6.1", "ISO27001 A.8.2.3", "PCI-DSS 3.4"],
+  "iac-s3-no-encryption": ["CIS AWS 2.1.1", "SOC2 CC6.7", "ISO27001 A.10.1.1", "PCI-DSS 3.4"],
+  "iac-sg-open-ingress": ["CIS AWS 4.1", "SOC2 CC6.6", "ISO27001 A.13.1.1"],
+  "iac-sg-open-ssh": ["CIS AWS 4.2", "SOC2 CC6.6", "ISO27001 A.13.1.1"],
+  "iac-rds-public": ["CIS AWS 2.3.1", "SOC2 CC6.6", "ISO27001 A.13.1.1", "PCI-DSS 1.3.4"],
+  "iac-rds-no-encryption": ["CIS AWS 2.3.2", "SOC2 CC6.7", "ISO27001 A.10.1.1", "PCI-DSS 3.4"],
+  "iac-iam-wildcard": ["CIS AWS 1.16", "SOC2 CC6.1", "ISO27001 A.9.2.3", "NIST AC-6"],
+  "iac-iam-admin-access": ["CIS AWS 1.22", "SOC2 CC6.1", "ISO27001 A.9.2.3", "NIST AC-6"],
+  "iac-cloudtrail-disabled": ["CIS AWS 2.1", "SOC2 CC7.2", "ISO27001 A.12.4.1"],
+  "iac-ebs-no-encryption": ["CIS AWS 2.2.1", "SOC2 CC6.7", "ISO27001 A.10.1.1"],
+  "iac-hardcoded-secret": ["OWASP A07:2021", "SOC2 CC6.1", "ISO27001 A.9.4.3", "PCI-DSS 3.4"],
+  "iac-http-not-https": ["SOC2 CC6.7", "ISO27001 A.10.1.1"],
+  "iac-k8s-privileged": ["CIS K8s 5.2.1", "SOC2 CC6.1", "NIST AC-6"],
+  "iac-k8s-run-as-root": ["CIS K8s 5.2.6", "SOC2 CC6.1", "NIST AC-6"],
+  "iac-k8s-host-network": ["CIS K8s 5.2.4", "SOC2 CC6.6"],
+  "iac-k8s-host-pid": ["CIS K8s 5.2.2", "SOC2 CC6.1"],
+  "iac-k8s-no-limits": ["CIS K8s 5.4.1"],
+  "iac-k8s-latest-image": ["CIS K8s 5.4.2", "SOC2 CC7.1"],
+  "iac-k8s-no-readonly-root": ["CIS K8s 5.2.3", "SOC2 CC6.1"],
+  "iac-k8s-default-namespace": ["CIS K8s 5.7.1"],
+  "iac-cloudwatch-no-logs": ["CIS AWS 2.4", "SOC2 CC7.2"],
 };
 
 /* ── Secret Fix Templates ── */
