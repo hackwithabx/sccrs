@@ -3182,6 +3182,12 @@ class TaintTracker {
       if (node.computed && root?.type === "Identifier" && this.taintedVars.has(root.name)) {
         return this.taintedVars.get(root.name)!;
       }
+      // Fallback: check if this MemberExpression is itself an inherent taint source
+      // (e.g. req.query.id, req.body.name used inline without variable assignment)
+      const source = isTaintSource(node);
+      if (source.tainted) {
+        return { label: source.label, sourceLine: node.start || 0, sourceCode: "" };
+      }
     }
     // Template literal with tainted expressions
     if (node.type === "TemplateLiteral") {

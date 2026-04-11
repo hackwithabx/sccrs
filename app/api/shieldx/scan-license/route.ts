@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const input = effectiveDemo ? LICENSE_DEMO_INPUT : String(body?.input || "");
+    // Use user input if provided (even in demo fallback), otherwise demo data
+    const userInput = body?.input && typeof body.input === "string" && body.input.trim().length >= 10
+      ? body.input : null;
+    const input = effectiveDemo ? (userInput || LICENSE_DEMO_INPUT) : String(body?.input || "");
 
     if (!input || input.trim().length < 10) {
       return NextResponse.json(
