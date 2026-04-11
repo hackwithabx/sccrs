@@ -1,15 +1,15 @@
 /**
- * ShieldX AI Provider — Lightweight abstraction over Anthropic Claude, Google Gemini & OpenAI
+ * ShieldX AI Provider — Lightweight abstraction over Google Gemini, Anthropic Claude & OpenAI
  *
  * Uses direct fetch (zero dependencies). Supports:
- *   - Anthropic Claude (default — same model powering this agent)
- *   - Google Gemini (fallback)
- *   - OpenAI GPT-4o-mini (fallback)
+ *   - Google Gemini (default — free tier, 15 RPM)
+ *   - Anthropic Claude (optional paid upgrade)
+ *   - OpenAI GPT-4o-mini (optional paid upgrade)
  *
  * Set env vars:
- *   ANTHROPIC_API_KEY   → Claude (preferred)
- *   GOOGLE_AI_API_KEY   → Gemini fallback
- *   OPENAI_API_KEY      → OpenAI fallback
+ *   GOOGLE_AI_API_KEY   → Gemini (free, preferred)
+ *   ANTHROPIC_API_KEY   → Claude (paid fallback)
+ *   OPENAI_API_KEY      → OpenAI (paid fallback)
  */
 
 type Provider = "anthropic" | "gemini" | "openai";
@@ -22,16 +22,16 @@ interface AIResponse {
 }
 
 function getProvider(): { provider: Provider; apiKey: string } {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (anthropicKey) return { provider: "anthropic", apiKey: anthropicKey };
-
   const geminiKey = process.env.GOOGLE_AI_API_KEY;
   if (geminiKey) return { provider: "gemini", apiKey: geminiKey };
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (anthropicKey) return { provider: "anthropic", apiKey: anthropicKey };
 
   const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) return { provider: "openai", apiKey: openaiKey };
 
-  throw new Error("No AI API key configured. Set ANTHROPIC_API_KEY, GOOGLE_AI_API_KEY, or OPENAI_API_KEY in your environment.");
+  throw new Error("No AI API key configured. Set GOOGLE_AI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY in your environment.");
 }
 
 async function callAnthropic(apiKey: string, systemPrompt: string, userPrompt: string, model = "claude-sonnet-4-20250514"): Promise<AIResponse> {
