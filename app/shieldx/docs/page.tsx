@@ -8,6 +8,7 @@ import {
   Shield, Key, Package, Cloud, Globe, Brain, GitBranch, Bell, BarChart3, FileCode,
   ArrowRight, CheckCircle2, Lock, Eye, Zap, BookOpen,
   Search, FileText, Crown, ChevronRight, Container, Blocks, FileJson, ClipboardCheck,
+  Sparkles, Wand2,
 } from "lucide-react";
 
 const modules = [
@@ -203,6 +204,63 @@ const modules = [
       "Use the 'Test' button to verify the integration works",
     ],
     supported: ["GitHub Actions", "GitLab CI", "Any CI via cURL/REST API", "Jenkins (via cURL)", "CircleCI (via cURL)", "Bitbucket Pipelines (via cURL)"],
+  },
+  {
+    id: "ai-review",
+    icon: Sparkles,
+    title: "AI Security Review",
+    description: "AI-powered deep security review that finds business logic flaws, authorization gaps, IDOR, race conditions, and vulnerabilities that no pattern-based SAST tool can detect",
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    features: [
+      "LLM-powered analysis using Google Gemini for deep security understanding",
+      "Business logic flaw detection — identifies authorization bypasses, IDOR, and trust boundary violations",
+      "Race condition detection in concurrent code paths",
+      "SSRF, open redirect, and insecure deserialization detection",
+      "Authentication and session management weakness identification",
+      "Privacy leakage detection (PII exposure, logging sensitive data)",
+      "Risk level assessment: Critical, High, Medium, Secure",
+      "Prioritized remediation actions with effort estimates",
+      "AI Executive Summary generation for stakeholder reports",
+      "Multi-language support: JavaScript, TypeScript, Python, Java, Go, Ruby, PHP, C#",
+    ],
+    howTo: [
+      "Navigate to ShieldX → AI Security Review tab",
+      "Select the programming language of your code",
+      "Paste your source code (focus on auth, API, or data handling logic)",
+      "Click 'Run Scan' to trigger AI-powered analysis",
+      "Review findings categorized by risk level and vulnerability type",
+      "Examine detailed explanations of business logic flaws and race conditions",
+      "Follow the prioritized remediation guidance",
+    ],
+    supported: ["JavaScript / TypeScript", "Python", "Java", "Go", "Ruby", "PHP", "C#", "Business logic flaws", "IDOR detection", "Race conditions", "Authorization gaps"],
+  },
+  {
+    id: "license",
+    icon: FileText,
+    title: "License Compliance Scanner",
+    description: "Scan your dependency manifests to identify open source license obligations and compliance risks",
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    features: [
+      "Identifies licenses for npm, pip, and Go dependencies",
+      "Risk classification: Copyleft (GPL), Weak Copyleft (LGPL, MPL), Permissive (MIT, Apache, BSD)",
+      "License compatibility checking for commercial use",
+      "Unknown/missing license flagging for manual review",
+      "Dual-license detection and resolution",
+      "SPDX license identifier mapping",
+      "Distribution obligation warnings for copyleft licenses",
+      "Export-ready license inventory reports",
+    ],
+    howTo: [
+      "Navigate to ShieldX → License Compliance tab",
+      "Paste your package.json, requirements.txt, or go.mod content",
+      "Click 'Check Licenses' to scan all dependencies",
+      "Review the license inventory sorted by risk level",
+      "Address copyleft license obligations before distribution",
+      "Flag unknown licenses for legal review",
+    ],
+    supported: ["npm (package.json)", "pip (requirements.txt)", "Go (go.mod)", "MIT", "Apache 2.0", "BSD", "GPL v2/v3", "LGPL", "MPL", "ISC", "AGPL", "Unlicense"],
   },
   // Alert module hidden — re-enable when alerts backend is live
   // {
@@ -539,15 +597,15 @@ export default function ShieldXDocsPage() {
             <Card className="border-primary/10">
               <CardContent className="p-8 space-y-6">
                 <p className="text-lg leading-relaxed text-muted-foreground">
-                <strong className="text-foreground">ShieldX</strong> is security that developers actually want to use. Built for startups, it provides 8 integrated modules—from detecting hardcoded secrets
-                to auditing cloud infrastructure. It's drastically cheaper and faster than legacy enterprise platforms, requiring zero dedicated security headcount to get started.
+                <strong className="text-foreground">ShieldX</strong> is security that developers actually want to use. Built for startups, it provides 14 integrated modules—from detecting hardcoded secrets
+                to container security, infrastructure-as-code scanning, SBOM generation, and compliance reporting. It's drastically cheaper and faster than legacy enterprise platforms, requiring zero dedicated security headcount to get started.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <h3 className="font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-primary" /> Key Capabilities</h3>
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      {["Secrets detection with entropy analysis", "Real-time CVE scanning", "Cloud security posture assessment", "API endpoint OWASP compliance testing", "Log-based threat detection", "CI/CD pipeline integration", "Unified security scoring"].map((item) => (
+                      {["Secrets detection with entropy analysis", "Real-time CVE scanning", "Cloud security posture assessment", "API endpoint OWASP compliance testing", "AST-based SAST with taint tracking", "AI-powered security review", "Container & Dockerfile security", "Infrastructure-as-Code scanning", "SBOM generation (CycloneDX)", "Compliance mapping (8 frameworks)", "Log-based threat detection", "CI/CD pipeline integration", "Custom rule engine", "Unified security scoring"].map((item) => (
                         <li key={item} className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> {item}</li>
                       ))}
                     </ul>
@@ -573,7 +631,7 @@ export default function ShieldXDocsPage() {
                     <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
                       <div className="font-bold text-lg">Pro</div>
                       <div className="text-2xl font-extrabold text-primary">$29<span className="text-sm text-muted-foreground">/mo</span></div>
-                      <p className="text-xs text-muted-foreground mt-1">All 9 modules incl. AST-based SAST, unlimited scans</p>
+                      <p className="text-xs text-muted-foreground mt-1">All 14 modules incl. AST-based SAST, AI review, unlimited scans</p>
                     </div>
                     <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
                       <div className="font-bold text-lg">Enterprise</div>
@@ -677,7 +735,7 @@ export default function ShieldXDocsPage() {
                   <mod.icon className={`h-6 w-6 ${mod.color}`} />
                 </div>
                 {mod.title}
-                <Badge variant="outline" className="text-xs">Module {idx + 1}/8</Badge>
+                <Badge variant="outline" className="text-xs">Module {idx + 1}/{modules.length}</Badge>
               </h2>
 
               <Card>
@@ -772,7 +830,10 @@ export default function ShieldXDocsPage() {
                 { q: "Does the Dependency Scanner use real data?", a: "Yes. Every query runs against a real-time vulnerability database. Vulnerabilities shown are actual CVEs from the National Vulnerability Database." },
                 { q: "Can I integrate ShieldX into my CI/CD pipeline?", a: "Yes. ShieldX provides ready-to-use templates for GitHub Actions and GitLab CI, plus cURL commands for any CI system. Failed security checks return exit code 1 to fail your pipeline." },
                 { q: "What platforms does Cloud Security cover?", a: "AWS, GCP, Azure, and general cloud infrastructure. Each platform has specific checks for storage, identity, network, database, logging, and encryption." },
-                { q: "How is the Security Score calculated?", a: "Each module produces a score from 0-10 based on penalty deductions. Critical findings deduct 3 points, High deducts 2, Medium deducts 1. The overall score is the average across all 5 scanning dimensions." },
+                { q: "How is the Security Score calculated?", a: "Each module produces a score from 0-10 based on penalty deductions. Critical findings deduct 3 points, High deducts 2, Medium deducts 1. The overall score is the average across all scanning dimensions." },
+                { q: "How do Custom Rules work?", a: "Custom Rules let you create your own detection patterns, suppress false positives, or add organization-specific security checks. Rules are written as regex patterns and are applied automatically during every SAST scan. You can manage up to 100 rules per account." },
+                { q: "What is the AI Executive Summary?", a: "The AI Executive Summary uses Google Gemini to translate security scan results into clear, actionable intelligence. It generates a risk assessment, prioritized fix order, and key insights suitable for engineering leads and non-technical stakeholders." },
+                { q: "What compliance frameworks does ShieldX support?", a: "The Compliance Report module maps findings to 8 frameworks: SOC 2 Type II, ISO 27001, PCI DSS 4.0, HIPAA, NIST 800-53, CIS Benchmarks, GDPR, and OWASP Top 10. Each framework shows control-level compliance scores." },
                 { q: "What does the Enterprise plan include?", a: "Everything in Pro plus: team management (up to 25 seats), priority support (< 4hr response), custom integrations, dedicated account manager, 99.9% SLA, white-label reports, and on-premise deployment option." },
                 { q: "Can I cancel anytime?", a: "Yes. Both Pro and Enterprise plans can be cancelled at any time. Contact support for details." },
               ].map((faq) => (

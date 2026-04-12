@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Demo rate limit reached (5 scans/hour). Sign up for unlimited access." }, { status: 429 });
       }
 
-      // Demo findings for compliance mapping
+      // Demo findings for compliance mapping — covers all categories
       const demoFindings = [
         { scanType: "secrets", severity: "high" },
-        { scanType: "secrets", severity: "high" },
+        { scanType: "secrets", severity: "critical" },
         { scanType: "deps", severity: "critical" },
         { scanType: "deps", severity: "high" },
         { scanType: "deps", severity: "medium" },
@@ -31,8 +31,16 @@ export async function POST(request: NextRequest) {
         { scanType: "cloud", severity: "critical" },
         { scanType: "cloud", severity: "medium" },
         { scanType: "docker", severity: "high" },
+        { scanType: "docker", severity: "medium" },
         { scanType: "iac", severity: "critical" },
+        { scanType: "iac", severity: "high" },
         { scanType: "license", severity: "medium" },
+        { scanType: "api", severity: "high" },
+        { scanType: "api", severity: "medium" },
+        { scanType: "logs", severity: "high" },
+        { scanType: "ai-review", severity: "medium" },
+        { scanType: "cicd", severity: "high" },
+        { scanType: "sbom", severity: "low" },
       ];
 
       const report = generateComplianceReport(demoFindings, body?.frameworks);

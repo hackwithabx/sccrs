@@ -74,13 +74,13 @@ import {
   CartesianGrid,
 } from "recharts";
 
-/* ── Chart Colors ── */
+/* ── Chart Colors (dark theme optimized) ── */
 const SEV_COLORS: Record<string, string> = {
-  critical: "#ef4444",
-  high: "#f97316",
-  medium: "#eab308",
-  low: "#3b82f6",
-  info: "#6b7280",
+  critical: "#f87171",
+  high: "#fb923c",
+  medium: "#fbbf24",
+  low: "#60a5fa",
+  info: "#9ca3af",
 };
 
 function SeverityPieChart({ stats }: { stats: { critical?: number; high?: number; medium?: number; low?: number; total?: number } }) {
@@ -95,16 +95,16 @@ function SeverityPieChart({ stats }: { stats: { critical?: number; high?: number
     <div className="flex flex-col items-center">
       <ResponsiveContainer width={180} height={180}>
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} strokeWidth={0}>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} strokeWidth={2} stroke="hsl(var(--background))">
             {data.map((d, i) => <Cell key={i} fill={d.color} />)}
           </Pie>
-          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" }} itemStyle={{ color: "hsl(var(--foreground))" }} />
         </PieChart>
       </ResponsiveContainer>
       <div className="flex gap-3 mt-1 flex-wrap justify-center">
         {data.map((d) => (
-          <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+          <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-foreground/80">
+            <span className="w-2.5 h-2.5 rounded-full ring-1 ring-white/10" style={{ backgroundColor: d.color }} />
             {d.name} ({d.value})
           </div>
         ))}
@@ -114,7 +114,7 @@ function SeverityPieChart({ stats }: { stats: { critical?: number; high?: number
 }
 
 function ScoreGauge({ score, label }: { score: number; label?: string }) {
-  const color = score >= 7 ? "#10b981" : score >= 4 ? "#f59e0b" : "#ef4444";
+  const color = score >= 7 ? "#34d399" : score >= 4 ? "#fbbf24" : "#f87171";
   const data = [{ value: score, fill: color }];
   return (
     <div className="flex flex-col items-center">
@@ -130,6 +130,9 @@ function ScoreGauge({ score, label }: { score: number; label?: string }) {
     </div>
   );
 }
+
+/* ── Shared Tooltip style ── */
+const CHART_TOOLTIP_STYLE = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--foreground))" };
 
 /* ── Types ── */
 
@@ -296,6 +299,15 @@ export default function ShieldXWorkspacePage() {
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiReviewLanguage, setAiReviewLanguage] = useState<string>("javascript");
 
+  /* ── Custom Rules state ── */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [customRules, setCustomRules] = useState<any[]>([]);
+  const [customRulesLoading, setCustomRulesLoading] = useState(false);
+  const [showAddRule, setShowAddRule] = useState(false);
+  const [newRule, setNewRule] = useState({ name: "", ruleType: "custom-check" as string, pattern: "", patternFlags: "gi", severity: "medium" as string, message: "", remediation: "", category: "Custom Rule", languages: [] as string[] });
+  const [savingRule, setSavingRule] = useState(false);
+  const [customRuleError, setCustomRuleError] = useState<string | null>(null);
+
   /* ── Admin plan upgrade ── */
   const [upgradingPlan, setUpgradingPlan] = useState(false);
   const [planMessage, setPlanMessage] = useState<string | null>(null);
@@ -350,7 +362,7 @@ export default function ShieldXWorkspacePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const generateSASTReport = useCallback((results: any) => {
     const now = new Date();
-    const sevColor: Record<string, string> = { critical: "#ef4444", high: "#f97316", medium: "#eab308", low: "#3b82f6", info: "#6b7280" };
+    const sevColor: Record<string, string> = { critical: "#f87171", high: "#fb923c", medium: "#fbbf24", low: "#60a5fa", info: "#9ca3af" };
     const findings = results.findings || [];
     const stats = results.stats || { total: 0, critical: 0, high: 0, medium: 0, low: 0 };
     const isMulti = results.multiFile;
@@ -609,6 +621,18 @@ export default function ShieldXWorkspacePage() {
 
   useEffect(() => { void loadBillingState(); }, [loadBillingState]);
   useEffect(() => { void loadScanHistory(); }, [loadScanHistory]);
+
+  /* ── Load custom rules ── */
+  const loadCustomRules = useCallback(async () => {
+    if (!isPaid) return;
+    setCustomRulesLoading(true);
+    try {
+      const res = await fetch("/api/shieldx/custom-rules");
+      const data = await res.json();
+      if (res.ok && data.rules) setCustomRules(data.rules);
+    } catch { /* silent */ } finally { setCustomRulesLoading(false); }
+  }, [isPaid]);
+  useEffect(() => { void loadCustomRules(); }, [loadCustomRules]);
 
   /* ── Admin plan upgrade ── */
   const adminUpgradePlan = async (plan: PlanTier) => {
@@ -1254,7 +1278,7 @@ export default function ShieldXWorkspacePage() {
                 const isAvailable = mod.plans.includes(userPlan);
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const isActive = activeModule === mod.id;
-                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd", "score", "license"].includes(mod.id);
+                const hasScanUI = ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd", "score", "license", "docker", "iac", "sbom", "compliance"].includes(mod.id);
                 return (
                   <motion.div key={mod.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                     <Card className={`h-full flex flex-col transition-colors cursor-pointer ${isActive ? "border-primary ring-2 ring-primary/20" : !isAvailable ? "opacity-60" : "hover:border-primary/30"}`}
@@ -1300,7 +1324,7 @@ export default function ShieldXWorkspacePage() {
             {/* ── Scan Panel ── */}
             <div ref={scanPanelRef} />
             <AnimatePresence>
-              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd", "score", "license"].includes(activeModule) && (() => {
+              {activeModule && ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd", "score", "license", "docker", "iac", "sbom", "compliance"].includes(activeModule) && (() => {
                 const mod = MODULES.find((m) => m.id === activeModule)!;
                 const isDemoOnly = mod.plans.includes("free") && !isPaid;
                 const inputCfg = getInputConfig(activeModule);
@@ -1577,7 +1601,7 @@ export default function ShieldXWorkspacePage() {
                         {/* Security Score Dashboard */}
                         {activeModule === "score" && (() => {
                           // Merge DB history + session scans, deduplicate by _id
-                          const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd"];
+                          const moduleTypes = ["secrets", "deps", "api", "cloud", "logs", "sast", "ai-review", "cicd", "docker", "iac", "sbom", "compliance"];
                           const byModule = moduleTypes.map((type) => {
                             const scans = mergedHistory.filter((s) => s.scanType === type);
                             const latest = scans[0]; // already sorted by date desc
@@ -2264,40 +2288,40 @@ export default function ShieldXWorkspacePage() {
                                 <Card className="border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-indigo-500/5">
                                   <CardContent className="p-4">
                                     <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1.5">
-                                      <ShieldCheck className="h-3.5 w-3.5" /> How ShieldX Differs From Other SAST Tools
-                                    </p>
-                                    <div className="grid sm:grid-cols-4 gap-3">
-                                      <div className="flex items-start gap-2">
-                                        <Eye className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
-                                        <div>
-                                          <p className="text-[11px] font-semibold">vs Checkmarx</p>
-                                          <p className="text-[10px] text-muted-foreground">Zero code storage — analyzed in memory and immediately discarded. Your code never hits a database.</p>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-start gap-2">
-                                        <Code2 className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
-                                        <div>
-                                          <p className="text-[11px] font-semibold">vs Semgrep</p>
-                                          <p className="text-[10px] text-muted-foreground">Full taint tracking with visual dataflow — traces data from input to sink, not just pattern matching.</p>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-start gap-2">
-                                        <Server className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />
-                                        <div>
-                                          <p className="text-[11px] font-semibold">vs SonarQube</p>
-                                          <p className="text-[10px] text-muted-foreground">Cross-file analysis with CWE/OWASP references and auto-generated fix code with effort estimates.</p>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-start gap-2">
-                                        <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
-                                        <div>
-                                          <p className="text-[11px] font-semibold">Exploit PoC Generator</p>
-                                          <p className="text-[10px] text-muted-foreground">Generates real exploit payloads showing exactly how attackers would exploit each vuln. No other SAST does this.</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </CardContent>
-                                </Card>
+                      <ShieldCheck className="h-3.5 w-3.5" /> What Makes ShieldX Different
+                    </p>
+                    <div className="grid sm:grid-cols-4 gap-3">
+                      <div className="flex items-start gap-2">
+                        <Eye className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[11px] font-semibold">Zero Code Storage</p>
+                          <p className="text-[10px] text-muted-foreground">Analyzed in memory and immediately discarded. Your code never hits a database.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Code2 className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[11px] font-semibold">Full Taint Tracking</p>
+                          <p className="text-[10px] text-muted-foreground">Visual dataflow analysis — traces data from input to sink across files, not just pattern matching.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Server className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[11px] font-semibold">Cross-File Analysis</p>
+                          <p className="text-[10px] text-muted-foreground">Cross-file analysis with CWE/OWASP references and auto-generated fix code with effort estimates.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-[11px] font-semibold">Exploit PoC Generator</p>
+                          <p className="text-[10px] text-muted-foreground">Generates real exploit payloads showing exactly how attackers would exploit each vulnerability found.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
                                 {/* Stats grid — Enhanced Executive Summary */}
                                 <div className="flex flex-col sm:flex-row gap-4 items-start">
@@ -3491,6 +3515,161 @@ export default function ShieldXWorkspacePage() {
             )}
           </TabsContent>
 
+          <TabsContent value="custom-rules">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2"><FileCode className="h-5 w-5 text-primary" /> Custom SAST Rules</CardTitle>
+                  {isPaid && (
+                    <Button size="sm" variant={showAddRule ? "secondary" : "default"} onClick={() => setShowAddRule(!showAddRule)} className="gap-1.5 text-xs">
+                      {showAddRule ? "Cancel" : <><Plus className="h-3 w-3" /> Add Rule</>}
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">Create custom detection rules, suppress false positives, or enforce organization-specific security patterns. Rules are applied automatically on every SAST scan.</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!isPaid && (
+                  <div className="text-center py-8">
+                    <Lock className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">Custom Rules require a Pro or Enterprise plan.</p>
+                    <Link href="/shieldx/pricing"><Button variant="outline" size="sm" className="mt-3 gap-1.5"><Crown className="h-3 w-3" /> Upgrade</Button></Link>
+                  </div>
+                )}
+
+                {isPaid && showAddRule && (
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Rule Name *</label>
+                          <input className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="e.g. Detect hardcoded DB host" value={newRule.name} onChange={(e) => setNewRule({ ...newRule, name: e.target.value })} />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Rule Type</label>
+                          <select className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={newRule.ruleType} onChange={(e) => setNewRule({ ...newRule, ruleType: e.target.value })}>
+                            <option value="custom-check">Custom Check (detect new patterns)</option>
+                            <option value="false-positive">False Positive (suppress finding)</option>
+                            <option value="false-negative">False Negative (add missed pattern)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Regex Pattern *</label>
+                        <input className="w-full rounded-md border bg-background px-3 py-2 text-sm font-mono" placeholder="e.g. process\\.env\\.[A-Z_]+" value={newRule.pattern} onChange={(e) => setNewRule({ ...newRule, pattern: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Message (what to report) *</label>
+                        <input className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="e.g. Hardcoded database host detected" value={newRule.message} onChange={(e) => setNewRule({ ...newRule, message: e.target.value })} />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Severity</label>
+                          <select className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={newRule.severity} onChange={(e) => setNewRule({ ...newRule, severity: e.target.value })}>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Category</label>
+                          <input className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="Custom Rule" value={newRule.category} onChange={(e) => setNewRule({ ...newRule, category: e.target.value })} />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Languages</label>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {["javascript", "typescript", "java", "cpp", "csharp"].map((lang) => (
+                              <Badge key={lang} variant={newRule.languages.includes(lang) ? "default" : "outline"} className="cursor-pointer text-[10px]" onClick={() => setNewRule({ ...newRule, languages: newRule.languages.includes(lang) ? newRule.languages.filter((l) => l !== lang) : [...newRule.languages, lang] })}>
+                                {lang}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Remediation (optional)</label>
+                        <input className="w-full rounded-md border bg-background px-3 py-2 text-sm" placeholder="e.g. Use environment variables instead" value={newRule.remediation} onChange={(e) => setNewRule({ ...newRule, remediation: e.target.value })} />
+                      </div>
+                      {customRuleError && <p className="text-xs text-red-500">{customRuleError}</p>}
+                      <Button size="sm" disabled={savingRule} onClick={async () => {
+                        setSavingRule(true);
+                        setCustomRuleError(null);
+                        try {
+                          const res = await fetch("/api/shieldx/custom-rules", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(newRule),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) { setCustomRuleError(data.error || "Failed"); setSavingRule(false); return; }
+                          setCustomRules([data.rule, ...customRules]);
+                          setNewRule({ name: "", ruleType: "custom-check", pattern: "", patternFlags: "gi", severity: "medium", message: "", remediation: "", category: "Custom Rule", languages: [] });
+                          setShowAddRule(false);
+                        } catch { setCustomRuleError("Network error"); }
+                        setSavingRule(false);
+                      }} className="gap-1.5">
+                        {savingRule ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</> : "Save Rule"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {isPaid && (
+                  <>
+                    {!customRulesLoading && customRules.length === 0 && !showAddRule && (
+                      <div className="text-center py-8">
+                        <FileCode className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground">No custom rules yet. Click &quot;Add Rule&quot; to create your first detection rule.</p>
+                      </div>
+                    )}
+                    {customRulesLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
+                    {customRules.length > 0 && (
+                      <div className="space-y-2">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {customRules.map((rule: any) => (
+                          <div key={rule._id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30 transition-colors">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${rule.severity === "critical" ? "bg-red-500" : rule.severity === "high" ? "bg-orange-500" : rule.severity === "medium" ? "bg-yellow-500" : "bg-blue-500"}`} />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{rule.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{rule.message}</p>
+                                <div className="flex gap-1.5 mt-1 flex-wrap">
+                                  <Badge variant="outline" className="text-[9px] capitalize">{rule.ruleType}</Badge>
+                                  <Badge variant="outline" className="text-[9px] capitalize">{rule.severity}</Badge>
+                                  {rule.pattern && <Badge variant="secondary" className="text-[9px] font-mono">/{rule.pattern.slice(0, 30)}{rule.pattern.length > 30 ? "…" : ""}/</Badge>}
+                                  {rule.languages?.map((l: string) => <Badge key={l} variant="secondary" className="text-[9px]">{l}</Badge>)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-3">
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={async () => {
+                                try {
+                                  const res = await fetch("/api/shieldx/custom-rules", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rule._id, enabled: !rule.enabled }) });
+                                  if (res.ok) setCustomRules(customRules.map((r) => r._id === rule._id ? { ...r, enabled: !r.enabled } : r));
+                                } catch { /* silent */ }
+                              }}>
+                                {rule.enabled ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-red-500 hover:text-red-600" onClick={async () => {
+                                try {
+                                  const res = await fetch(`/api/shieldx/custom-rules?id=${rule._id}`, { method: "DELETE" });
+                                  if (res.ok) setCustomRules(customRules.filter((r) => r._id !== rule._id));
+                                } catch { /* silent */ }
+                              }}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="overview">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
@@ -3583,10 +3762,10 @@ export default function ShieldXWorkspacePage() {
                         mergedHistory.forEach((s) => { counts[s.scanType] = (counts[s.scanType] || 0) + 1; });
                         return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
                       })()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                        <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                         <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -3612,11 +3791,11 @@ export default function ShieldXWorkspacePage() {
                           <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="scan" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis domain={[0, 10]} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                      <Area type="monotone" dataKey="score" stroke="hsl(var(--primary))" fill="url(#scoreGrad)" strokeWidth={2} dot={{ r: 3 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                      <XAxis dataKey="scan" tick={{ fontSize: 10, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                      <Area type="monotone" dataKey="score" stroke="hsl(var(--primary))" fill="url(#scoreGrad)" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
