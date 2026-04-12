@@ -17,7 +17,7 @@ export default function DemosLayout({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto"
+      className="fixed inset-0 z-[200] overflow-y-auto"
       style={{ colorScheme: "light", scrollBehavior: "smooth" }}
     >
       {children}
