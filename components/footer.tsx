@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Shield } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -34,6 +37,11 @@ const footerLinks = {
 };
 
 export function Footer() {
+  const pathname = usePathname();
+
+  // Hide main footer on demo template pages
+  if (pathname.startsWith("/demos")) return null;
+
   return (
     <footer className="border-t bg-card">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">

@@ -61,6 +61,9 @@ export function Navbar() {
     [pathname]
   );
 
+  // Hide main navbar on demo template pages
+  if (pathname.startsWith("/demos")) return null;
+
   return (
     <>
     <header
