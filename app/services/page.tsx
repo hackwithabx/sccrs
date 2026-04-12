@@ -650,23 +650,23 @@ export default function ServicesPage() {
             viewport={{ once: true }}
             className="text-center mb-14"
           >
-            <Badge className="bg-rose-600 text-white mb-4 text-sm px-3 py-1">Website Templates</Badge>
+            <Badge className="bg-rose-600 text-white mb-4 text-sm px-3 py-1">18 Premium Templates</Badge>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Ready-Made Website Demo Templates
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Professional, mobile-responsive websites for every industry. Browse our live demos and get yours customized.
+              18 stunning, mobile-responsive websites across 6 industries — 3 unique designs per category. Browse live demos & get yours customized.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: Stethoscope, name: "Clinic & Doctor", slug: "clinic", color: "from-blue-500 to-cyan-500", desc: "Appointment booking, doctor profiles, clinic timings" },
-              { icon: UtensilsCrossed, name: "Restaurant & Café", slug: "restaurant", color: "from-amber-600 to-yellow-500", desc: "Interactive menu, reservations, photo gallery" },
-              { icon: Building2, name: "Real Estate Agent", slug: "real-estate", color: "from-yellow-700 to-amber-500", desc: "Property listings, search filters, agent profile" },
-              { icon: Calculator, name: "CA / Law Firm", slug: "ca-firm", color: "from-yellow-800 to-yellow-600", desc: "Service details, team profiles, FAQ section" },
-              { icon: GraduationCap, name: "Coaching Institute", slug: "coaching", color: "from-orange-600 to-orange-400", desc: "Course details, topper showcase, batch timings" },
-              { icon: Scissors, name: "Salon & Spa", slug: "salon", color: "from-rose-500 to-pink-400", desc: "Service pricing, membership plans, appointment booking" },
+              { icon: Stethoscope, name: "Clinic & Healthcare", slug: "clinic", color: "from-blue-500 to-cyan-500", desc: "3 premium designs — modern, dark luxe & warm creative", count: 3 },
+              { icon: UtensilsCrossed, name: "Restaurant & Dining", slug: "restaurant", color: "from-amber-600 to-yellow-500", desc: "3 unique styles — Indian, Italian & Japanese aesthetics", count: 3 },
+              { icon: Building2, name: "Real Estate", slug: "real-estate", color: "from-blue-600 to-indigo-600", desc: "3 variants — professional, prop-tech dark & ultra-luxury", count: 3 },
+              { icon: Calculator, name: "CA & Accounting", slug: "ca-firm", color: "from-slate-600 to-slate-800", desc: "3 designs — modern corporate, startup & heritage classic", count: 3 },
+              { icon: GraduationCap, name: "Coaching & Education", slug: "coaching", color: "from-orange-600 to-orange-400", desc: "3 themes — IIT-JEE/NEET, UPSC & tech bootcamp", count: 3 },
+              { icon: Scissors, name: "Salon & Beauty", slug: "salon", color: "from-rose-500 to-pink-400", desc: "3 looks — blush pink, dark glamour & lavender dream", count: 3 },
             ].map((tmpl, i) => (
               <motion.div
                 key={tmpl.slug}
@@ -680,11 +680,14 @@ export default function ServicesPage() {
                     <tmpl.icon className="h-10 w-10 text-white/80" />
                   </div>
                   <CardContent className="p-5">
-                    <CardTitle className="text-lg mb-1">{tmpl.name}</CardTitle>
+                    <div className="flex items-center justify-between mb-1">
+                      <CardTitle className="text-lg">{tmpl.name}</CardTitle>
+                      <Badge variant="secondary" className="text-xs">{tmpl.count} designs</Badge>
+                    </div>
                     <CardDescription className="text-sm mb-4">{tmpl.desc}</CardDescription>
                     <Link href={`/demos/${tmpl.slug}`}>
                       <Button variant="outline" size="sm" className="w-full gap-1.5">
-                        View Live Demo <ExternalLink className="h-3.5 w-3.5" />
+                        View Live Demos <ExternalLink className="h-3.5 w-3.5" />
                       </Button>
                     </Link>
                   </CardContent>

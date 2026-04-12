@@ -1,507 +1,117 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Phone, Mail, MapPin, Star, Menu, X, Clock,
-  Scissors, Sparkles, Heart, Droplets,
-  MessageCircle, Instagram, Facebook, ChevronRight,
-} from "lucide-react";
+import { Phone, MapPin, Clock, Star, Menu, X, Scissors, Sparkles, Heart, Flower2, Droplets, Sun, CheckCircle2, ArrowRight } from "lucide-react";
 
-/* ════════ SERVICE DATA ════════ */
-const serviceCategories = ["Hair", "Skin", "Nails", "Spa"] as const;
-
-const serviceItems: Record<string, { name: string; duration: string; price: string }[]> = {
-  Hair: [
-    { name: "Women's Haircut & Styling", duration: "45 min", price: "₹799" },
-    { name: "Hair Colour (Global)", duration: "90 min", price: "₹2,499" },
-    { name: "Highlights / Balayage", duration: "120 min", price: "₹3,999" },
-    { name: "Keratin Treatment", duration: "150 min", price: "₹5,499" },
-    { name: "Hair Spa & Treatment", duration: "60 min", price: "₹1,299" },
-    { name: "Blow Dry & Set", duration: "30 min", price: "₹499" },
-  ],
-  Skin: [
-    { name: "Classic Facial", duration: "60 min", price: "₹1,199" },
-    { name: "Gold / Diamond Facial", duration: "90 min", price: "₹2,499" },
-    { name: "Chemical Peel", duration: "45 min", price: "₹1,999" },
-    { name: "De-Tan Treatment", duration: "45 min", price: "₹899" },
-    { name: "Anti-Aging Facial", duration: "75 min", price: "₹2,999" },
-    { name: "Acne Treatment", duration: "60 min", price: "₹1,499" },
-  ],
-  Nails: [
-    { name: "Manicure (Classic)", duration: "30 min", price: "₹499" },
-    { name: "Pedicure (Spa)", duration: "45 min", price: "₹699" },
-    { name: "Gel Nail Art", duration: "60 min", price: "₹1,299" },
-    { name: "Acrylic Extensions", duration: "90 min", price: "₹2,499" },
-    { name: "Nail Art (Per Nail)", duration: "10 min", price: "₹99" },
-  ],
-  Spa: [
-    { name: "Swedish Massage", duration: "60 min", price: "₹1,999" },
-    { name: "Aromatherapy Massage", duration: "75 min", price: "₹2,499" },
-    { name: "Hot Stone Therapy", duration: "90 min", price: "₹2,999" },
-    { name: "Body Scrub & Wrap", duration: "60 min", price: "₹1,799" },
-    { name: "Head & Shoulder Massage", duration: "30 min", price: "₹799" },
-  ],
-};
-
-const memberships = [
-  {
-    name: "Silver",
-    price: "₹1,999/mo",
-    features: ["2 Haircuts per month", "1 Basic Facial", "10% off all services", "Priority booking"],
-    popular: false,
-  },
-  {
-    name: "Gold",
-    price: "₹3,499/mo",
-    features: ["Unlimited Haircuts", "2 Facials per month", "1 Spa Treatment", "20% off all services", "Free Manicure", "Priority booking"],
-    popular: true,
-  },
-  {
-    name: "Platinum",
-    price: "₹5,999/mo",
-    features: ["Unlimited Haircuts & Styling", "4 Facials per month", "2 Spa Treatments", "30% off all services", "Free Mani-Pedi", "Complimentary Hair Spa", "Priority + Home service"],
-    popular: false,
-  },
+const services = [
+  {icon:Scissors,title:"Hair Styling",desc:"Precision cuts, blowouts, keratin treatments, balayage & global colors by trained stylists.",price:"From ₹999"},
+  {icon:Sparkles,title:"Skin & Facials",desc:"HydraFacial, chemical peels, LED therapy, gold facials & anti-aging treatments.",price:"From ₹1,499"},
+  {icon:Droplets,title:"Nail Art & Extensions",desc:"Gel nails, acrylics, nail art, pedicures & luxury hand treatments.",price:"From ₹799"},
+  {icon:Sun,title:"Bridal Packages",desc:"Complete bridal makeup, mehndi, pre-bridal skincare & hair styling packages.",price:"From ₹25,000"},
+  {icon:Heart,title:"Body Spa & Massage",desc:"Aromatherapy, hot stone, deep tissue massage & body wraps.",price:"From ₹2,499"},
+  {icon:Flower2,title:"Makeup Studio",desc:"HD/Airbrush makeup, party looks, engagement & reception styling.",price:"From ₹3,499"},
 ];
+const reviews = [{name:"Priya Sharma",text:"Aura is my happy place. The ambiance is gorgeous and my hairstylist Neha truly understands what I want every single time.",stars:5},{name:"Roshni Kapoor",text:"Got my bridal package done here — the makeup lasted 14 hours! Absolutely stunning work by the team. Highly recommend.",stars:5},{name:"Meera Jain",text:"The HydraFacial here is chef's kiss. My skin has never looked better. Clean, professional, and such a lovely space.",stars:5}];
+const navLinks = ["Home","Services","About","Reviews","Book"];
 
-const stylists = [
-  { name: "Aisha Kapoor", role: "Senior Hair Colourist", exp: "8 Years", img: "https://placehold.co/300x360/f8e8e8/b76e79?text=Aisha" },
-  { name: "Neha Sharma", role: "Skin Specialist", exp: "6 Years", img: "https://placehold.co/300x360/f8e8e8/b76e79?text=Neha" },
-  { name: "Riya Patel", role: "Nail Artist", exp: "5 Years", img: "https://placehold.co/300x360/f8e8e8/b76e79?text=Riya" },
-];
-
-const reviews = [
-  { name: "Megha Desai", service: "Hair Colour", rating: 5, text: "Aisha gave me the most beautiful balayage! The salon is so elegant and relaxing. Absolutely love my new look.", img: "M" },
-  { name: "Priya Singh", service: "Bridal Package", rating: 5, text: "Had my bridal makeup and hair done here. The team was amazing, super professional, and made me feel like a princess on my big day.", img: "P" },
-  { name: "Ananya Rao", service: "Spa Treatment", rating: 5, text: "The aromatherapy massage was heavenly. Such a serene atmosphere. I come here monthly now — it's my happy place.", img: "A" },
-  { name: "Kavita Joshi", service: "Nail Art", rating: 4, text: "Riya's nail art designs are incredible. She's so creative and patient. My instagram is full of her nail art pictures now!", img: "K" },
-];
-
-const galleryPairs = [
-  { before: "https://placehold.co/400x300/e8d5d5/b76e79?text=Before+1", after: "https://placehold.co/400x300/f8e8e8/b76e79?text=After+1" },
-  { before: "https://placehold.co/400x300/e8d5d5/b76e79?text=Before+2", after: "https://placehold.co/400x300/f8e8e8/b76e79?text=After+2" },
-  { before: "https://placehold.co/400x300/e8d5d5/b76e79?text=Before+3", after: "https://placehold.co/400x300/f8e8e8/b76e79?text=After+3" },
-  { before: "https://placehold.co/400x300/e8d5d5/b76e79?text=Before+4", after: "https://placehold.co/400x300/f8e8e8/b76e79?text=After+4" },
-  { before: "https://placehold.co/400x300/e8d5d5/b76e79?text=Before+5", after: "https://placehold.co/400x300/f8e8e8/b76e79?text=After+5" },
-  { before: "https://placehold.co/400x300/e8d5d5/b76e79?text=Before+6", after: "https://placehold.co/400x300/f8e8e8/b76e79?text=After+6" },
-];
-
-const navLinks = ["Home", "Services", "Gallery", "Book", "Contact"];
-
-export default function SalonTemplate() {
+export default function SalonV1() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("Hair");
-
-  const tabIcons: Record<string, typeof Scissors> = { Hair: Scissors, Skin: Sparkles, Nails: Heart, Spa: Droplets };
-
   return (
-    <div className="min-h-screen bg-white text-[#2d2d2d]" style={{ fontFamily: "'Lato', system-ui, sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Lato:wght@300;400;700&display=swap');`}</style>
+    <div className="min-h-screen bg-white text-gray-900">
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        *{font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+        @keyframes shimmer{0%,100%{opacity:.5}50%{opacity:1}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}`}</style>
 
-      {/* Demo Bar */}
-      <div className="bg-[#2d2d2d] text-white text-xs text-center py-2 px-4">
-        <span className="opacity-70">This is a demo template by </span>
-        <Link href="/demos" className="underline font-medium text-[#b76e79] hover:text-white transition-colors">SecureCodeReviews</Link>
-        <span className="opacity-70"> · </span>
-        <Link href="/demos" className="underline opacity-70 hover:opacity-100 transition-opacity">← View all templates</Link>
+      <div className="bg-gradient-to-r from-[#be185d] to-[#ec4899] text-white text-xs text-center py-2.5 px-4">
+        <span className="opacity-70">Demo by </span><Link href="/demos" className="underline font-semibold hover:opacity-100">SecureCodeReviews</Link><span className="opacity-70"> · </span><Link href="/demos" className="underline opacity-70 hover:opacity-100">← All templates</Link>
       </div>
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#f8e8e8]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <a href="#home" className="flex items-center gap-2">
-              <div className="h-9 w-9 bg-[#b76e79] rounded-full flex items-center justify-center">
-                <Scissors className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-xl" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700 }}>
-                <span className="text-[#b76e79]">Blush</span> <span className="text-[#2d2d2d]">& Bloom</span>
-              </span>
-            </a>
-
-            <div className="hidden md:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <a key={link} href={`#${link.toLowerCase()}`} className="text-sm text-[#2d2d2d]/70 hover:text-[#b76e79] transition-colors font-medium tracking-wide">
-                  {link}
-                </a>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <a href="#book" className="hidden sm:inline-flex bg-[#b76e79] hover:bg-[#a25d68] text-white text-sm font-medium px-5 py-2.5 rounded-full transition-colors tracking-wide">
-                Book Now
-              </a>
-              <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 text-[#2d2d2d]">
-                {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-            </div>
-          </div>
-
-          {menuOpen && (
-            <div className="md:hidden py-4 border-t border-[#f8e8e8]">
-              {navLinks.map((link) => (
-                <a key={link} href={`#${link.toLowerCase()}`} onClick={() => setMenuOpen(false)} className="block py-2.5 text-sm text-[#2d2d2d]/70 hover:text-[#b76e79] font-medium tracking-wide">
-                  {link}
-                </a>
-              ))}
-            </div>
-          )}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-pink-100/50 shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-[70px]">
+          <a href="#home" className="flex items-center gap-2"><div className="h-9 w-9 bg-gradient-to-br from-[#be185d] to-[#f472b6] rounded-full flex items-center justify-center"><Sparkles className="h-4 w-4 text-white"/></div><div><span className="text-lg font-extrabold bg-gradient-to-r from-[#be185d] to-[#ec4899] bg-clip-text text-transparent">Aura</span><span className="block text-[8px] text-gray-400 tracking-[0.15em] uppercase -mt-0.5 font-bold">Salon & Spa</span></div></a>
+          <div className="hidden md:flex items-center gap-1">{navLinks.map(l=><a key={l} href={`#${l.toLowerCase()}`} className="text-sm text-gray-500 hover:text-[#be185d] px-3.5 py-2 rounded-lg transition-all font-medium">{l}</a>)}</div>
+          <div className="flex items-center gap-3"><a href="#book" className="hidden sm:inline-flex bg-gradient-to-r from-[#be185d] to-[#ec4899] text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-lg shadow-pink-500/20 hover:-translate-y-0.5 transition-all">Book Now</a><button onClick={()=>setMenuOpen(!menuOpen)} className="md:hidden p-2 text-gray-400"><Menu className="h-6 w-6"/></button></div>
         </div>
+        {menuOpen&&<div className="md:hidden px-4 pb-4 border-t border-pink-50">{navLinks.map(l=><a key={l} href={`#${l.toLowerCase()}`} onClick={()=>setMenuOpen(false)} className="block py-3 text-sm text-gray-500 hover:text-[#be185d]">{l}</a>)}</div>}
       </nav>
 
-      {/* ══════════════════════ HERO ══════════════════════ */}
-      <section id="home" className="relative bg-[#f8e8e8] overflow-hidden">
-        <div className="absolute inset-0">
-          <img src="https://placehold.co/1920x900/f0d5d5/b76e79?text=Salon+Hero" alt="Salon" className="w-full h-full object-cover opacity-30" />
-        </div>
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-          <div className="max-w-2xl">
-            <p className="text-[#b76e79] text-sm tracking-[0.2em] uppercase font-medium mb-4">Premium Salon & Spa</p>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#2d2d2d] mb-6 leading-tight" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Where Beauty Meets <span className="text-[#b76e79]">Elegance</span>
-            </h1>
-            <p className="text-lg text-[#2d2d2d]/70 mb-10 leading-relaxed font-light">
-              Indulge in luxury treatments by expert stylists. From hair transformations to rejuvenating spa therapies — your self-care journey starts here.
-            </p>
+      {/* Hero */}
+      <section id="home" className="relative py-20 sm:py-28 bg-gradient-to-br from-[#fff1f2] via-white to-[#fdf2f8] overflow-hidden">
+        <div className="absolute top-10 right-10 w-72 h-72 bg-pink-200/30 rounded-full blur-3xl" style={{animation:"float 6s ease-in-out infinite"}}/>
+        <div className="absolute bottom-10 left-10 w-52 h-52 bg-rose-200/20 rounded-full blur-3xl"/>
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-14 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-pink-500/10 border border-pink-500/20 text-[#be185d] px-4 py-2 rounded-full text-sm font-semibold mb-8"><Sparkles className="h-4 w-4"/>South Delhi&apos;s Most Loved Salon</div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-6 text-gray-900">Where Beauty<br/>Meets <span className="bg-gradient-to-r from-[#be185d] to-[#ec4899] bg-clip-text text-transparent">Luxury</span></h1>
+            <p className="text-lg text-gray-500 mb-10 leading-relaxed">Premium hair styling, skincare, bridal makeup & spa treatments. Trusted by 10,000+ women across Delhi NCR since 2016.</p>
             <div className="flex flex-wrap gap-4">
-              <a href="#book" className="inline-flex items-center gap-2 bg-[#b76e79] hover:bg-[#a25d68] text-white font-medium px-7 py-3.5 rounded-full transition-colors tracking-wide">
-                Book Appointment
-              </a>
-              <a href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border-2 border-[#b76e79] text-[#b76e79] hover:bg-[#b76e79] hover:text-white font-medium px-7 py-3.5 rounded-full transition-all tracking-wide">
-                <MessageCircle className="h-4 w-4" /> WhatsApp Us
-              </a>
+              <a href="#book" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#be185d] to-[#ec4899] text-white font-bold px-8 py-4 rounded-full shadow-xl shadow-pink-500/20 hover:-translate-y-0.5 transition-all text-sm">Book Appointment <ArrowRight className="h-4 w-4"/></a>
+              <a href="#services" className="inline-flex items-center gap-2 text-gray-700 font-semibold px-8 py-4 rounded-full border border-gray-200 hover:border-pink-200 hover:bg-pink-50/50 text-sm transition-all">Our Services</a>
             </div>
+            <div className="grid grid-cols-3 gap-4 mt-12">{[{v:"10,000+",l:"Happy Clients"},{v:"4.9★",l:"Google Rating"},{v:"8+ Years",l:"Experience"}].map(s=><div key={s.l} className="text-center"><p className="text-xl font-extrabold text-[#be185d]">{s.v}</p><p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wider">{s.l}</p></div>)}</div>
+          </div>
+          <div className="relative hidden lg:block">
+            <div className="rounded-[2rem] overflow-hidden shadow-2xl shadow-pink-200/50 border-4 border-white"><img src="https://placehold.co/550x650/fdf2f8/be185d?text=Aura+Salon" alt="Aura Salon" className="w-full"/></div>
+            <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl p-4 shadow-xl border border-pink-100" style={{animation:"float 5s ease-in-out infinite"}}><div className="flex items-center gap-2"><div className="flex -space-x-2">{[1,2,3].map(i=><div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-200 to-pink-400 border-2 border-white"/>)}</div><div><p className="text-xs font-bold">200+ Reviews</p><div className="flex gap-0.5">{[1,2,3,4,5].map(i=><Star key={i} className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400"/>)}</div></div></div></div>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════ SERVICES ══════════════════════ */}
-      <section id="services" className="py-20">
+      {/* Services */}
+      <section id="services" className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-[#b76e79] text-sm tracking-[0.15em] uppercase font-medium mb-2">Our Services</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Services & Pricing</h2>
-          </div>
-
-          {/* Category tabs */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {serviceCategories.map((cat) => {
-              const Icon = tabIcons[cat];
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveTab(cat)}
-                  className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all ${
-                    activeTab === cat
-                      ? "bg-[#b76e79] text-white shadow-md"
-                      : "bg-[#f8e8e8] text-[#2d2d2d]/70 hover:bg-[#f0d5d5]"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" /> {cat}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Service items */}
-          <div className="max-w-3xl mx-auto">
-            <div className="space-y-3">
-              {serviceItems[activeTab]?.map((item) => (
-                <div key={item.name} className="flex items-center justify-between p-5 bg-[#fdf6f6] rounded-xl border border-[#f8e8e8] hover:border-[#b76e79]/30 transition-colors group">
-                  <div className="flex-1">
-                    <h3 className="font-semibold group-hover:text-[#b76e79] transition-colors">{item.name}</h3>
-                    <p className="text-sm text-[#2d2d2d]/50 mt-0.5">{item.duration}</p>
-                  </div>
-                  <span className="text-[#b76e79] font-bold text-lg shrink-0 ml-4" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{item.price}</span>
-                </div>
-              ))}
-            </div>
+          <div className="text-center mb-14"><span className="text-[#be185d] text-xs tracking-[0.2em] uppercase font-bold">What We Offer</span><h2 className="text-3xl sm:text-4xl font-extrabold mt-2">Our Services</h2></div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {services.map(s=><div key={s.title} className="group bg-gradient-to-br from-pink-50/50 to-white rounded-2xl p-7 border border-pink-100/50 hover:shadow-xl hover:shadow-pink-100/50 hover:-translate-y-1 transition-all duration-300"><div className="flex items-center justify-between mb-4"><s.icon className="h-8 w-8 text-[#be185d] group-hover:scale-110 transition-transform"/><span className="text-xs text-[#be185d] font-bold bg-pink-500/10 px-3 py-1 rounded-full">{s.price}</span></div><h3 className="text-lg font-bold mb-2">{s.title}</h3><p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p></div>)}
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════ MEMBERSHIP ══════════════════════ */}
-      <section className="py-20 bg-[#fdf6f6]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-[#b76e79] text-sm tracking-[0.15em] uppercase font-medium mb-2">Exclusive</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Membership Plans</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {memberships.map((m) => (
-              <div key={m.name} className={`bg-white rounded-2xl p-6 border-2 relative ${m.popular ? "border-[#b76e79] shadow-lg" : "border-[#f8e8e8]"} hover:shadow-md transition-shadow`}>
-                {m.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#b76e79] text-white text-xs font-bold px-4 py-1 rounded-full">
-                    Most Popular
-                  </div>
-                )}
-                <div className="text-center mb-6 pt-2">
-                  <h3 className="text-2xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{m.name}</h3>
-                  <p className="text-3xl font-bold text-[#b76e79] mt-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{m.price}</p>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  {m.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-[#2d2d2d]/70">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#b76e79] shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <a href="#book" className={`block text-center font-medium py-2.5 rounded-full transition-colors text-sm tracking-wide ${
-                  m.popular
-                    ? "bg-[#b76e79] hover:bg-[#a25d68] text-white"
-                    : "border-2 border-[#b76e79] text-[#b76e79] hover:bg-[#b76e79] hover:text-white"
-                }`}>
-                  Join Now
-                </a>
-              </div>
-            ))}
+      {/* About */}
+      <section id="about" className="py-24 bg-gradient-to-br from-[#fff1f2] to-[#fdf2f8]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-14 items-center">
+          <div className="rounded-[2rem] overflow-hidden shadow-2xl shadow-pink-200/30"><img src="https://placehold.co/550x500/fdf2f8/be185d?text=Our+Studio" alt="Studio" className="w-full"/></div>
+          <div>
+            <span className="text-[#be185d] text-xs tracking-[0.2em] uppercase font-bold">About Aura</span>
+            <h2 className="text-3xl font-extrabold mt-2 mb-4">Founded by Passion, Driven by Perfection</h2>
+            <p className="text-gray-600 leading-relaxed mb-4">Aura Salon & Spa was founded in 2016 by Kavita Arora — a London-trained hair stylist and beauty expert with 15+ years of experience. What started as a small studio in GK-1 has grown into South Delhi&apos;s most celebrated salon.</p>
+            <p className="text-gray-600 leading-relaxed mb-6">Our team of 25+ trained professionals uses only premium international products — Olaplex, Kérastase, MAC, Bobbi Brown — to deliver results that speak for themselves.</p>
+            <div className="space-y-2">{["London School of Beauty certified lead stylist","Only premium products: Olaplex, MAC, Kérastase","CIDESCO-certified skincare therapists","5,000+ bridal makeovers completed","Featured in Vogue India & Femina"].map(t=><div key={t} className="flex items-center gap-2 text-sm text-gray-600"><CheckCircle2 className="h-4 w-4 text-[#be185d] shrink-0"/>{t}</div>)}</div>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════ BEFORE / AFTER GALLERY ══════════════════════ */}
-      <section id="gallery" className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-[#b76e79] text-sm tracking-[0.15em] uppercase font-medium mb-2">Transformations</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Before & After</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {galleryPairs.map((pair, i) => (
-              <div key={i} className="group">
-                <div className="grid grid-cols-2 gap-1 rounded-xl overflow-hidden">
-                  <div className="relative">
-                    <img src={pair.before} alt="Before" className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <span className="absolute bottom-2 left-2 text-[10px] bg-black/50 text-white px-2 py-0.5 rounded-full">Before</span>
-                  </div>
-                  <div className="relative">
-                    <img src={pair.after} alt="After" className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <span className="absolute bottom-2 right-2 text-[10px] bg-[#b76e79] text-white px-2 py-0.5 rounded-full">After</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Reviews */}
+      <section id="reviews" className="py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="text-center mb-14"><h2 className="text-3xl font-extrabold">Client Love</h2></div>
+          <div className="grid md:grid-cols-3 gap-5">{reviews.map(r=><div key={r.name} className="bg-gradient-to-br from-pink-50/50 to-white rounded-2xl p-7 border border-pink-100/50"><div className="flex gap-0.5 mb-4">{Array.from({length:5}).map((_,i)=><Star key={i} className="h-4 w-4 text-pink-500 fill-pink-500"/>)}</div><p className="text-sm text-gray-600 leading-relaxed mb-4">&ldquo;{r.text}&rdquo;</p><p className="text-sm font-bold text-[#be185d]">{r.name}</p></div>)}</div>
         </div>
       </section>
 
-      {/* ══════════════════════ STYLISTS ══════════════════════ */}
-      <section className="py-20 bg-[#fdf6f6]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-[#b76e79] text-sm tracking-[0.15em] uppercase font-medium mb-2">Our Experts</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Meet Our Stylists</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {stylists.map((s) => (
-              <div key={s.name} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-[#f8e8e8] group hover:shadow-md transition-shadow">
-                <img src={s.img} alt={s.name} className="w-full h-64 object-cover group-hover:scale-[1.02] transition-transform duration-300" />
-                <div className="p-6 text-center">
-                  <h3 className="text-lg font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{s.name}</h3>
-                  <p className="text-[#b76e79] text-sm font-medium">{s.role}</p>
-                  <p className="text-sm text-[#2d2d2d]/50 mt-1">{s.exp} Experience</p>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Booking */}
+      <section id="book" className="py-24 bg-gradient-to-br from-[#fff1f2] to-[#fdf2f8]">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10"><h2 className="text-3xl font-extrabold mb-3">Book Your Visit</h2><p className="text-gray-500">Walk-ins welcome · Appointments preferred</p></div>
+          <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" className="bg-white rounded-3xl p-7 sm:p-10 shadow-xl shadow-pink-100/50 border border-pink-50">
+            <div className="grid sm:grid-cols-2 gap-4 mb-4"><div><label className="block text-sm font-semibold mb-1.5">Name *</label><input type="text" name="name" required className="w-full px-4 py-3 bg-pink-50/30 border border-pink-100 rounded-xl text-sm placeholder-gray-400 focus:ring-2 focus:ring-pink-500 outline-none" placeholder="Your name"/></div><div><label className="block text-sm font-semibold mb-1.5">Phone *</label><input type="tel" name="phone" required className="w-full px-4 py-3 bg-pink-50/30 border border-pink-100 rounded-xl text-sm placeholder-gray-400 focus:ring-2 focus:ring-pink-500 outline-none" placeholder="+91 99999 99999"/></div></div>
+            <div className="grid sm:grid-cols-2 gap-4 mb-4"><div><label className="block text-sm font-semibold mb-1.5">Email</label><input type="email" name="email" className="w-full px-4 py-3 bg-pink-50/30 border border-pink-100 rounded-xl text-sm placeholder-gray-400 focus:ring-2 focus:ring-pink-500 outline-none" placeholder="you@email.com"/></div><div><label className="block text-sm font-semibold mb-1.5">Service *</label><select name="service" required className="w-full px-4 py-3 bg-pink-50/30 border border-pink-100 rounded-xl text-sm focus:ring-2 focus:ring-pink-500 outline-none"><option value="">Select...</option>{["Hair Styling","Skin & Facials","Nail Art","Bridal Packages","Body Spa & Massage","Makeup Studio"].map(p=><option key={p} value={p}>{p}</option>)}</select></div></div>
+            <div className="mb-6"><label className="block text-sm font-semibold mb-1.5">Message</label><textarea name="message" rows={3} className="w-full px-4 py-3 bg-pink-50/30 border border-pink-100 rounded-xl text-sm placeholder-gray-400 focus:ring-2 focus:ring-pink-500 outline-none resize-none" placeholder="Preferred date/time or special requests..."/></div>
+            <button type="submit" className="w-full bg-gradient-to-r from-[#be185d] to-[#ec4899] text-white font-bold py-4 rounded-xl shadow-lg shadow-pink-500/20">Book Appointment</button>
+          </form>
         </div>
       </section>
 
-      {/* ══════════════════════ REVIEWS ══════════════════════ */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-[#b76e79] text-sm tracking-[0.15em] uppercase font-medium mb-2">Love Notes</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Client Reviews</h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {reviews.map((r) => (
-              <div key={r.name} className="bg-[#fdf6f6] rounded-2xl p-5 border border-[#f8e8e8] hover:border-[#b76e79]/30 transition-colors">
-                <div className="flex gap-0.5 mb-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`h-4 w-4 ${i < r.rating ? "text-[#b76e79] fill-[#b76e79]" : "text-gray-200"}`} />
-                  ))}
-                </div>
-                <p className="text-sm text-[#2d2d2d]/70 mb-4 leading-relaxed italic">&ldquo;{r.text}&rdquo;</p>
-                <div className="flex items-center gap-3 pt-3 border-t border-[#f8e8e8]">
-                  <div className="h-9 w-9 bg-[#b76e79] rounded-full flex items-center justify-center text-white font-bold text-xs">
-                    {r.img}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">{r.name}</p>
-                    <p className="text-xs text-[#b76e79]">{r.service}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2"><div className="h-8 w-8 bg-gradient-to-r from-[#be185d] to-[#ec4899] rounded-full flex items-center justify-center"><Sparkles className="h-3.5 w-3.5 text-white"/></div><span className="font-extrabold">Aura Salon & Spa</span></div>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400"><span><MapPin className="h-3.5 w-3.5 inline mr-1"/>M-21, GK-1, New Delhi</span><span><Clock className="h-3.5 w-3.5 inline mr-1"/>10 AM – 8 PM (All Days)</span><span><Phone className="h-3.5 w-3.5 inline mr-1"/>+91 99999 99999</span></div>
         </div>
-      </section>
-
-      {/* ══════════════════════ BOOKING FORM ══════════════════════ */}
-      <section id="book" className="py-20 bg-[#2d2d2d]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12">
-            <div className="text-white">
-              <p className="text-[#b76e79] text-sm tracking-[0.15em] uppercase font-medium mb-4">Appointments</p>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Book Your Visit</h2>
-              <p className="text-gray-400 leading-relaxed mb-8 font-light">
-                Treat yourself to a pampering session. Book online and we&apos;ll have everything ready for your arrival.
-              </p>
-
-              {/* Opening hours */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
-                <h3 className="font-semibold mb-4 flex items-center gap-2 text-[#b76e79]">
-                  <Clock className="h-5 w-5" /> Opening Hours
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-400">Monday – Saturday</span><span className="font-medium">10:00 AM – 8:00 PM</span></div>
-                  <div className="flex justify-between"><span className="text-gray-400">Sunday</span><span className="font-medium">11:00 AM – 6:00 PM</span></div>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-sm text-gray-400">
-                <div className="flex items-center gap-3"><MapPin className="h-4 w-4 text-[#b76e79]" /> Blush & Bloom Salon, 12 Rose Lane, Koregaon Park, Pune</div>
-                <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-[#b76e79]" /> +91 99999 99999</div>
-              </div>
-            </div>
-
-            <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" className="bg-white rounded-2xl p-6 sm:p-8 shadow-2xl">
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1.5">Name *</label>
-                  <input type="text" name="name" required className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#b76e79] focus:border-transparent outline-none" placeholder="Your name" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1.5">Phone *</label>
-                  <input type="tel" name="phone" required className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#b76e79] focus:border-transparent outline-none" placeholder="+91 99999 99999" />
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1.5">Date *</label>
-                  <input type="date" name="date" required className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#b76e79] focus:border-transparent outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1.5">Time *</label>
-                  <select name="time" required className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-[#b76e79] focus:border-transparent outline-none">
-                    <option value="">Select time...</option>
-                    {["10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM"].map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1.5">Service Category *</label>
-                  <select name="service" required className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-[#b76e79] focus:border-transparent outline-none">
-                    <option value="">Select...</option>
-                    {serviceCategories.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1.5">Stylist Preference</label>
-                  <select name="stylist" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-[#b76e79] focus:border-transparent outline-none">
-                    <option value="No preference">No preference</option>
-                    {stylists.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#2d2d2d] mb-1.5">Special Requests</label>
-                <textarea name="requests" rows={3} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#b76e79] focus:border-transparent outline-none resize-none" placeholder="Any specific requests or notes..." />
-              </div>
-              <button type="submit" className="w-full bg-[#b76e79] hover:bg-[#a25d68] text-white font-semibold py-3.5 rounded-full transition-colors tracking-wide">
-                Book Appointment
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════ MAP ══════════════════════ */}
-      <section id="contact" className="py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/*
-            GOOGLE MAPS EMBED:
-            Replace the src with your salon's Google Maps embed URL.
-          */}
-          <div className="rounded-2xl overflow-hidden border border-[#f8e8e8]">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d242117.68082427554!2d73.72288309453122!3d18.524598710773886!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2bf2e67461101%3A0x828d43bf9d9ee343!2sPune%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1711111111111"
-              width="100%"
-              height="300"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Salon Location"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════ FOOTER ══════════════════════ */}
-      <footer className="bg-[#2d2d2d] text-white py-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div>
-              <span className="text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700 }}>
-                <span className="text-[#b76e79]">Blush</span> & Bloom
-              </span>
-              <p className="text-sm text-gray-400 mt-3 leading-relaxed font-light">
-                Where beauty meets elegance. Your self-care destination in Pune.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wide text-gray-300">Quick Links</h4>
-              <ul className="space-y-2.5">
-                {navLinks.map((l) => (
-                  <li key={l}><a href={`#${l.toLowerCase()}`} className="text-sm text-gray-400 hover:text-[#b76e79] transition-colors">{l}</a></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wide text-gray-300">Contact</h4>
-              <ul className="space-y-2.5 text-sm text-gray-400">
-                <li>+91 99999 99999</li>
-                <li>hello@blushandbloom.com</li>
-                <li>12 Rose Lane, Koregaon Park</li>
-                <li>Pune – 411001</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wide text-gray-300">Follow Us</h4>
-              <div className="flex gap-3">
-                {[Instagram, Facebook].map((Icon, i) => (
-                  <a key={i} href="#" className="h-10 w-10 bg-white/5 hover:bg-[#b76e79] rounded-full flex items-center justify-center text-gray-400 hover:text-white transition-all">
-                    <Icon className="h-5 w-5" />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-white/10 mt-10 pt-8 text-center text-xs text-gray-500">
-            © 2026 Blush & Bloom Salon & Spa. All rights reserved. | Built with ❤️ by SecureCodeReviews
-          </div>
-        </div>
+        <p className="text-center text-xs text-gray-600 mt-8">© 2026 Aura Salon & Spa · Built by SecureCodeReviews</p>
       </footer>
 
-      {/* ══════════════════════ FLOATING WHATSAPP ══════════════════════ */}
-      <a
-        href="https://wa.me/919999999999"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
-        aria-label="Chat on WhatsApp"
-      >
-        <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-        </svg>
-      </a>
+      <a href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg hover:scale-110 transition-all" aria-label="WhatsApp"><svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
     </div>
   );
 }
