@@ -30,6 +30,11 @@ import {
   Database,
   Gauge,
   Palette,
+  Stethoscope,
+  UtensilsCrossed,
+  Building2,
+  Calculator,
+  Scissors,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -436,6 +441,7 @@ export default function ServicesPage() {
           {[
             { label: "🛡️ Security Services", href: "#security-services" },
             { label: "💻 Web & App Development", href: "#development-services" },
+            { label: "🌐 Website Demos", href: "#website-demos" },
             { label: "🤖 AI / ML Services", href: "#ai-services" },
             { label: "📂 Portfolio", href: "#portfolio" },
           ].map((link) => (
@@ -627,6 +633,76 @@ export default function ServicesPage() {
               <Button size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 <Globe className="h-5 w-5" />
                 Start Your Project
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────
+          WEBSITE DEMO TEMPLATES
+          ───────────────────────────────────────────── */}
+      <section id="website-demos" className="scroll-mt-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <Badge className="bg-rose-600 text-white mb-4 text-sm px-3 py-1">Website Templates</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready-Made Website Demo Templates
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Professional, mobile-responsive websites for every industry. Browse our live demos and get yours customized.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { icon: Stethoscope, name: "Clinic & Doctor", slug: "clinic", color: "from-blue-500 to-cyan-500", desc: "Appointment booking, doctor profiles, clinic timings" },
+              { icon: UtensilsCrossed, name: "Restaurant & Café", slug: "restaurant", color: "from-amber-600 to-yellow-500", desc: "Interactive menu, reservations, photo gallery" },
+              { icon: Building2, name: "Real Estate Agent", slug: "real-estate", color: "from-yellow-700 to-amber-500", desc: "Property listings, search filters, agent profile" },
+              { icon: Calculator, name: "CA / Law Firm", slug: "ca-firm", color: "from-yellow-800 to-yellow-600", desc: "Service details, team profiles, FAQ section" },
+              { icon: GraduationCap, name: "Coaching Institute", slug: "coaching", color: "from-orange-600 to-orange-400", desc: "Course details, topper showcase, batch timings" },
+              { icon: Scissors, name: "Salon & Spa", slug: "salon", color: "from-rose-500 to-pink-400", desc: "Service pricing, membership plans, appointment booking" },
+            ].map((tmpl, i) => (
+              <motion.div
+                key={tmpl.slug}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.06 }}
+              >
+                <Card className="h-full border-0 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
+                  <div className={`h-24 bg-gradient-to-br ${tmpl.color} flex items-center justify-center`}>
+                    <tmpl.icon className="h-10 w-10 text-white/80" />
+                  </div>
+                  <CardContent className="p-5">
+                    <CardTitle className="text-lg mb-1">{tmpl.name}</CardTitle>
+                    <CardDescription className="text-sm mb-4">{tmpl.desc}</CardDescription>
+                    <Link href={`/demos/${tmpl.slug}`}>
+                      <Button variant="outline" size="sm" className="w-full gap-1.5">
+                        View Live Demo <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-12 text-center"
+          >
+            <Link href="/demos">
+              <Button size="lg" className="gap-2 bg-rose-600 hover:bg-rose-700">
+                <Globe className="h-5 w-5" />
+                Browse All Templates
               </Button>
             </Link>
           </motion.div>
