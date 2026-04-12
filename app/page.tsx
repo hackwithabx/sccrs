@@ -49,9 +49,13 @@ const shieldxModules = [
   { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
   { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing with header analysis for any HTTP endpoint" },
   { icon: Fingerprint, title: "SAST Code Analyzer", desc: "AST-based taint analysis with 80+ checks — traces user input to dangerous sinks across 25+ vulnerability classes" },
-  { icon: Brain, title: "Log Analyzer", desc: "AI-powered threat detection for brute force, injection, privilege escalation, and exfiltration" },
-  { icon: GitBranch, title: "CI/CD Pipeline Gate", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates with pass/fail verdicts" },
+  { icon: Brain, title: "AI Security Review", desc: "AI-powered deep review for business logic flaws, IDOR, race conditions, and auth gaps beyond pattern-based SAST" },
+  { icon: Shield, title: "Container Security", desc: "Scan Dockerfiles for 15+ CIS Benchmark checks — root user, secrets in ENV, curl|bash, open ports" },
+  { icon: Cloud, title: "IaC Scanner", desc: "Terraform, CloudFormation & K8s manifest scanning for public S3 buckets, IAM wildcards, missing encryption" },
+  { icon: FileSearch, title: "SBOM Generator", desc: "CycloneDX 1.5 Software Bill of Materials from package.json, requirements.txt, go.mod — regulatory-ready" },
+  { icon: Scale, title: "Compliance Report", desc: "Map findings to SOC 2, ISO 27001, PCI-DSS, HIPAA, NIST 800-53, CIS, and GDPR frameworks" },
   { icon: Scale, title: "License Compliance", desc: "Detect GPL, AGPL, and copyleft licenses that can block acquisitions or compliance audits" },
+  { icon: GitBranch, title: "CI/CD Pipeline Gate", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates with pass/fail verdicts" },
   { icon: BarChart3, title: "Security Score", desc: "Unified composite security posture score across all modules with trend tracking" },
 ];
 
@@ -73,12 +77,6 @@ const features = [
     title: "Vulnerability Dashboard",
     description: "Interactive visualizations showing real-time vulnerability trends and severity data.",
     href: "/vulnerabilities",
-  },
-  {
-    icon: FileText,
-    title: "Security Reports",
-    description: "Generate branded PDF security assessment reports with executive summaries.",
-    href: "/reports",
   },
   {
     icon: Shield,
@@ -174,7 +172,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-              7 scanners. 80+ SAST checks. Exploit PoC generation and cross-file dataflow tracing — all in under 60 seconds. More coverage than Snyk + Semgrep combined, at 1/3 the price.
+              14 scanners. 80+ SAST checks. Exploit PoC generation, SBOM generation, compliance mapping, and cross-file dataflow tracing — all in under 60 seconds.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -207,7 +205,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4"
+            className="mt-20 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
           >
             {shieldxModules.map((mod, i) => (
               <motion.div
@@ -237,9 +235,9 @@ export default function HomePage() {
             className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8"
           >
             {[ 
-              { value: "9", label: "Security Modules" },
+              { value: "14", label: "Security Modules" },
               { value: "80+", label: "SAST Vulnerability Checks" },
-              { value: "$49", label: "Pro Per Month" },
+              { value: "$79", label: "Pro Per Month" },
               { value: "60s", label: "To First Scan Results" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
@@ -455,14 +453,14 @@ export default function HomePage() {
               },
               {
                 icon: Shield,
-                title: "9 Modules, One Platform",
-                desc: "Secrets, dependencies, SAST, API, cloud, logs, CI/CD, license compliance, and security scoring — all in one workspace.",
+                title: "14 Modules, One Platform",
+                desc: "Secrets, dependencies, SAST, API, cloud, logs, CI/CD, license compliance, security scoring, containers, IaC, SBOM, and compliance mapping — all in one workspace.",
                 highlight: "Complete Coverage",
               },
               {
                 icon: Lock,
-                title: "$49/mo vs $50K+ Stacks",
-                desc: "7 scanners for $49/mo flat — Snyk charges $25/dev/mo for just one. Your code is analyzed in memory and immediately discarded.",
+                title: "$79/mo vs $50K+ Stacks",
+                desc: "14 scanners for $79/mo flat — Snyk charges $25/dev/mo for just one. Your code is analyzed in memory and immediately discarded.",
                 highlight: "10x Cheaper",
               },
             ].map((item, i) => (
@@ -496,7 +494,7 @@ export default function HomePage() {
               },
               {
                 label: "Starting cost",
-                shieldx: "$49/mo flat — all 7 scanners",
+                shieldx: "$79/mo flat — all 14 scanners",
                 traditional: "$25–$105/dev/mo per product",
               },
               {
@@ -1147,7 +1145,7 @@ export default function HomePage() {
               Your Code Has Vulnerabilities. Find Them Before Attackers Do.
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              7 scanners. 80+ checks. Exploit PoC generation. $49/mo flat — not per developer, not per product. Try ShieldX free or request Pro access.
+              14 scanners. 80+ checks. Exploit PoC generation, SBOM generation, and compliance mapping. $79/mo flat — not per developer, not per product. Try ShieldX free or request Pro access.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/shieldx">

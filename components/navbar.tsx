@@ -28,7 +28,6 @@ const navLinks = [
   { href: "/tools", label: "Tools", icon: Wrench },
   { href: "/owasp", label: "Learn", icon: BookOpen, matchAlso: ["/secure-code", "/cloud-security", "/vulnerabilities"] },
   { href: "/blog", label: "Blog", icon: BookOpen },
-  { href: "/reports", label: "Reports", icon: FileText },
   { href: "/about", label: "About", icon: Info },
   { href: "/contact", label: "Contact", icon: Mail },
 ];

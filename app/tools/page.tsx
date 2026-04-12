@@ -84,7 +84,6 @@ export default function ToolsPage() {
         <div className="mt-8 flex flex-wrap gap-2 justify-center">
           {[
             { id: "ai-auditor", label: "🤖 AI Security Auditor", link: "/tools/ai-security-auditor" },
-            { id: "headers", label: "Header Analyzer" },
             { id: "csp-generator", label: "CSP Generator" },
             { id: "jwt-decoder", label: "JWT Decoder" },
             { id: "hash", label: "Hash Generator" },
@@ -109,8 +108,6 @@ export default function ToolsPage() {
         </div>
 
         <div className="mt-12 space-y-8">
-          <HeaderAnalyzer />
-          <Separator />
           <CSPGenerator />
           <Separator />
           <JWTDecoder />
@@ -135,152 +132,15 @@ export default function ToolsPage() {
                 View Services <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/reports">
+            <Link href="/shieldx">
               <Button variant="outline" className="gap-2">
-                Generate Report <ArrowRight className="h-4 w-4" />
+                Open ShieldX <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-// ---------- Header Analyzer ----------
-function HeaderAnalyzer() {
-  const [url, setUrl] = useState("");
-  const [results, setResults] = useState<
-    { header: string; value: string | null; status: "good" | "warning" | "bad" | "info"; message: string }[] | null
-  >(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<{ url: string; statusCode: number; server: string; scannedAt: string } | null>(null);
-
-  const analyzeHeaders = async () => {
-    setLoading(true);
-    setError(null);
-    setResults(null);
-    setMeta(null);
-
-    try {
-      const res = await fetch("/api/analyze-headers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Failed to analyze headers");
-        return;
-      }
-
-      setResults(data.results);
-      setMeta({ url: data.url, statusCode: data.statusCode, server: data.server, scannedAt: data.scannedAt });
-    } catch {
-      setError("Network error — please check your connection and try again");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const statusIcon = (status: string) => {
-    if (status === "good") return <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />;
-    if (status === "warning") return <AlertTriangle className="h-5 w-5 text-chart-4 shrink-0" />;
-    if (status === "info") return <ShieldCheck className="h-5 w-5 text-blue-500 shrink-0" />;
-    return <XCircle className="h-5 w-5 text-destructive shrink-0" />;
-  };
-
-  return (
-    <Card id="headers">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Globe className="h-5 w-5 text-primary" />
-          <CardTitle>Security Header Analyzer</CardTitle>
-        </div>
-        <CardDescription>
-          Performs a real HTTP request to check security headers on any public URL
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Enter URL (e.g., https://example.com)"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && url && !loading) analyzeHeaders(); }}
-            className="flex-1"
-          />
-          <Button onClick={analyzeHeaders} disabled={!url || loading} className="gap-2">
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            Analyze
-          </Button>
-        </div>
-
-        {error && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
-            {error}
-          </motion.div>
-        )}
-
-        {meta && results && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            {/* Scan metadata */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-b pb-3">
-              <span><strong>URL:</strong> {meta.url}</span>
-              <span><strong>HTTP Status:</strong> {meta.statusCode}</span>
-              <span><strong>Server:</strong> {meta.server}</span>
-              <span><strong>Scanned:</strong> {new Date(meta.scannedAt).toLocaleString()}</span>
-            </div>
-
-            {/* Results */}
-            {results.map((r) => (
-              <div
-                key={r.header}
-                className="flex items-start gap-3 rounded-lg border p-3"
-              >
-                {statusIcon(r.status)}
-                <div className="min-w-0">
-                  <div className="font-mono text-sm font-semibold">{r.header}</div>
-                  {r.value && (
-                    <div className="text-xs font-mono text-muted-foreground truncate" title={r.value}>
-                      {r.value.length > 120 ? r.value.slice(0, 120) + "…" : r.value}
-                    </div>
-                  )}
-                  <div className="text-sm text-muted-foreground mt-0.5">{r.message}</div>
-                </div>
-              </div>
-            ))}
-
-            {/* Summary badges */}
-            <div className="flex flex-wrap gap-2 mt-4">
-              <Badge variant="outline" className="gap-1">
-                <CheckCircle2 className="h-3 w-3 text-primary" />
-                {results.filter((r) => r.status === "good").length} Passed
-              </Badge>
-              <Badge variant="outline" className="gap-1">
-                <AlertTriangle className="h-3 w-3 text-chart-4" />
-                {results.filter((r) => r.status === "warning").length} Warnings
-              </Badge>
-              <Badge variant="outline" className="gap-1">
-                <XCircle className="h-3 w-3 text-destructive" />
-                {results.filter((r) => r.status === "bad").length} Failed
-              </Badge>
-              <Badge variant="outline" className="gap-1">
-                <ShieldCheck className="h-3 w-3 text-blue-500" />
-                {results.filter((r) => r.status === "info").length} Info
-              </Badge>
-            </div>
-          </motion.div>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 

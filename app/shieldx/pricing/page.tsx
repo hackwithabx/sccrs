@@ -51,9 +51,14 @@ const FEATURES: PlanFeature[] = [
   { name: "Cloud Security Audit (18 checks)", icon: Cloud, free: false, pro: true, enterprise: true },
   { name: "API Scanner (OWASP API Top 10)", icon: Globe, free: false, pro: true, enterprise: true },
   { name: "SAST Code Analyzer (AST taint analysis + multi-file project scan)", icon: Brain, free: false, pro: true, enterprise: true },
+  { name: "AI Security Review (LLM-powered deep analysis)", icon: Brain, free: false, pro: true, enterprise: true },
   { name: "Threat Log Analyzer", icon: Brain, free: false, pro: true, enterprise: true },
-  { name: "CI/CD Pipeline Gate", icon: GitBranch, free: false, pro: false, enterprise: true },
+  { name: "Container Security (CIS Docker Benchmark, 15+ checks)", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "IaC Scanner (Terraform, CloudFormation, Kubernetes)", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "SBOM Generator (CycloneDX 1.5)", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "Compliance Report (SOC 2, ISO 27001, PCI-DSS, HIPAA, NIST, GDPR)", icon: Shield, free: false, pro: true, enterprise: true },
   { name: "License Compliance Scanner (copyleft & risk detection)", icon: Shield, free: false, pro: true, enterprise: true },
+  { name: "CI/CD Pipeline Gate", icon: GitBranch, free: false, pro: false, enterprise: true },
   { name: "Security Score Dashboard", icon: BarChart3, free: "Demo (2 scans)", pro: true, enterprise: true },
   { name: "Interactive Charts & Analytics", icon: BarChart3, free: false, pro: true, enterprise: true },
   { name: "Downloadable Reports (HTML, JSON, CSV)", icon: Shield, free: false, pro: true, enterprise: true },
@@ -63,6 +68,7 @@ const FEATURES: PlanFeature[] = [
   { name: "Finding Suppression & False Positive Management", icon: Shield, free: false, pro: true, enterprise: true },
   { name: "Up to 200MB Project Upload (ZIP/folder)", icon: Zap, free: false, pro: true, enterprise: true },
   { name: "JSON & CSV Export for CI/CD Integration", icon: Zap, free: false, pro: true, enterprise: true },
+  { name: "Up to 5 Developer Seats", icon: Star, free: false, pro: true, enterprise: true },
   { name: "Team Management (25 seats)", icon: Star, free: false, pro: false, enterprise: true },
   { name: "Priority Support and Onboarding", icon: Crown, free: false, pro: false, enterprise: true },
   { name: "Custom Integrations and White-labeling", icon: Crown, free: false, pro: false, enterprise: true },
@@ -83,9 +89,9 @@ const plans = [
   {
     key: "pro" as const,
     name: "Pro",
-    price: "$49",
+    price: "$79",
     period: "/month",
-    description: "All 7 scanners, exploit PoC generator, and unlimited scans for up to 3 developers.",
+    description: "All 14 scanners, exploit PoC generator, SBOM generation, compliance reports, and unlimited scans for up to 5 developers.",
     badge: "Most Popular",
     cta: "Request Pro Access",
     highlight: true,
@@ -94,9 +100,9 @@ const plans = [
   {
     key: "enterprise" as const,
     name: "Enterprise",
-    price: "$199",
+    price: "$299",
     period: "/month",
-    description: "25 team seats, CI/CD pipeline gate, priority support, onboarding, and white-labeling.",
+    description: "25 team seats, CI/CD pipeline gate, priority support, onboarding, white-labeling, and dedicated account manager.",
     badge: "Built for Teams",
     cta: "Request Enterprise Plan",
     highlight: false,
@@ -492,14 +498,14 @@ export default function ShieldXPricingPage() {
             How ShieldX Compares
           </h2>
           <p className="mx-auto mb-8 max-w-2xl text-center text-sm text-muted-foreground">
-            ShieldX delivers 7 scanners + exploit PoC generation at a fraction of what others charge for fewer capabilities.
+            ShieldX delivers 14 scanners + exploit PoC generation at a fraction of what others charge for fewer capabilities.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b">
                   <th className="px-4 py-3 text-left font-semibold">Capability</th>
-                  <th className="px-4 py-3 text-center font-semibold text-primary">ShieldX Pro $49/mo</th>
+                  <th className="px-4 py-3 text-center font-semibold text-primary">ShieldX Pro $79/mo</th>
                   <th className="px-4 py-3 text-center font-semibold">Snyk Team $25/dev/mo</th>
                   <th className="px-4 py-3 text-center font-semibold">Semgrep Teams $30/dev/mo</th>
                   <th className="px-4 py-3 text-center font-semibold">SonarQube Team $32/mo</th>
@@ -518,7 +524,11 @@ export default function ShieldXPricingPage() {
                   { cap: "License Compliance", shieldx: true, snyk: "Team+", semgrep: true, sonar: false },
                   { cap: "CI/CD Integration", shieldx: true, snyk: true, semgrep: true, sonar: true },
                   { cap: "Unlimited Scans", shieldx: true, snyk: "1,000/mo cap", semgrep: true, sonar: true },
-                  { cap: "Cost for 3 Developers", shieldx: "$49 total", snyk: "$75–$315", semgrep: "$90–$135", sonar: "$32+" },
+                  { cap: "Container Security (Docker)", shieldx: true, snyk: "$25/dev add-on", semgrep: false, sonar: false },
+                  { cap: "IaC Scanner (Terraform/K8s/CFN)", shieldx: true, snyk: "$25/dev add-on", semgrep: false, sonar: false },
+                  { cap: "SBOM Generator (CycloneDX)", shieldx: true, snyk: true, semgrep: false, sonar: false },
+                  { cap: "Compliance Mapping (SOC 2/ISO/PCI)", shieldx: true, snyk: "Enterprise only", semgrep: false, sonar: false },
+                  { cap: "Cost for 5 Developers", shieldx: "$79 total", snyk: "$125–$525", semgrep: "$150–$225", sonar: "$32+" },
                 ].map((row) => (
                   <tr key={row.cap} className="border-b border-border/50 transition-colors hover:bg-muted/30">
                     <td className="px-4 py-2.5 font-medium">{row.cap}</td>
@@ -584,11 +594,11 @@ export default function ShieldXPricingPage() {
               },
               {
                 q: "Why is ShieldX so much cheaper than Snyk or Semgrep?",
-                a: "Most competitors charge per-developer per-product ($25–$105/dev/month). ShieldX uses flat pricing — Pro at $49/month covers up to 3 developers across all 7 scanners plus exploit PoC generation. Enterprise at $199/month includes 25 seats. We believe comprehensive security shouldn't be priced out of reach for small teams.",
+                a: "Most competitors charge per-developer per-product ($25–$105/dev/month). ShieldX uses flat pricing — Pro at $79/month covers up to 5 developers across all 14 scanners plus exploit PoC generation, SBOM generation, and compliance mapping. Enterprise at $299/month includes 25 seats. We believe comprehensive security shouldn't be priced out of reach for small teams.",
               },
               {
                 q: "What makes ShieldX different from other SAST tools?",
-                a: "ShieldX is a unified platform with 7 scanners (SAST, Secrets, Dependencies, Cloud, API, Logs, License) plus a unique Exploit PoC Generator that shows real attack impact. Competitors typically require separate products or add-ons for each capability.",
+                a: "ShieldX is a unified platform with 14 scanners (SAST, Secrets, Dependencies, Cloud, API, Logs, License, Container Security, IaC, SBOM, Compliance, AI Review) plus a unique Exploit PoC Generator that shows real attack impact. Competitors typically require separate products or add-ons for each capability.",
               },
             ].map((faq) => (
               <Card key={faq.q}>

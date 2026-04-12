@@ -750,7 +750,7 @@ export default function ShieldXWorkspacePage() {
           };
           break;
         default:
-          setScanError(`The ${mod.name} module is coming soon.`);
+          setScanError(`The ${mod.name} scanner is not available for this module.`);
           setScanning(false);
           return;
       }
@@ -1306,7 +1306,7 @@ export default function ShieldXWorkspacePage() {
                             </Button>
                           ) : isAvailable ? (
                             <Button size="sm" variant="outline" className="w-full gap-1.5" disabled>
-                              Coming Soon
+                              Scanner UI Loading...
                             </Button>
                           ) : (
                             <Button size="sm" variant="outline" className="w-full gap-1.5" disabled>
