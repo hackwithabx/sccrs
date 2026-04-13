@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" fill="none">
+  <defs>
+    <linearGradient id="iamBg" x1="0" y1="0" x2="900" y2="520">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" rx="12" fill="url(#iamBg)"/>
+  <text x="450" y="38" font-family="system-ui,sans-serif" font-size="19" font-weight="700" fill="#f59e0b" text-anchor="middle">AWS IAM Privilege Escalation — Attack Paths &amp; Defenses</text>
+  <!-- Attack Paths -->
+  <text x="60" y="68" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#ef4444">PRIVILEGE ESCALATION PATHS (21 Known)</text>
+  <!-- Path boxes -->
+  <rect x="40" y="78" width="200" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="140" y="100" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">iam:CreatePolicyVersion</text>
+  <text x="140" y="118" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Overwrite policy → admin</text>
+  <rect x="255" y="78" width="200" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="355" y="100" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">iam:AttachUserPolicy</text>
+  <text x="355" y="118" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Attach AdministratorAccess</text>
+  <rect x="470" y="78" width="200" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="570" y="100" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">iam:PassRole + Lambda</text>
+  <text x="570" y="118" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Assume high-priv role via fn</text>
+  <rect x="685" y="78" width="180" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="775" y="100" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">sts:AssumeRole chain</text>
+  <text x="775" y="118" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Role chaining to admin</text>
+  <!-- Row 2 -->
+  <rect x="40" y="143" width="200" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="140" y="165" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">ec2:RunInstances</text>
+  <text x="140" y="183" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Launch EC2 with admin role</text>
+  <rect x="255" y="143" width="200" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="355" y="165" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">lambda:UpdateFunction</text>
+  <text x="355" y="183" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Modify code + execution role</text>
+  <rect x="470" y="143" width="200" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="570" y="165" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">glue:UpdateDevEndpoint</text>
+  <text x="570" y="183" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">SSH key injection</text>
+  <rect x="685" y="143" width="180" height="55" rx="6" fill="#ef444415" stroke="#ef4444" stroke-width="1"/>
+  <text x="775" y="165" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#f87171" text-anchor="middle">ssm:SendCommand</text>
+  <text x="775" y="183" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">RCE on any EC2 instance</text>
+  <!-- Detection -->
+  <text x="60" y="228" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#3b82f6">DETECTION &amp; MONITORING</text>
+  <rect x="40" y="238" width="200" height="70" rx="6" fill="#3b82f615" stroke="#3b82f6" stroke-width="1"/>
+  <text x="140" y="262" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#60a5fa" text-anchor="middle">CloudTrail</text>
+  <text x="140" y="280" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Log all IAM API calls</text>
+  <text x="140" y="295" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Filter: eventSource=iam*</text>
+  <rect x="260" y="238" width="200" height="70" rx="6" fill="#3b82f615" stroke="#3b82f6" stroke-width="1"/>
+  <text x="360" y="262" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#60a5fa" text-anchor="middle">Access Analyzer</text>
+  <text x="360" y="280" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Find unused permissions</text>
+  <text x="360" y="295" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Detect external access</text>
+  <rect x="480" y="238" width="200" height="70" rx="6" fill="#3b82f615" stroke="#3b82f6" stroke-width="1"/>
+  <text x="580" y="262" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#60a5fa" text-anchor="middle">GuardDuty</text>
+  <text x="580" y="280" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Anomalous IAM activity</text>
+  <text x="580" y="295" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Credential exfiltration alerts</text>
+  <rect x="700" y="238" width="165" height="70" rx="6" fill="#3b82f615" stroke="#3b82f6" stroke-width="1"/>
+  <text x="782" y="262" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#60a5fa" text-anchor="middle">SCPs</text>
+  <text x="782" y="280" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Deny iam:* at org-level</text>
+  <text x="782" y="295" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Guardrails for all accounts</text>
+  <!-- Tools -->
+  <text x="60" y="340" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#10b981">AUDIT TOOLS</text>
+  <rect x="40" y="350" width="130" height="38" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="105" y="374" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">Prowler</text>
+  <rect x="185" y="350" width="130" height="38" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="250" y="374" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">ScoutSuite</text>
+  <rect x="330" y="350" width="130" height="38" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="395" y="374" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">Pacu</text>
+  <rect x="475" y="350" width="130" height="38" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="540" y="374" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">CloudMapper</text>
+  <rect x="620" y="350" width="130" height="38" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="685" y="374" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">PMapper</text>
+  <rect x="765" y="350" width="100" height="38" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="815" y="374" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">iamlive</text>
+  <!-- Stats bar -->
+  <rect x="40" y="405" width="410" height="100" rx="8" fill="#f59e0b10" stroke="#f59e0b60" stroke-width="1"/>
+  <text x="245" y="430" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#f59e0b" text-anchor="middle">IAM STATS (2025 Cloud Security Report)</text>
+  <text x="245" y="452" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">99% of IAM identities have excessive permissions</text>
+  <text x="245" y="470" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Only 1% of permissions granted are actually used</text>
+  <text x="245" y="488" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Average IAM user has 20x needed permissions</text>
+  <rect x="465" y="405" width="400" height="100" rx="8" fill="#ef444410" stroke="#ef444460" stroke-width="1"/>
+  <text x="665" y="430" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#f87171" text-anchor="middle">REAL BREACHES VIA IAM</text>
+  <text x="665" y="452" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Capital One (2019) — SSRF + overpermissive role → 100M records</text>
+  <text x="665" y="470" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Twitch (2021) — Misconfigured IAM → full source code leak</text>
+  <text x="665" y="488" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">LastPass (2022) — Compromised dev IAM → vault breach</text>
+</svg>

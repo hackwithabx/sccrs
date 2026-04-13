@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" fill="none">
+  <defs>
+    <linearGradient id="mcsBg" x1="0" y1="0" x2="900" y2="520">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" rx="12" fill="url(#mcsBg)"/>
+  <text x="450" y="38" font-family="system-ui,sans-serif" font-size="18" font-weight="700" fill="#06b6d4" text-anchor="middle">Multi-Cloud Security Comparison — AWS vs GCP vs Azure</text>
+  <!-- Headers -->
+  <rect x="40" y="55" width="180" height="35" rx="4" fill="#334155"/>
+  <text x="130" y="78" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#e2e8f0" text-anchor="middle">Security Feature</text>
+  <rect x="220" y="55" width="210" height="35" rx="4" fill="#ff990030"/>
+  <text x="325" y="78" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#ff9900" text-anchor="middle">AWS</text>
+  <rect x="430" y="55" width="210" height="35" rx="4" fill="#4285f430"/>
+  <text x="535" y="78" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#4285f4" text-anchor="middle">Google Cloud</text>
+  <rect x="640" y="55" width="225" height="35" rx="4" fill="#0078d430"/>
+  <text x="752" y="78" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#38bdf8" text-anchor="middle">Azure</text>
+  <!-- Row 1: IAM -->
+  <rect x="40" y="95" width="180" height="40" fill="#1e293b"/>
+  <text x="130" y="119" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#e2e8f0" text-anchor="middle">Identity &amp; Access</text>
+  <rect x="220" y="95" width="210" height="40" fill="#1e293b80"/>
+  <text x="325" y="119" font-family="system-ui,sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">IAM + Identity Center</text>
+  <rect x="430" y="95" width="210" height="40" fill="#1e293b80"/>
+  <text x="535" y="119" font-family="system-ui,sans-serif" font-size="10" fill="#60a5fa" text-anchor="middle">Cloud IAM + WIF</text>
+  <rect x="640" y="95" width="225" height="40" fill="#1e293b80"/>
+  <text x="752" y="119" font-family="system-ui,sans-serif" font-size="10" fill="#38bdf8" text-anchor="middle">Entra ID + RBAC</text>
+  <!-- Row 2: Network -->
+  <rect x="40" y="140" width="180" height="40" fill="#1e293b60"/>
+  <text x="130" y="164" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#e2e8f0" text-anchor="middle">Network Security</text>
+  <rect x="220" y="140" width="210" height="40" fill="#1e293b40"/>
+  <text x="325" y="164" font-family="system-ui,sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">VPC + SG + NACL</text>
+  <rect x="430" y="140" width="210" height="40" fill="#1e293b40"/>
+  <text x="535" y="164" font-family="system-ui,sans-serif" font-size="10" fill="#60a5fa" text-anchor="middle">VPC SC + Firewall Rules</text>
+  <rect x="640" y="140" width="225" height="40" fill="#1e293b40"/>
+  <text x="752" y="164" font-family="system-ui,sans-serif" font-size="10" fill="#38bdf8" text-anchor="middle">VNet + NSG + ASG</text>
+  <!-- Row 3: WAF -->
+  <rect x="40" y="185" width="180" height="40" fill="#1e293b"/>
+  <text x="130" y="209" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#e2e8f0" text-anchor="middle">WAF / DDoS</text>
+  <rect x="220" y="185" width="210" height="40" fill="#1e293b80"/>
+  <text x="325" y="209" font-family="system-ui,sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">WAF + Shield Advanced</text>
+  <rect x="430" y="185" width="210" height="40" fill="#1e293b80"/>
+  <text x="535" y="209" font-family="system-ui,sans-serif" font-size="10" fill="#60a5fa" text-anchor="middle">Cloud Armor</text>
+  <rect x="640" y="185" width="225" height="40" fill="#1e293b80"/>
+  <text x="752" y="209" font-family="system-ui,sans-serif" font-size="10" fill="#38bdf8" text-anchor="middle">Azure WAF + DDoS Protection</text>
+  <!-- Row 4: Encryption -->
+  <rect x="40" y="230" width="180" height="40" fill="#1e293b60"/>
+  <text x="130" y="254" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#e2e8f0" text-anchor="middle">Encryption (KMS)</text>
+  <rect x="220" y="230" width="210" height="40" fill="#1e293b40"/>
+  <text x="325" y="254" font-family="system-ui,sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">KMS + CloudHSM</text>
+  <rect x="430" y="230" width="210" height="40" fill="#1e293b40"/>
+  <text x="535" y="254" font-family="system-ui,sans-serif" font-size="10" fill="#60a5fa" text-anchor="middle">Cloud KMS + EKM</text>
+  <rect x="640" y="230" width="225" height="40" fill="#1e293b40"/>
+  <text x="752" y="254" font-family="system-ui,sans-serif" font-size="10" fill="#38bdf8" text-anchor="middle">Key Vault + HSM</text>
+  <!-- Row 5: Threat Detection -->
+  <rect x="40" y="275" width="180" height="40" fill="#1e293b"/>
+  <text x="130" y="299" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#e2e8f0" text-anchor="middle">Threat Detection</text>
+  <rect x="220" y="275" width="210" height="40" fill="#1e293b80"/>
+  <text x="325" y="299" font-family="system-ui,sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">GuardDuty + Detective</text>
+  <rect x="430" y="275" width="210" height="40" fill="#1e293b80"/>
+  <text x="535" y="299" font-family="system-ui,sans-serif" font-size="10" fill="#60a5fa" text-anchor="middle">SCC + Chronicle</text>
+  <rect x="640" y="275" width="225" height="40" fill="#1e293b80"/>
+  <text x="752" y="299" font-family="system-ui,sans-serif" font-size="10" fill="#38bdf8" text-anchor="middle">Defender + Sentinel</text>
+  <!-- Row 6: Posture -->
+  <rect x="40" y="320" width="180" height="40" fill="#1e293b60"/>
+  <text x="130" y="344" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#e2e8f0" text-anchor="middle">Posture Management</text>
+  <rect x="220" y="320" width="210" height="40" fill="#1e293b40"/>
+  <text x="325" y="344" font-family="system-ui,sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">Security Hub + Config</text>
+  <rect x="430" y="320" width="210" height="40" fill="#1e293b40"/>
+  <text x="535" y="344" font-family="system-ui,sans-serif" font-size="10" fill="#60a5fa" text-anchor="middle">SCC Premium</text>
+  <rect x="640" y="320" width="225" height="40" fill="#1e293b40"/>
+  <text x="752" y="344" font-family="system-ui,sans-serif" font-size="10" fill="#38bdf8" text-anchor="middle">Defender for Cloud</text>
+  <!-- Row 7: Container -->
+  <rect x="40" y="365" width="180" height="40" fill="#1e293b"/>
+  <text x="130" y="389" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#e2e8f0" text-anchor="middle">Container Security</text>
+  <rect x="220" y="365" width="210" height="40" fill="#1e293b80"/>
+  <text x="325" y="389" font-family="system-ui,sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">EKS + ECR + Inspector</text>
+  <rect x="430" y="365" width="210" height="40" fill="#1e293b80"/>
+  <text x="535" y="389" font-family="system-ui,sans-serif" font-size="10" fill="#60a5fa" text-anchor="middle">GKE + Artifact + BinAuth</text>
+  <rect x="640" y="365" width="225" height="40" fill="#1e293b80"/>
+  <text x="752" y="389" font-family="system-ui,sans-serif" font-size="10" fill="#38bdf8" text-anchor="middle">AKS + ACR + Defender</text>
+  <!-- Bottom stats -->
+  <rect x="40" y="425" width="270" height="80" rx="8" fill="#ff990010" stroke="#ff990060" stroke-width="1"/>
+  <text x="175" y="450" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#ff9900" text-anchor="middle">AWS</text>
+  <text x="175" y="470" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">31% market share</text>
+  <text x="175" y="488" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">300+ security services</text>
+  <rect x="325" y="425" width="250" height="80" rx="8" fill="#4285f410" stroke="#4285f460" stroke-width="1"/>
+  <text x="450" y="450" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#4285f4" text-anchor="middle">Google Cloud</text>
+  <text x="450" y="470" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">12% market share</text>
+  <text x="450" y="488" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Best-in-class zero trust</text>
+  <rect x="590" y="425" width="275" height="80" rx="8" fill="#0078d410" stroke="#0078d460" stroke-width="1"/>
+  <text x="727" y="450" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#38bdf8" text-anchor="middle">Azure</text>
+  <text x="727" y="470" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">24% market share</text>
+  <text x="727" y="488" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Best Entra ID integration</text>
+</svg>

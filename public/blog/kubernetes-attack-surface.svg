@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" fill="none">
+  <defs>
+    <linearGradient id="k8sBg" x1="0" y1="0" x2="900" y2="520">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" rx="12" fill="url(#k8sBg)"/>
+  <text x="450" y="38" font-family="system-ui,sans-serif" font-size="19" font-weight="700" fill="#326ce5" text-anchor="middle">Kubernetes Attack Surface — From Cluster to Container</text>
+  <!-- Cluster Level -->
+  <text x="60" y="68" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#326ce5">CLUSTER LEVEL</text>
+  <rect x="40" y="78" width="165" height="50" rx="6" fill="#326ce515" stroke="#326ce5" stroke-width="1"/>
+  <text x="122" y="100" font-family="system-ui,sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">Exposed API Server</text>
+  <text x="122" y="116" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Unauthenticated access</text>
+  <rect x="220" y="78" width="165" height="50" rx="6" fill="#326ce515" stroke="#326ce5" stroke-width="1"/>
+  <text x="302" y="100" font-family="system-ui,sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">RBAC Misconfig</text>
+  <text x="302" y="116" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Overprivileged roles</text>
+  <rect x="400" y="78" width="165" height="50" rx="6" fill="#326ce515" stroke="#326ce5" stroke-width="1"/>
+  <text x="482" y="100" font-family="system-ui,sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">etcd Exposed</text>
+  <text x="482" y="116" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Secrets in plaintext</text>
+  <rect x="580" y="78" width="145" height="50" rx="6" fill="#326ce515" stroke="#326ce5" stroke-width="1"/>
+  <text x="652" y="100" font-family="system-ui,sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">Kubelet API</text>
+  <text x="652" y="116" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Node-level takeover</text>
+  <rect x="740" y="78" width="125" height="50" rx="6" fill="#326ce515" stroke="#326ce5" stroke-width="1"/>
+  <text x="802" y="100" font-family="system-ui,sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">Admission</text>
+  <text x="802" y="116" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">No policy enforcement</text>
+  <!-- Pod / Workload Level -->
+  <text x="60" y="155" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#a855f7">POD / WORKLOAD LEVEL</text>
+  <rect x="40" y="165" width="165" height="50" rx="6" fill="#a855f715" stroke="#a855f7" stroke-width="1"/>
+  <text x="122" y="187" font-family="system-ui,sans-serif" font-size="11" fill="#c084fc" text-anchor="middle">Privileged Pods</text>
+  <text x="122" y="203" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Container escape</text>
+  <rect x="220" y="165" width="165" height="50" rx="6" fill="#a855f715" stroke="#a855f7" stroke-width="1"/>
+  <text x="302" y="187" font-family="system-ui,sans-serif" font-size="11" fill="#c084fc" text-anchor="middle">hostPath Mounts</text>
+  <text x="302" y="203" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Node FS access</text>
+  <rect x="400" y="165" width="165" height="50" rx="6" fill="#a855f715" stroke="#a855f7" stroke-width="1"/>
+  <text x="482" y="187" font-family="system-ui,sans-serif" font-size="11" fill="#c084fc" text-anchor="middle">SA Token Abuse</text>
+  <text x="482" y="203" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Lateral movement</text>
+  <rect x="580" y="165" width="145" height="50" rx="6" fill="#a855f715" stroke="#a855f7" stroke-width="1"/>
+  <text x="652" y="187" font-family="system-ui,sans-serif" font-size="11" fill="#c084fc" text-anchor="middle">Resource Limits</text>
+  <text x="652" y="203" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Crypto-mining DoS</text>
+  <rect x="740" y="165" width="125" height="50" rx="6" fill="#a855f715" stroke="#a855f7" stroke-width="1"/>
+  <text x="802" y="187" font-family="system-ui,sans-serif" font-size="11" fill="#c084fc" text-anchor="middle">Sidecar Inject</text>
+  <text x="802" y="203" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Traffic intercept</text>
+  <!-- Container / Image Level -->
+  <text x="60" y="242" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#10b981">CONTAINER / IMAGE LEVEL</text>
+  <rect x="40" y="252" width="200" height="50" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="140" y="274" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">Vulnerable Base Images</text>
+  <text x="140" y="290" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">CVE-loaded ubuntu:latest</text>
+  <rect x="260" y="252" width="200" height="50" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="360" y="274" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">Hardcoded Secrets</text>
+  <text x="360" y="290" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">ENV vars in Dockerfile</text>
+  <rect x="480" y="252" width="200" height="50" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="580" y="274" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">Running as Root</text>
+  <text x="580" y="290" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">UID 0 in production</text>
+  <rect x="700" y="252" width="165" height="50" rx="6" fill="#10b98115" stroke="#10b981" stroke-width="1"/>
+  <text x="782" y="274" font-family="system-ui,sans-serif" font-size="11" fill="#34d399" text-anchor="middle">No Image Signing</text>
+  <text x="782" y="290" font-family="system-ui,sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Supply chain attacks</text>
+  <!-- Defense Tools -->
+  <text x="60" y="330" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#fbbf24">DEFENSE TOOLS</text>
+  <rect x="40" y="340" width="130" height="42" rx="6" fill="#fbbf2415" stroke="#fbbf24" stroke-width="1"/>
+  <text x="105" y="365" font-family="system-ui,sans-serif" font-size="11" fill="#fbbf24" text-anchor="middle">OPA / Gatekeeper</text>
+  <rect x="185" y="340" width="110" height="42" rx="6" fill="#fbbf2415" stroke="#fbbf24" stroke-width="1"/>
+  <text x="240" y="365" font-family="system-ui,sans-serif" font-size="11" fill="#fbbf24" text-anchor="middle">Kyverno</text>
+  <rect x="310" y="340" width="110" height="42" rx="6" fill="#fbbf2415" stroke="#fbbf24" stroke-width="1"/>
+  <text x="365" y="365" font-family="system-ui,sans-serif" font-size="11" fill="#fbbf24" text-anchor="middle">Falco</text>
+  <rect x="435" y="340" width="110" height="42" rx="6" fill="#fbbf2415" stroke="#fbbf24" stroke-width="1"/>
+  <text x="490" y="365" font-family="system-ui,sans-serif" font-size="11" fill="#fbbf24" text-anchor="middle">Trivy</text>
+  <rect x="560" y="340" width="110" height="42" rx="6" fill="#fbbf2415" stroke="#fbbf24" stroke-width="1"/>
+  <text x="615" y="365" font-family="system-ui,sans-serif" font-size="11" fill="#fbbf24" text-anchor="middle">Cosign</text>
+  <rect x="685" y="340" width="110" height="42" rx="6" fill="#fbbf2415" stroke="#fbbf24" stroke-width="1"/>
+  <text x="740" y="365" font-family="system-ui,sans-serif" font-size="11" fill="#fbbf24" text-anchor="middle">Cilium</text>
+  <!-- Stats -->
+  <rect x="40" y="400" width="270" height="105" rx="8" fill="#326ce510" stroke="#326ce560" stroke-width="1"/>
+  <text x="175" y="425" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#60a5fa" text-anchor="middle">CLUSTER STATS (2025)</text>
+  <text x="175" y="448" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">78% run with default RBAC</text>
+  <text x="175" y="466" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">62% have no network policies</text>
+  <text x="175" y="484" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">44% use privileged containers</text>
+  <rect x="325" y="400" width="270" height="105" rx="8" fill="#ef444410" stroke="#ef444460" stroke-width="1"/>
+  <text x="460" y="425" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#f87171" text-anchor="middle">ATTACK TIMELINE</text>
+  <text x="460" y="448" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Tesla (2018): Exposed dashboard</text>
+  <text x="460" y="466" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Capital One (2019): SSRF + k8s</text>
+  <text x="460" y="484" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Siloscape (2021): Container escape</text>
+  <rect x="610" y="400" width="250" height="105" rx="8" fill="#10b98110" stroke="#10b98160" stroke-width="1"/>
+  <text x="735" y="425" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#34d399" text-anchor="middle">CIS BENCHMARKS</text>
+  <text x="735" y="448" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">CIS Kubernetes v1.9</text>
+  <text x="735" y="466" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">CIS Docker v1.7</text>
+  <text x="735" y="484" font-family="system-ui,sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">NSA K8s Hardening Guide</text>
+</svg>
