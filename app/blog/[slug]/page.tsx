@@ -45,11 +45,13 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       publishedTime: post.date,
       authors: [post.author],
       tags: post.tags,
+      ...(post.image && { images: [{ url: post.image, width: 900, height: 520, alt: post.title }] }),
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt,
+      ...(post.image && { images: [post.image] }),
     },
     alternates: {
       canonical: `/blog/${slug}`,

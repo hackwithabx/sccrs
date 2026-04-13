@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" font-family="system-ui,-apple-system,sans-serif">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <filter id="sh3"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.3"/></filter>
+  </defs>
+
+  <rect width="900" height="500" fill="url(#bg3)" rx="12"/>
+  <text x="450" y="38" text-anchor="middle" fill="#f8fafc" font-size="20" font-weight="700">AI Supply Chain Threat Landscape</text>
+
+  <!-- Pipeline: Left to Right -->
+  <!-- Step 1: Pre-trained Model -->
+  <rect x="20" y="70" width="170" height="110" rx="10" fill="#1e1e2e" stroke="#3b82f6" stroke-width="1.5" filter="url(#sh3)"/>
+  <text x="105" y="95" text-anchor="middle" fill="#60a5fa" font-size="12" font-weight="700">📦 Pre-trained Model</text>
+  <text x="105" y="115" text-anchor="middle" fill="#94a3b8" font-size="10">Hugging Face, GitHub</text>
+  <text x="105" y="130" text-anchor="middle" fill="#94a3b8" font-size="10">PyTorch Hub, TF Hub</text>
+  <rect x="30" y="142" width="150" height="28" rx="5" fill="#7f1d1d" stroke="#dc2626" stroke-width="1"/>
+  <text x="105" y="160" text-anchor="middle" fill="#fca5a5" font-size="9">🔥 Backdoored weights</text>
+
+  <!-- Arrow -->
+  <line x1="190" y1="125" x2="215" y2="125" stroke="#60a5fa" stroke-width="2" marker-end="url(#a3)"/>
+  <defs><marker id="a3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#60a5fa"/></marker></defs>
+
+  <!-- Step 2: Training Data -->
+  <rect x="220" y="70" width="155" height="110" rx="10" fill="#1e1e2e" stroke="#8b5cf6" stroke-width="1.5" filter="url(#sh3)"/>
+  <text x="297" y="95" text-anchor="middle" fill="#a78bfa" font-size="12" font-weight="700">📊 Training Dataset</text>
+  <text x="297" y="115" text-anchor="middle" fill="#94a3b8" font-size="10">Common Crawl, LAION</text>
+  <text x="297" y="130" text-anchor="middle" fill="#94a3b8" font-size="10">Custom datasets</text>
+  <rect x="230" y="142" width="135" height="28" rx="5" fill="#7f1d1d" stroke="#dc2626" stroke-width="1"/>
+  <text x="297" y="160" text-anchor="middle" fill="#fca5a5" font-size="9">🔥 Data poisoning</text>
+
+  <line x1="375" y1="125" x2="400" y2="125" stroke="#a78bfa" stroke-width="2" marker-end="url(#a3p)"/>
+  <defs><marker id="a3p" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/></marker></defs>
+
+  <!-- Step 3: Fine-tuning -->
+  <rect x="405" y="70" width="155" height="110" rx="10" fill="#1e1e2e" stroke="#f59e0b" stroke-width="1.5" filter="url(#sh3)"/>
+  <text x="482" y="95" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">⚙️ Fine-tuning</text>
+  <text x="482" y="115" text-anchor="middle" fill="#94a3b8" font-size="10">LoRA, QLoRA, RLHF</text>
+  <text x="482" y="130" text-anchor="middle" fill="#94a3b8" font-size="10">Custom adapters</text>
+  <rect x="415" y="142" width="135" height="28" rx="5" fill="#7f1d1d" stroke="#dc2626" stroke-width="1"/>
+  <text x="482" y="160" text-anchor="middle" fill="#fca5a5" font-size="9">🔥 Safety bypass</text>
+
+  <line x1="560" y1="125" x2="585" y2="125" stroke="#fbbf24" stroke-width="2" marker-end="url(#a3y)"/>
+  <defs><marker id="a3y" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#fbbf24"/></marker></defs>
+
+  <!-- Step 4: Dependencies -->
+  <rect x="590" y="70" width="145" height="110" rx="10" fill="#1e1e2e" stroke="#ec4899" stroke-width="1.5" filter="url(#sh3)"/>
+  <text x="662" y="95" text-anchor="middle" fill="#f472b6" font-size="12" font-weight="700">📚 ML Libraries</text>
+  <text x="662" y="115" text-anchor="middle" fill="#94a3b8" font-size="10">PyTorch, TensorFlow</text>
+  <text x="662" y="130" text-anchor="middle" fill="#94a3b8" font-size="10">transformers, langchain</text>
+  <rect x="600" y="142" width="125" height="28" rx="5" fill="#7f1d1d" stroke="#dc2626" stroke-width="1"/>
+  <text x="662" y="160" text-anchor="middle" fill="#fca5a5" font-size="9">🔥 CVEs in deps</text>
+
+  <line x1="735" y1="125" x2="755" y2="125" stroke="#f472b6" stroke-width="2" marker-end="url(#a3pk)"/>
+  <defs><marker id="a3pk" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f472b6"/></marker></defs>
+
+  <!-- Step 5: Deployment -->
+  <rect x="760" y="70" width="120" height="110" rx="10" fill="#1e1e2e" stroke="#22c55e" stroke-width="1.5" filter="url(#sh3)"/>
+  <text x="820" y="95" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">🚀 Production</text>
+  <text x="820" y="115" text-anchor="middle" fill="#94a3b8" font-size="10">API endpoint</text>
+  <text x="820" y="130" text-anchor="middle" fill="#94a3b8" font-size="10">Edge inference</text>
+  <rect x="768" y="142" width="104" height="28" rx="5" fill="#7f1d1d" stroke="#dc2626" stroke-width="1"/>
+  <text x="820" y="160" text-anchor="middle" fill="#fca5a5" font-size="9">🔥 Model theft</text>
+
+  <!-- Known Incidents -->
+  <text x="450" y="220" text-anchor="middle" fill="#fca5a5" font-size="17" font-weight="700">Known AI Supply Chain Incidents</text>
+
+  <rect x="20" y="240" width="280" height="85" rx="8" fill="#1e1e2e" stroke="#dc2626" stroke-width="1" filter="url(#sh3)"/>
+  <text x="160" y="263" text-anchor="middle" fill="#f87171" font-size="11" font-weight="600">Hugging Face Pickle Exploit (2024)</text>
+  <text x="160" y="281" text-anchor="middle" fill="#94a3b8" font-size="9">Malicious .pkl model files on Hugging Face</text>
+  <text x="160" y="296" text-anchor="middle" fill="#94a3b8" font-size="9">executed arbitrary code on model load</text>
+  <text x="160" y="311" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Impact: RCE on developer machines</text>
+
+  <rect x="310" y="240" width="280" height="85" rx="8" fill="#1e1e2e" stroke="#dc2626" stroke-width="1" filter="url(#sh3)"/>
+  <text x="450" y="263" text-anchor="middle" fill="#f87171" font-size="11" font-weight="600">PyTorch Nightly Backdoor (2022)</text>
+  <text x="450" y="281" text-anchor="middle" fill="#94a3b8" font-size="9">Compromised torchtriton package on PyPI</text>
+  <text x="450" y="296" text-anchor="middle" fill="#94a3b8" font-size="9">exfiltrated SSH keys, AWS credentials</text>
+  <text x="450" y="311" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Impact: Credential theft at scale</text>
+
+  <rect x="600" y="240" width="280" height="85" rx="8" fill="#1e1e2e" stroke="#dc2626" stroke-width="1" filter="url(#sh3)"/>
+  <text x="740" y="263" text-anchor="middle" fill="#f87171" font-size="11" font-weight="600">LAION Dataset CSAM (2023)</text>
+  <text x="740" y="281" text-anchor="middle" fill="#94a3b8" font-size="9">Stanford found illegal content in LAION-5B</text>
+  <text x="740" y="296" text-anchor="middle" fill="#94a3b8" font-size="9">training dataset used by Stable Diffusion</text>
+  <text x="740" y="311" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">Impact: Legal + reputational risk</text>
+
+  <!-- Defense Checklist -->
+  <text x="450" y="365" text-anchor="middle" fill="#22c55e" font-size="17" font-weight="700">✅ AI SBOM Security Checklist</text>
+
+  <rect x="20" y="382" width="210" height="80" rx="8" fill="#1e1e2e" stroke="#22c55e" stroke-width="1"/>
+  <text x="125" y="405" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="600">Model Provenance</text>
+  <text x="125" y="423" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Track model origin + hash</text>
+  <text x="125" y="438" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Verify model signatures</text>
+  <text x="125" y="453" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Use safetensors format</text>
+
+  <rect x="245" y="382" width="210" height="80" rx="8" fill="#1e1e2e" stroke="#22c55e" stroke-width="1"/>
+  <text x="350" y="405" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="600">Data Lineage</text>
+  <text x="350" y="423" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Audit training data sources</text>
+  <text x="350" y="438" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Scan for PII / toxic content</text>
+  <text x="350" y="453" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Version datasets with DVC</text>
+
+  <rect x="470" y="382" width="210" height="80" rx="8" fill="#1e1e2e" stroke="#22c55e" stroke-width="1"/>
+  <text x="575" y="405" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="600">Dependency Scanning</text>
+  <text x="575" y="423" text-anchor="middle" fill="#94a3b8" font-size="9">✓ SBOM generation (CycloneDX)</text>
+  <text x="575" y="438" text-anchor="middle" fill="#94a3b8" font-size="9">✓ CVE monitoring for ML libs</text>
+  <text x="575" y="453" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Pin + lockfile all packages</text>
+
+  <rect x="695" y="382" width="185" height="80" rx="8" fill="#1e1e2e" stroke="#22c55e" stroke-width="1"/>
+  <text x="787" y="405" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="600">Runtime Protection</text>
+  <text x="787" y="423" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Sandboxed inference</text>
+  <text x="787" y="438" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Input/output monitoring</text>
+  <text x="787" y="453" text-anchor="middle" fill="#94a3b8" font-size="9">✓ Model drift detection</text>
+
+  <text x="450" y="490" text-anchor="middle" fill="#475569" font-size="10">securecodereviews.com/shieldx</text>
+</svg>

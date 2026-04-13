@@ -13,6 +13,7 @@ import { trafficBatch1Articles } from "./articles-traffic-batch1";
 import { trafficBatch2Articles } from "./articles-traffic-batch2";
 import { trafficBatch3Articles } from "./articles-traffic-batch3";
 import { trafficBatch4Articles } from "./articles-traffic-batch4";
+import { aiSecurityArticles2 } from "./articles-ai-security-2";
 
 export interface BlogPost {
   slug: string;
@@ -3753,4 +3754,5 @@ app.post('/api/refresh', async (req, res) => {
   ...trafficBatch2Articles,
   ...trafficBatch3Articles,
   ...trafficBatch4Articles,
+  ...aiSecurityArticles2,
 ];
