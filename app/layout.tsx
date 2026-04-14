@@ -21,11 +21,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "SecureCodeReviews — Application Security Platform | Code Review, Pen Testing, OWASP",
+    default: "SecureCodeReviews — Application Security Platform & Free SAST Scanner | ShieldX, Code Review, Pen Testing",
     template: "%s | SecureCodeReviews",
   },
   description:
-    "Expert application security platform offering secure code reviews, penetration testing, OWASP Top 10 guides, free security tools, vulnerability analysis, cloud security, and educational resources for developers and enterprises.",
+    "SecureCodeReviews is an application security platform featuring ShieldX — a free SAST scanner with 14 security modules. Get secure code reviews, penetration testing, OWASP Top 10 guides, vulnerability analysis, cloud security, and DevSecOps tools for developers and enterprises.",
   keywords: [
     "application security",
     "secure code review",
@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     "vulnerability assessment",
     "OWASP Top 10",
     "OWASP Top 10 AI",
+    "OWASP Top 10 2025",
     "secure coding",
     "appsec",
     "code review services",
@@ -45,6 +46,14 @@ export const metadata: Metadata = {
     "DevSecOps",
     "API security",
     "cybersecurity",
+    "ShieldX",
+    "free SAST scanner",
+    "static code analysis",
+    "secrets scanner",
+    "dependency scanner",
+    "CI/CD security",
+    "container security",
+    "infrastructure as code security",
   ],
   authors: [{ name: "SecureCodeReviews", url: "https://securecodereviews.com" }],
   creator: "SecureCodeReviews",
@@ -58,9 +67,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://securecodereviews.com",
     siteName: "SecureCodeReviews",
-    title: "SecureCodeReviews — Application Security Platform",
+    title: "SecureCodeReviews — Application Security Platform & Free SAST Scanner",
     description:
-      "Expert application security platform with free security tools, OWASP guides, vulnerability research, code review services, and cloud security resources.",
+      "Application security platform with ShieldX free SAST scanner (14 modules), OWASP guides, vulnerability research, code review services, and cloud security tools.",
     images: [
       {
         url: "/og-image.png",
@@ -72,9 +81,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SecureCodeReviews — Application Security Platform",
+    title: "SecureCodeReviews — Application Security Platform & ShieldX SAST Scanner",
     description:
-      "Free security tools, OWASP Top 10 guides, vulnerability research, and expert code review services.",
+      "Free SAST scanner with 14 security modules, OWASP Top 10 guides, vulnerability research, and expert code review services.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -114,7 +123,7 @@ export default function RootLayout({
     url: "https://securecodereviews.com",
     logo: "https://securecodereviews.com/logo.png",
     description:
-      "Expert application security platform offering secure code reviews, penetration testing, OWASP guides, free security tools, and educational resources.",
+      "Expert application security platform featuring ShieldX — a free SAST scanner with 14 modules. Offering secure code reviews, penetration testing, OWASP guides, and DevSecOps tools.",
     contactPoint: {
       "@type": "ContactPoint",
       email: "support@securecodereviews.com",
@@ -132,7 +141,7 @@ export default function RootLayout({
     "@type": "WebSite",
     name: "SecureCodeReviews",
     url: "https://securecodereviews.com",
-    description: "Application security platform with free tools, OWASP guides, vulnerability research, and expert code review services.",
+    description: "Application security platform featuring ShieldX free SAST scanner, OWASP guides, vulnerability research, and expert code review services.",
     publisher: { "@type": "Organization", name: "SecureCodeReviews" },
     potentialAction: {
       "@type": "SearchAction",

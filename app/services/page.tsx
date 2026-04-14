@@ -20,7 +20,6 @@ import {
   Lock,
   LineChart,
   Smartphone,
-  Sparkles,
   CheckCircle2,
   ArrowRight,
   ExternalLink,
@@ -286,63 +285,6 @@ const securityIncluded = [
 ];
 
 /* ═══════════════════════════════════════════
-   CATEGORY 3 — AI / ML SERVICES
-   ═══════════════════════════════════════════ */
-
-const aiServices = [
-  {
-    icon: Brain,
-    title: "AI-Powered Security Tools",
-    description:
-      "Custom AI/ML tools for security automation: anomaly detection, threat prediction, log analysis, and vulnerability prioritization.",
-    features: [
-      "Anomaly detection systems",
-      "Threat prediction models",
-      "Security log analysis AI",
-      "Vulnerability risk scoring",
-      "Automated report generation",
-    ],
-    badge: "High Demand",
-    color: "from-amber-500 to-yellow-500",
-    price: "$5K–$18K",
-  },
-  {
-    icon: Sparkles,
-    title: "Generative AI Integration",
-    description:
-      "Integrate ChatGPT, Claude, Llama, or custom LLMs into your applications with proper security controls, guardrails, and data protection.",
-    features: [
-      "LLM API integration",
-      "RAG (Retrieval Augmented Generation)",
-      "Fine-tuned models",
-      "Prompt engineering & guardrails",
-      "Secure API implementation",
-      "Rate limiting & abuse monitoring",
-    ],
-    badge: "Trending",
-    color: "from-violet-500 to-fuchsia-500",
-    price: "$4K–$15K",
-  },
-  {
-    icon: LineChart,
-    title: "Data Analytics & Dashboards",
-    description:
-      "Secure analytics platforms with real-time dashboards, ML-powered insights, and enterprise-grade BI tools.",
-    features: [
-      "Real-time dashboards",
-      "Predictive analytics",
-      "ML-based insights",
-      "Data visualization",
-      "Secure data pipelines",
-      "Custom KPI tracking",
-    ],
-    badge: null,
-    color: "from-blue-500 to-indigo-500",
-    price: "$4K–$16K",
-  },
-];
-
-/* ═══════════════════════════════════════════
    PORTFOLIO
    ═══════════════════════════════════════════ */
 
@@ -442,7 +384,6 @@ export default function ServicesPage() {
             { label: "🛡️ Security Services", href: "#security-services" },
             { label: "💻 Web & App Development", href: "#development-services" },
             { label: "🌐 Website Demos", href: "#website-demos" },
-            { label: "🤖 AI / ML Services", href: "#ai-services" },
             { label: "📂 Portfolio", href: "#portfolio" },
           ].map((link) => (
             <Link key={link.href} href={link.href}>
@@ -709,65 +650,6 @@ export default function ServicesPage() {
               </Button>
             </Link>
           </motion.div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────
-          SECTION 3 — AI / ML SERVICES
-          ───────────────────────────────────────────── */}
-      <section id="ai-services" className="scroll-mt-20 py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
-          >
-            <Badge className="bg-violet-600 text-white mb-4 text-sm px-3 py-1">AI / ML Services</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">AI & Machine Learning Solutions</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Production-ready AI implementations — from chatbots and RAG pipelines to custom ML models. Every solution built with security guardrails.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {aiServices.map((service, i) => (
-              <motion.div
-                key={service.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
-              >
-                <Card className="h-full border-0 shadow-md hover:shadow-xl transition-all hover:-translate-y-1">
-                  <CardHeader>
-                    <div className={`mb-2 inline-flex rounded-xl bg-gradient-to-br ${service.color} p-3 text-white w-fit shadow-lg shadow-black/10`}>
-                      <service.icon className="h-6 w-6" />
-                    </div>
-                    {service.badge && (
-                      <Badge className={`bg-gradient-to-r ${service.color} text-white w-fit mt-2`}>{service.badge}</Badge>
-                    )}
-                    <CardTitle className="text-lg">{service.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
-                    <ul className="space-y-2">
-                      {service.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="pt-4 border-t flex items-center justify-between">
-                      <span className="text-sm font-semibold text-muted-foreground">Estimated:</span>
-                      <span className="text-lg font-bold text-violet-600">{service.price}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 

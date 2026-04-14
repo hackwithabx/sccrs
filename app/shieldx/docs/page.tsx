@@ -630,12 +630,12 @@ export default function ShieldXDocsPage() {
                     </div>
                     <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
                       <div className="font-bold text-lg">Pro</div>
-                      <div className="text-2xl font-extrabold text-primary">$29<span className="text-sm text-muted-foreground">/mo</span></div>
+                      <div className="text-2xl font-extrabold text-primary">$79<span className="text-sm text-muted-foreground">/mo</span></div>
                       <p className="text-xs text-muted-foreground mt-1">All 14 modules incl. AST-based SAST, AI review, unlimited scans</p>
                     </div>
                     <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
                       <div className="font-bold text-lg">Enterprise</div>
-                      <div className="text-2xl font-extrabold text-amber-500">$99<span className="text-sm text-muted-foreground">/mo</span></div>
+                      <div className="text-2xl font-extrabold text-amber-500">$299<span className="text-sm text-muted-foreground">/mo</span></div>
                       <p className="text-xs text-muted-foreground mt-1">Team management, CI/CD gate, SLA, priority support</p>
                     </div>
                   </div>

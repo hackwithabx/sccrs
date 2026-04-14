@@ -1149,7 +1149,7 @@ export default function ShieldXWorkspacePage() {
                   <Badge className="bg-primary/10 text-primary text-[10px]">Most Popular</Badge>
                 </div>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-4xl font-extrabold">$29</span>
+                  <span className="text-4xl font-extrabold">$79</span>
                   <span className="text-muted-foreground text-sm">/ month</span>
                 </div>
               </CardHeader>
@@ -1174,7 +1174,7 @@ export default function ShieldXWorkspacePage() {
                   <Badge variant="secondary" className="text-[10px]">Built for Teams</Badge>
                 </div>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-4xl font-extrabold">$99</span>
+                  <span className="text-4xl font-extrabold">$299</span>
                   <span className="text-muted-foreground text-sm">/ month</span>
                 </div>
               </CardHeader>

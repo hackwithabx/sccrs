@@ -7,6 +7,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPages = [
     { url: `${baseUrl}`, changeFrequency: "weekly" as const, priority: 1.0 },
+    { url: `${baseUrl}/shieldx`, changeFrequency: "weekly" as const, priority: 0.95 },
+    { url: `${baseUrl}/shieldx/pricing`, changeFrequency: "monthly" as const, priority: 0.85 },
+    { url: `${baseUrl}/shieldx/docs`, changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/blog`, changeFrequency: "daily" as const, priority: 0.9 },
     { url: `${baseUrl}/services`, changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/owasp`, changeFrequency: "monthly" as const, priority: 0.9 },
@@ -20,11 +23,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/tools`, changeFrequency: "weekly" as const, priority: 0.8 },
     { url: `${baseUrl}/cloud-security`, changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/nodejs-security-guide`, changeFrequency: "monthly" as const, priority: 0.7 },
-    { url: `${baseUrl}/reports`, changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${baseUrl}/tools/ai-security-auditor`, changeFrequency: "monthly" as const, priority: 0.8 },
-    { url: `${baseUrl}/shieldx`, changeFrequency: "weekly" as const, priority: 0.9 },
     { url: `${baseUrl}/contact`, changeFrequency: "monthly" as const, priority: 0.6 },
+    { url: `${baseUrl}/demos`, changeFrequency: "monthly" as const, priority: 0.5 },
     { url: `${baseUrl}/privacy-policy`, changeFrequency: "yearly" as const, priority: 0.3 },
+    { url: `${baseUrl}/privacy-policy/no-code-storage`, changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${baseUrl}/terms-of-service`, changeFrequency: "yearly" as const, priority: 0.3 },
   ];
 
