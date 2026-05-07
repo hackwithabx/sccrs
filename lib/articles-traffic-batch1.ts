@@ -429,9 +429,11 @@ Until then, treat AI-generated code the same way you'd treat code from a junior 
     title: "Next.js Security Best Practices: Server Actions, Auth, Headers & Hardening Guide",
     excerpt:
       "A practical Next.js security guide covering Server Actions, middleware, authentication, security headers, environment variables, and App Router hardening for Next.js 15 and 16.",
-    content: `## Next.js Security Has Fundamentally Changed
+    content: `## Next.js Security Best Practices for Server Actions, Middleware, and the App Router
 
-Next.js 15 and 16 introduced **Server Components**, **Server Actions**, and the **App Router** — blurring the line between client and server code. This creates entirely new attack vectors that didn't exist in Pages Router applications.
+  If you are looking for **Next.js security best practices**, start with the parts of the framework that changed the trust boundary: **Server Actions**, **middleware**, **Route Handlers**, **Server Components**, and **environment variable exposure**. In Next.js 15 and 16, these features make it easier to ship fast, but also easier to expose server-side logic if authentication, authorization, and validation are not explicit.
+
+  This guide focuses on the highest-impact Next.js security controls for production apps: hardening Server Actions, protecting App Router endpoints, preventing middleware bypasses, locking down security headers, and avoiding common secrets leaks.
 
 | Feature | Security Impact | Risk Level |
 |---------|----------------|------------|
@@ -681,6 +683,20 @@ export async function GET(
 
 ---
 
+## Next.js Security FAQ
+
+### What are the most important Next.js security best practices?
+
+The most important controls are authentication and authorization on every Server Action and Route Handler, strict input validation, rate limiting, safe handling of \`NEXT_PUBLIC_\` variables, correct middleware matching, and production security headers such as CSP and HSTS.
+
+### Are Server Actions secure by default?
+
+No. Server Actions are powerful, but they do not automatically inherit the protections many teams expect from traditional API routes. You still need explicit auth checks, input validation, authorization logic, and abuse controls.
+
+### How do I secure a Next.js App Router application?
+
+Treat the App Router like a mixed trust boundary. Review which logic runs on the server, which values are exposed to the client, which routes are protected by middleware, and whether every state-changing action enforces authorization server-side.
+
 ## Quick Reference: Next.js Security Checklist
 
 - [ ] Every Server Action has auth + input validation + authorization
@@ -914,9 +930,11 @@ The MCP ecosystem is moving fast. Security controls need to keep pace — or AI 
     title: "OAuth 2.0 Vulnerabilities and Security Best Practices: PKCE, State, Redirect URI",
     excerpt:
       "A complete OAuth 2.0 security guide covering redirect URI attacks, state parameter defenses, PKCE, token leakage, scope abuse, and production-ready OAuth best practices.",
-    content: `## Why OAuth 2.0 Is Still Broken in 2026
+    content: `## OAuth 2.0 Security Best Practices and Common Vulnerabilities
 
-OAuth 2.0 powers authentication for **billions of users** — Google, GitHub, Facebook, Microsoft — yet implementation errors remain one of the most common web vulnerabilities.
+  Teams searching for **OAuth 2.0 security best practices** usually need answers to three questions: how to stop redirect URI abuse, how to implement PKCE correctly, and how to prevent account-linking or token leakage attacks. Those are still the most common ways OAuth deployments fail in production.
+
+  OAuth 2.0 powers authentication for **billions of users** — Google, GitHub, Facebook, Microsoft — yet implementation errors remain one of the most common web vulnerabilities.
 
 The problem isn't the spec. It's that OAuth has **dozens of configuration options**, and getting even one wrong opens a critical vulnerability.
 
@@ -1132,7 +1150,21 @@ function validateScopes(requestedScopes: string[]): string[] {
 - [ ] Scope validation against registered app permissions
 - [ ] Token revocation on logout
 - [ ] Rate limiting on token endpoint
-- [ ] Monitor for token reuse and code replay attacks`,
+- [ ] Monitor for token reuse and code replay attacks
+
+## OAuth 2.0 FAQ
+
+### What are the most common OAuth 2.0 vulnerabilities?
+
+The most common issues are redirect URI validation bugs, missing or weak state parameters, broken PKCE implementations, token leakage, scope escalation, and insecure token storage in browsers or mobile clients.
+
+### Is PKCE required for OAuth 2.0 now?
+
+Yes, in practice it should be treated as mandatory for modern OAuth deployments, including mobile apps, SPAs, and increasingly confidential clients. It closes off authorization code interception attacks that are otherwise hard to detect.
+
+### What is the safest OAuth 2.0 flow for web apps?
+
+For most modern applications, the safest default is the **Authorization Code flow with PKCE**, strict redirect URI matching, a cryptographically random state parameter, short-lived access tokens, and secure server-side token handling.`,
     date: "2026-03-28",
     author: "SCRs Team",
     category: "Application Security",

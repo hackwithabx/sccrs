@@ -523,9 +523,15 @@ Understanding these techniques helps defenders identify weaknesses before attack
     title: "API Authentication: JWT vs Session vs OAuth 2.0 Security Comparison",
     excerpt:
       "Compare JWT, server-side sessions, and OAuth 2.0 for API authentication, including security trade-offs, cookie vs token risks, and when each approach is the right fit.",
-    content: `## The Authentication Decision Tree
+    content: `## API Authentication: JWT vs Session vs OAuth 2.0
 
-Choosing the right authentication method is one of the most impactful security decisions you'll make. Here's the quick answer:
+  When teams compare **JWT vs session vs OAuth 2.0**, they are really deciding how much state to keep on the server, how to revoke access quickly, and whether the system is for first-party login or third-party delegation. Choosing the wrong API authentication model creates avoidable risk in scaling, logout, browser security, and cross-domain access.
+
+  If you want the short version: sessions are usually safest for traditional web apps, JWTs are useful for stateless and mobile scenarios when handled carefully, and OAuth 2.0 is the right choice when third-party applications need delegated access.
+
+  ### The Authentication Decision Tree
+
+  Here's the quick answer:
 
 \`\`\`
 Your App → Is it a traditional web app?
@@ -748,7 +754,21 @@ For third-party access ("Login with Google") or when external apps need to call 
 | **Complexity** | Low | Medium | High |
 | **Best for** | Traditional web apps | SPAs, mobile, microservices | Third-party access |
 
-The safest option for most web applications: **Server-side sessions with Redis**. If you need stateless tokens for mobile/SPA: **JWT in HttpOnly cookies with short expiry and refresh rotation.**`,
+The safest option for most web applications: **Server-side sessions with Redis**. If you need stateless tokens for mobile/SPA: **JWT in HttpOnly cookies with short expiry and refresh rotation.**
+
+## API Authentication FAQ
+
+### Is JWT better than sessions for API security?
+
+Not automatically. JWTs are easier to scale across services, but sessions are often simpler to revoke and safer for traditional web apps. The secure choice depends on your architecture, not hype.
+
+### When should I use OAuth 2.0 instead of JWT?
+
+Use OAuth 2.0 when a third-party app, external client, or delegated access model is involved. JWTs solve token format and session transport problems; OAuth solves authorization delegation.
+
+### What is the safest authentication method for a normal web app?
+
+For most web applications, server-side sessions with secure cookies remain the safest and simplest default. If you need API-first mobile or SPA support, use short-lived JWTs with refresh rotation and strict cookie handling.`,
     date: "2026-03-04",
     author: "SCRs Team",
     category: "Application Security",

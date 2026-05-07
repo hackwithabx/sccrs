@@ -198,9 +198,11 @@ With MCP (Model Context Protocol) and AI function calling, APIs are now consumed
     title: "Shadow APIs and Zombie APIs: API Discovery, Inventory, and Hidden Attack Surface Security",
     excerpt:
       "Learn how to find shadow APIs, track zombie APIs, build an API inventory, and reduce hidden API attack surface risk with practical API discovery and decommissioning strategies.",
-    content: `## The Hidden API Problem
+    content: `## Shadow API Discovery and Zombie API Security
 
-Your API attack surface is larger than you think. Much larger.
+  If you are trying to reduce hidden API risk, the starting point is **API discovery** and **API inventory hygiene**. Teams searching for answers on **shadow APIs** and **zombie APIs** usually do not have a detection problem alone. They have an ownership, documentation, and decommissioning problem.
+
+  Your API attack surface is larger than you think. Much larger.
 
 > **Critical Finding:** Salt Security's 2025 State of API Security Report found that **76% of organizations have shadow APIs** — APIs that exist in production but are not documented, monitored, or managed by security teams. Additionally, **43% of organizations have zombie APIs** — deprecated endpoints that were never decommissioned.
 
@@ -382,6 +384,22 @@ app.use("/api/v1/*", (req, res, next) => {
 
 ---
 
+## Shadow API FAQ
+
+### What is a shadow API?
+
+A shadow API is an endpoint that exists in production but is undocumented, unmanaged, or unknown to the security team. It may still receive traffic even though it is outside normal governance and monitoring.
+
+### What is a zombie API?
+
+A zombie API is an older or deprecated endpoint that was replaced but never fully removed. These endpoints often remain exploitable because they miss the newer authentication, authorization, or validation logic added to current API versions.
+
+### How do you find shadow APIs in practice?
+
+The most effective approach combines traffic analysis, source code discovery, API gateway inspection, OpenAPI spec comparison, and certificate or DNS enumeration. A single source of truth is usually not enough.
+
+---
+
 ## Further Reading
 
 - [API Security Trends 2026](/blog/api-security-trends-2026-graphql-grpc-rest) — Comprehensive API threat landscape
@@ -400,9 +418,11 @@ app.use("/api/v1/*", (req, res, next) => {
     title: "OWASP API Security Top 10 Explained: BOLA, Broken Auth, SSRF and Real Attack Examples",
     excerpt:
       "A practical OWASP API Security Top 10 guide covering BOLA, broken authentication, excessive data exposure, SSRF, rate limiting, and real API attack examples with secure fix patterns.",
-    content: `## What Is the OWASP API Security Top 10?
+    content: `## OWASP API Security Top 10 Explained
 
-The OWASP API Security Project maintains a separate Top 10 list specifically for APIs, distinct from the web application OWASP Top 10. APIs have unique attack patterns that web-focused frameworks don't adequately address.
+  If you are looking for a practical explanation of the **OWASP API Security Top 10**, focus on the few categories that show up repeatedly in real systems: **BOLA**, **broken authentication**, **rate limiting failures**, **business logic abuse**, **shadow APIs**, and **SSRF**. These are the issues that turn routine API mistakes into breach paths.
+
+  The OWASP API Security Project maintains a separate Top 10 list specifically for APIs, distinct from the web application OWASP Top 10. APIs have unique attack patterns that web-focused frameworks don't adequately address.
 
 > **Why a Separate List?** APIs expose application logic and sensitive data directly. Unlike web applications, APIs don't have a UI that limits what users can do — any client can send any request to any endpoint. This makes authorization, input validation, and rate limiting critical at the API layer.
 
@@ -618,6 +638,22 @@ When your API consumes third-party APIs without proper validation, you inherit t
 | Function Auth | Call admin endpoints as regular user | AuthMatrix (Burp) |
 | Business Logic | Automate purchase/reservation flows | Custom scripts |
 | SSRF | Send internal URLs (169.254.x, localhost) | SSRFmap |
+
+---
+
+## OWASP API Security Top 10 FAQ
+
+### What is the most common OWASP API Security Top 10 issue?
+
+Broken Object Level Authorization, or BOLA, remains the most common and most damaging API risk because it turns ordinary API requests into unauthorized data access with only small changes to object IDs or resource references.
+
+### Is the OWASP API Security Top 10 only for public APIs?
+
+No. Internal APIs, partner APIs, mobile backends, and service-to-service endpoints can all suffer from the same authorization, authentication, SSRF, and inventory-management failures.
+
+### How should teams use the OWASP API Security Top 10 in practice?
+
+Use it as a testing and review framework. Map existing endpoints to the top risks, review auth and authorization flows first, then test for resource abuse, API inventory gaps, and unsafe downstream integrations.
 
 ---
 
