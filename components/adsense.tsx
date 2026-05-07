@@ -5,30 +5,22 @@ import { useEffect, useRef, useState } from "react";
 import { hasMarketingConsent, CONSENT_EVENT } from "@/lib/cookie-consent-utils";
 
 // Your Google AdSense Publisher ID (get from AdSense dashboard)
-const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+const ADSENSE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-9959434931890692";
 
 /**
  * Google AdSense initialization script
- * Only loads when marketing consent is granted
+ * Always loads so Google can verify the site; ad units remain consent-gated.
  */
 export function AdSenseScript() {
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    setAllowed(hasMarketingConsent());
-    const handler = () => setAllowed(hasMarketingConsent());
-    window.addEventListener(CONSENT_EVENT, handler);
-    return () => window.removeEventListener(CONSENT_EVENT, handler);
-  }, []);
-
-  if (!ADSENSE_CLIENT_ID || !allowed) return null;
+  if (!ADSENSE_CLIENT_ID) return null;
 
   return (
     <Script
       async
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
       crossOrigin="anonymous"
-      strategy="afterInteractive"
+      strategy="beforeInteractive"
     />
   );
 }

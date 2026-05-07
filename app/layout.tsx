@@ -5,7 +5,6 @@ import { AuthProvider } from "@/components/auth-provider";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
-import { AdSenseScript } from "@/components/adsense";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
@@ -18,6 +17,9 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+const ADSENSE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-9959434931890692";
 
 export const metadata: Metadata = {
   title: {
@@ -163,6 +165,13 @@ export default function RootLayout({
         <link rel="alternate" type="application/rss+xml" title="SecureCodeReviews Blog" href="/feed.xml" />
         <meta name="theme-color" content="#1e3a8a" />
         <meta name="msapplication-TileColor" content="#1e3a8a" />
+        {ADSENSE_CLIENT_ID ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -191,7 +200,6 @@ export default function RootLayout({
         </AuthProvider>
         <CookieConsent />
         <GoogleAnalytics />
-        <AdSenseScript />
       </body>
     </html>
   );
