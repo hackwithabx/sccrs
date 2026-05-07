@@ -27,6 +27,56 @@ interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }
 
+const DEFAULT_OG_IMAGE = "/og-image.png";
+
+function slugify(text: string) {
+  return String(text)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+function stripMarkdown(content: string) {
+  return content
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[>*_~|-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function estimateWordCount(content: string) {
+  return stripMarkdown(content).split(/\s+/).filter(Boolean).length;
+}
+
+function extractHeadingLinks(content: string) {
+  const links: Array<{ id: string; label: string; level: 2 | 3 }> = [];
+  let insideCodeBlock = false;
+
+  for (const line of content.split("\n")) {
+    if (line.startsWith("```")) {
+      insideCodeBlock = !insideCodeBlock;
+      continue;
+    }
+
+    if (insideCodeBlock) continue;
+
+    const match = line.match(/^(##|###)\s+(.+)/);
+    if (!match) continue;
+
+    const level = match[1].length as 2 | 3;
+    const label = match[2].trim();
+    links.push({ id: slugify(label), label, level });
+  }
+
+  return links;
+}
+
 export async function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
 }
@@ -35,24 +85,46 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   const { slug } = await params;
   const post = blogPosts.find((p) => p.slug === slug);
   if (!post) return { title: "Post Not Found" };
+
+  const image = post.image || DEFAULT_OG_IMAGE;
+
   return {
     title: `${post.title} | SecureCodeReviews Blog`,
     description: post.excerpt,
     keywords: post.tags,
+    authors: [{ name: post.author }],
+    creator: post.author,
+    publisher: "SecureCodeReviews",
+    category: post.category,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
     openGraph: {
       title: post.title,
       description: post.excerpt,
       type: "article",
+      url: `https://securecodereviews.com/blog/${slug}`,
+      siteName: "SecureCodeReviews",
       publishedTime: post.date,
+      modifiedTime: post.date,
+      section: post.category,
       authors: [post.author],
       tags: post.tags,
-      ...(post.image && { images: [{ url: post.image, width: 900, height: 520, alt: post.title }] }),
+      images: [{ url: image, width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt,
-      ...(post.image && { images: [post.image] }),
+      images: [image],
     },
     alternates: {
       canonical: `/blog/${slug}`,
@@ -68,6 +140,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  const image = post.image || DEFAULT_OG_IMAGE;
+  const headingLinks = extractHeadingLinks(post.content).slice(0, 8);
+  const wordCount = estimateWordCount(post.content);
+
   return (
     <div className="py-16">
       {/* JSON-LD Article structured data */}
@@ -76,9 +152,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "Article",
+            "@type": "TechArticle",
             headline: post.title,
             description: post.excerpt,
+            image: [`https://securecodereviews.com${image}`],
             author: {
               "@type": "Person",
               name: post.author,
@@ -87,6 +164,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               "@type": "Organization",
               name: "SecureCodeReviews",
               url: "https://securecodereviews.com",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://securecodereviews.com/logo.png",
+              },
             },
             datePublished: post.date,
             dateModified: post.date,
@@ -96,6 +177,43 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             },
             keywords: post.tags.join(", "),
             articleSection: post.category,
+            wordCount,
+            timeRequired: post.readTime.replace(" read", ""),
+            inLanguage: "en",
+            isAccessibleForFree: true,
+            about: post.tags.map((tag) => ({
+              "@type": "Thing",
+              name: tag,
+            })),
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Home",
+                item: "https://securecodereviews.com",
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "Blog",
+                item: "https://securecodereviews.com/blog",
+              },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: post.title,
+                item: `https://securecodereviews.com/blog/${post.slug}`,
+              },
+            ],
           }),
         }}
       />
@@ -104,6 +222,24 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <div className="flex gap-8">
           {/* Main article column */}
           <article className="min-w-0 max-w-3xl flex-1">
+            <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+              <ol className="flex flex-wrap items-center gap-2">
+                <li>
+                  <Link href="/" className="hover:text-foreground transition-colors">
+                    Home
+                  </Link>
+                </li>
+                <li>/</li>
+                <li>
+                  <Link href="/blog" className="hover:text-foreground transition-colors">
+                    Blog
+                  </Link>
+                </li>
+                <li>/</li>
+                <li className="text-foreground line-clamp-1">{post.title}</li>
+              </ol>
+            </nav>
+
             <Link href="/blog">
               <Button variant="ghost" className="gap-2 mb-8">
                 <ArrowLeft className="h-4 w-4" />
@@ -113,11 +249,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                <Badge>{post.category}</Badge>
+                <Link href={`/blog?category=${encodeURIComponent(post.category)}`}>
+                  <Badge className="hover:bg-primary/90">{post.category}</Badge>
+                </Link>
                 {post.tags.slice(0, 4).map((tag) => (
-                  <Badge key={tag} variant="outline">
-                    {tag}
-                  </Badge>
+                  <Link key={tag} href={`/blog?tag=${encodeURIComponent(tag)}`}>
+                    <Badge variant="outline" className="hover:border-primary/50 hover:text-primary">
+                      {tag}
+                    </Badge>
+                  </Link>
                 ))}
                 {post.tags.length > 4 && (
                   <Badge variant="secondary" className="text-xs">
@@ -148,10 +288,28 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                     <Clock className="h-4 w-4" />
                     {post.readTime}
                   </div>
+                  <div>{wordCount.toLocaleString()} words</div>
                 </div>
                 <ShareButtons title={post.title} slug={post.slug} />
               </div>
             </div>
+
+            {headingLinks.length > 0 && (
+              <div className="mt-8 rounded-xl border bg-muted/30 p-5">
+                <p className="text-sm font-semibold text-foreground">On this page</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {headingLinks.map((heading) => (
+                    <a
+                      key={heading.id}
+                      href={`#${heading.id}`}
+                      className={`text-sm text-muted-foreground transition-colors hover:text-foreground ${heading.level === 3 ? "sm:pl-4" : ""}`}
+                    >
+                      {heading.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <Separator className="my-8" />
 

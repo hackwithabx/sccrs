@@ -30,6 +30,17 @@ export default function BlogPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q") || "";
+    const category = params.get("category");
+    const tag = params.get("tag");
+
+    if (q) setSearchQuery(q);
+    if (category) setSelectedCategory(category);
+    if (tag) setSelectedTag(tag);
+  }, []);
+
   const categories = useMemo(
     () => [...new Set(blogPosts.map((p) => p.category))].sort(),
     []
@@ -78,6 +89,24 @@ export default function BlogPage() {
 
   return (
     <div className="py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "SecureCodeReviews Blog Articles",
+            itemListOrder: "https://schema.org/ItemListOrderDescending",
+            numberOfItems: blogPosts.length,
+            itemListElement: blogPosts.slice(0, 24).map((post, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              url: `https://securecodereviews.com/blog/${post.slug}`,
+              name: post.title,
+            })),
+          }),
+        }}
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           badge="Blog"
