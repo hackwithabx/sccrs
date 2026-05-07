@@ -284,6 +284,37 @@ const securityIncluded = [
   { icon: Gauge, text: "Performance & security monitoring setup" },
 ];
 
+const flagshipSecurityOffers = [
+  {
+    icon: Code,
+    title: "Secure Code Review",
+    description: "Best for release hardening, client audits, and catching exploitable issues before launch.",
+    href: "/contact?subject=Secure+Code+Review+Request&message=I+want+a+secure+code+review.%0A%0ARepository+or+app%3A%0ATech+stack%3A%0ATarget+timeline%3A%0AMain+concerns%3A",
+    cta: "Book code review",
+  },
+  {
+    icon: Brain,
+    title: "AI / LLM Security Audit",
+    description: "Best for agent workflows, prompt injection risk, RAG systems, and tool-calling security reviews.",
+    href: "/contact?subject=AI+Security+Audit+Request&message=I+want+an+AI+%2F+LLM+security+assessment.%0A%0AProduct+or+feature%3A%0AModels+or+providers%3A%0ATarget+timeline%3A%0AMain+concerns%3A",
+    cta: "Request AI audit",
+  },
+  {
+    icon: Cloud,
+    title: "Cloud / API Assessment",
+    description: "Best for production environments, IAM exposure, API attack surface, and security posture cleanup.",
+    href: "/contact?subject=Cloud+or+API+Security+Assessment&message=I+want+a+cloud+or+API+security+assessment.%0A%0AEnvironment+or+API%3A%0ACloud+platform%3A%0ATarget+timeline%3A%0AMain+concerns%3A",
+    cta: "Start assessment",
+  },
+];
+
+const engagementDeliverables = [
+  "Manual expert review with security findings",
+  "Clear remediation guidance and priorities",
+  "Executive summary for stakeholders",
+  "Follow-up validation after fixes",
+];
+
 /* ═══════════════════════════════════════════
    PORTFOLIO
    ═══════════════════════════════════════════ */
@@ -353,6 +384,37 @@ export default function ServicesPage() {
           title="Security & Development Expertise"
           description="Two service lines — Security Services to protect what you have, and Development Services to build secure applications from scratch. All powered by ShieldX technology."
         />
+
+        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {flagshipSecurityOffers.map((offer) => (
+            <Card key={offer.title} className="border-primary/15 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+              <CardContent className="p-6">
+                <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
+                  <offer.icon className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-semibold">{offer.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{offer.description}</p>
+                <Link href={offer.href} className="mt-5 inline-flex">
+                  <Button variant="outline" className="gap-2">
+                    {offer.cta}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-2xl border bg-muted/30 p-5">
+          <p className="text-sm font-semibold">What teams usually need from us</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {engagementDeliverables.map((item) => (
+              <div key={item} className="rounded-xl border bg-background px-4 py-3 text-sm text-muted-foreground">
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* ShieldX promotion */}
         <motion.div

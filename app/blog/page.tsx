@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionHeading } from "@/components/section-heading";
 import { blogPosts } from "@/lib/blog-data";
-import { ArrowRight, Calendar, Clock, Search, X, ChevronDown, Tag } from "lucide-react";
+import { ArrowRight, Brain, Calendar, Clock, Code, Search, Shield, X, ChevronDown, Tag } from "lucide-react";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,6 +84,61 @@ export default function BlogPage() {
           title="Security Insights & Best Practices"
           description="Stay informed with the latest application security trends, expert guides, and actionable advice."
         />
+
+        <Card className="mt-10 border-primary/20 bg-gradient-to-r from-primary/8 via-primary/5 to-transparent">
+          <CardContent className="p-6 sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-2xl space-y-3">
+                <Badge className="w-fit">Need more than a blog post?</Badge>
+                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Use the blog to learn. Use the team to ship securely.
+                </h2>
+                <p className="text-sm leading-6 text-muted-foreground sm:text-base">
+                  If you are preparing a release, hardening an AI feature, or trying to catch issues before an audit,
+                  we can turn the advice you are reading here into a scoped security review.
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <Code className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Secure code review</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Manual review with engineering-ready remediation guidance.</p>
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <Brain className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">AI / LLM audit</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Prompt injection, data leakage, agent, and tool-use review.</p>
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <Shield className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Cloud and API assessment</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Targeted reviews for high-risk release paths and external attack surface.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full max-w-sm rounded-2xl border bg-background/90 p-5 shadow-sm">
+                <p className="text-sm font-semibold">Fastest next step</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tell us what you are shipping and where you want the review focused.
+                </p>
+                <div className="mt-4 space-y-3">
+                  <Link href="/contact?subject=Security+Assessment+Request&message=I+want+help+reviewing+an+application+or+feature.%0A%0AApp+or+feature%3A%0ATech+stack%3A%0ATarget+timeline%3A%0AMain+concerns%3A">
+                    <Button className="w-full gap-2">
+                      Request Security Review
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/services">
+                    <Button variant="outline" className="w-full">
+                      Explore Services
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Search & Filters */}
         <div className="mt-10 space-y-4">

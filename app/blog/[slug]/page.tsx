@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User, Shield, Wrench, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 import { InArticleAd } from "@/components/adsense";
+import ArticleCta from "@/components/article-cta";
 import MarkdownRenderer from "@/components/markdown-renderer";
 import { ReadingProgress } from "@/components/reading-progress";
 import { TableOfContents } from "@/components/table-of-contents";
@@ -157,6 +158,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <div className="prose prose-neutral dark:prose-invert max-w-none">
           <MarkdownRenderer content={post.content} />
         </div>
+
+        <ArticleCta category={post.category} tags={post.tags} title={post.title} />
 
         <Separator className="my-8" />
 

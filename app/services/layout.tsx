@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     "DevSecOps consulting",
     "cloud security assessment",
     "API security testing",
+    "AI security audit",
+    "LLM security assessment",
     "OWASP compliance audit",
     "web application security",
     "vulnerability assessment",
@@ -46,7 +48,7 @@ export default function ServicesLayout({
     description: "Professional application security services: secure code review, penetration testing, DevSecOps consulting, and cloud security assessments.",
     url: "https://securecodereviews.com/services",
     provider: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
-    serviceType: ["Secure Code Review", "Penetration Testing", "DevSecOps Consulting", "Cloud Security Assessment", "API Security Testing"],
+    serviceType: ["Secure Code Review", "Penetration Testing", "DevSecOps Consulting", "Cloud Security Assessment", "API Security Testing", "AI / LLM Security Audit"],
     areaServed: "Worldwide",
   };
 
