@@ -520,9 +520,9 @@ Understanding these techniques helps defenders identify weaknesses before attack
   },
   {
     slug: "api-authentication-jwt-vs-session-vs-oauth-comparison",
-    title: "JWT vs Session vs OAuth: Which API Authentication Should You Use?",
+    title: "API Authentication: JWT vs Session vs OAuth 2.0 Security Comparison",
     excerpt:
-      "A no-nonsense comparison of JWT tokens, server-side sessions, and OAuth 2.0 — with architecture diagrams, security trade-offs, and when to use each.",
+      "Compare JWT, server-side sessions, and OAuth 2.0 for API authentication, including security trade-offs, cookie vs token risks, and when each approach is the right fit.",
     content: `## The Authentication Decision Tree
 
 Choosing the right authentication method is one of the most impactful security decisions you'll make. Here's the quick answer:
@@ -752,7 +752,7 @@ The safest option for most web applications: **Server-side sessions with Redis**
     date: "2026-03-04",
     author: "SCRs Team",
     category: "Application Security",
-    tags: ["jwt", "session", "oauth", "authentication", "api security", "cookies", "tokens"],
+    tags: ["API authentication", "JWT vs session", "OAuth 2.0", "authentication security", "API security", "cookies vs tokens", "JWT security"],
     readTime: "16 min read",
   },
   {

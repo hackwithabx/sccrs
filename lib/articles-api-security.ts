@@ -195,9 +195,9 @@ With MCP (Model Context Protocol) and AI function calling, APIs are now consumed
 
   {
     slug: "shadow-apis-zombie-apis-discovery-security",
-    title: "Shadow APIs & Zombie APIs: How to Find and Secure Your Hidden Attack Surface",
+    title: "Shadow APIs and Zombie APIs: API Discovery, Inventory, and Hidden Attack Surface Security",
     excerpt:
-      "76% of organizations have APIs they don't know about. Shadow APIs (undocumented) and zombie APIs (deprecated but live) are the most overlooked attack vectors. This guide covers discovery, inventory, and elimination strategies.",
+      "Learn how to find shadow APIs, track zombie APIs, build an API inventory, and reduce hidden API attack surface risk with practical API discovery and decommissioning strategies.",
     content: `## The Hidden API Problem
 
 Your API attack surface is larger than you think. Much larger.
@@ -391,15 +391,15 @@ app.use("/api/v1/*", (req, res, next) => {
     date: "2026-02-06",
     author: "SCR Security Research Team",
     category: "API Security",
-    tags: ["Shadow APIs", "Zombie APIs", "API Discovery", "API Inventory", "Attack Surface", "API Security"],
+    tags: ["Shadow APIs", "Zombie APIs", "API discovery", "API inventory", "API attack surface", "hidden APIs", "API security"],
     readTime: "17 min read",
   },
 
   {
     slug: "owasp-api-security-top-10-2023",
-    title: "OWASP API Security Top 10 (2023): Every Vulnerability Explained With Real Attacks",
+    title: "OWASP API Security Top 10 Explained: BOLA, Broken Auth, SSRF and Real Attack Examples",
     excerpt:
-      "The OWASP API Security Top 10 is the definitive framework for API vulnerabilities. This guide explains all 10 risks with real-world attack scenarios, vulnerable code examples, and production-ready fixes for Node.js, Python, and Java.",
+      "A practical OWASP API Security Top 10 guide covering BOLA, broken authentication, excessive data exposure, SSRF, rate limiting, and real API attack examples with secure fix patterns.",
     content: `## What Is the OWASP API Security Top 10?
 
 The OWASP API Security Project maintains a separate Top 10 list specifically for APIs, distinct from the web application OWASP Top 10. APIs have unique attack patterns that web-focused frameworks don't adequately address.
@@ -630,7 +630,7 @@ When your API consumes third-party APIs without proper validation, you inherit t
     date: "2026-02-05",
     author: "SCR Security Research Team",
     category: "API Security",
-    tags: ["OWASP", "API Security", "BOLA", "SSRF", "JWT", "Rate Limiting", "Authorization"],
+    tags: ["OWASP API Security Top 10", "API Security", "BOLA", "broken authentication", "SSRF", "rate limiting", "authorization"],
     readTime: "22 min read",
   },
 

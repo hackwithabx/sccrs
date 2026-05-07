@@ -426,9 +426,9 @@ Until then, treat AI-generated code the same way you'd treat code from a junior 
   },
   {
     slug: "nextjs-security-complete-guide-2026",
-    title: "Next.js Security: The Complete Hardening Guide for 2026",
+    title: "Next.js Security Best Practices: Server Actions, Auth, Headers & Hardening Guide",
     excerpt:
-      "Server Components, Server Actions, and the App Router changed everything. Here's how to secure Next.js 15+ applications against the vulnerabilities that matter.",
+      "A practical Next.js security guide covering Server Actions, middleware, authentication, security headers, environment variables, and App Router hardening for Next.js 15 and 16.",
     content: `## Next.js Security Has Fundamentally Changed
 
 Next.js 15 and 16 introduced **Server Components**, **Server Actions**, and the **App Router** — blurring the line between client and server code. This creates entirely new attack vectors that didn't exist in Pages Router applications.
@@ -696,7 +696,7 @@ export async function GET(
     date: "2026-04-03",
     author: "SCRs Team",
     category: "Application Security",
-    tags: ["nextjs", "react", "server components", "server actions", "web security", "javascript"],
+    tags: ["Next.js security", "Next.js security best practices", "server actions", "App Router security", "middleware", "React security", "web security"],
     readTime: "16 min read",
   },
   {
@@ -911,9 +911,9 @@ The MCP ecosystem is moving fast. Security controls need to keep pace — or AI 
   },
   {
     slug: "oauth-2-vulnerabilities-attacks-defense-guide",
-    title: "OAuth 2.0 Vulnerabilities: Every Attack and Defense Explained with Code",
+    title: "OAuth 2.0 Vulnerabilities and Security Best Practices: PKCE, State, Redirect URI",
     excerpt:
-      "From authorization code interception to token leakage — a complete breakdown of OAuth 2.0 attacks with real exploit code and production-ready defenses.",
+      "A complete OAuth 2.0 security guide covering redirect URI attacks, state parameter defenses, PKCE, token leakage, scope abuse, and production-ready OAuth best practices.",
     content: `## Why OAuth 2.0 Is Still Broken in 2026
 
 OAuth 2.0 powers authentication for **billions of users** — Google, GitHub, Facebook, Microsoft — yet implementation errors remain one of the most common web vulnerabilities.
@@ -1136,7 +1136,7 @@ function validateScopes(requestedScopes: string[]): string[] {
     date: "2026-03-28",
     author: "SCRs Team",
     category: "Application Security",
-    tags: ["oauth", "oauth2", "authentication", "sso", "pkce", "authorization", "token security"],
+    tags: ["OAuth 2.0 security", "OAuth vulnerabilities", "PKCE", "state parameter", "redirect URI", "SSO security", "authorization code flow"],
     readTime: "16 min read",
   },
 ];
