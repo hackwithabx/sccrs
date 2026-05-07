@@ -16,6 +16,7 @@ import { trafficBatch4Articles } from "./articles-traffic-batch4";
 import { trafficBatch5Articles } from "./articles-traffic-batch5";
 import { trafficBatch6Articles } from "./articles-traffic-batch6";
 import { aiSecurityArticles2 } from "./articles-ai-security-2";
+import { aiSecurityArticles3 } from "./articles-ai-security-3";
 import { cloudSecurityArticles } from "./articles-cloud-security";
 
 export interface BlogPost {
@@ -3760,5 +3761,6 @@ app.post('/api/refresh', async (req, res) => {
   ...trafficBatch5Articles,
   ...trafficBatch6Articles,
   ...aiSecurityArticles2,
+  ...aiSecurityArticles3,
   ...cloudSecurityArticles,
 ];
