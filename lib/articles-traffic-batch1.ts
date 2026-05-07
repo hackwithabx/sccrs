@@ -710,6 +710,7 @@ Treat the App Router like a mixed trust boundary. Review which logic runs on the
 - [ ] Error responses don't leak stack traces or internal details
 - [ ] Dependencies audited (\`npm audit\`, Snyk, or ShieldX)`,
     date: "2026-04-03",
+    updatedAt: "2026-05-08",
     author: "SCRs Team",
     category: "Application Security",
     tags: ["Next.js security", "Next.js security best practices", "server actions", "App Router security", "middleware", "React security", "web security"],
@@ -1166,6 +1167,7 @@ Yes, in practice it should be treated as mandatory for modern OAuth deployments,
 
 For most modern applications, the safest default is the **Authorization Code flow with PKCE**, strict redirect URI matching, a cryptographically random state parameter, short-lived access tokens, and secure server-side token handling.`,
     date: "2026-03-28",
+    updatedAt: "2026-05-08",
     author: "SCRs Team",
     category: "Application Security",
     tags: ["OAuth 2.0 security", "OAuth vulnerabilities", "PKCE", "state parameter", "redirect URI", "SSO security", "authorization code flow"],

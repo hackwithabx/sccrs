@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { blogPosts } from "@/lib/blog-data";
+import { getPostLastModified, slugifyTaxonomy } from "@/lib/blog-taxonomy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,20 +9,12 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User, Shield, Wrench, BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 import { InArticleAd } from "@/components/adsense";
+import { adSlots } from "@/lib/adsense-config";
 import ArticleCta from "@/components/article-cta";
 import MarkdownRenderer from "@/components/markdown-renderer";
 import { ReadingProgress } from "@/components/reading-progress";
 import { TableOfContents } from "@/components/table-of-contents";
 import { ShareButtons } from "@/components/share-buttons";
-
-// Ad slot IDs - Replace with your actual AdSense slot IDs from https://www.google.com/adsense
-// 1. Go to AdSense > Ads > By ad unit
-// 2. Create "In-article ads" unit
-// 3. Copy the data-ad-slot value
-const AD_SLOTS = {
-  inArticle: "1234567890",  // Replace with your actual slot ID
-  sidebar: "0987654321",    // Replace with your actual slot ID
-};
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -87,6 +80,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   if (!post) return { title: "Post Not Found" };
 
   const image = post.image || DEFAULT_OG_IMAGE;
+  const lastModified = getPostLastModified(post);
 
   return {
     title: `${post.title} | SecureCodeReviews Blog`,
@@ -114,7 +108,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       url: `https://securecodereviews.com/blog/${slug}`,
       siteName: "SecureCodeReviews",
       publishedTime: post.date,
-      modifiedTime: post.date,
+      modifiedTime: lastModified,
       section: post.category,
       authors: [post.author],
       tags: post.tags,
@@ -143,6 +137,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const image = post.image || DEFAULT_OG_IMAGE;
   const headingLinks = extractHeadingLinks(post.content).slice(0, 8);
   const wordCount = estimateWordCount(post.content);
+  const lastModified = getPostLastModified(post);
+  const hasUpdatedDate = post.updatedAt && post.updatedAt !== post.date;
 
   return (
     <div className="py-16">
@@ -170,7 +166,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               },
             },
             datePublished: post.date,
-            dateModified: post.date,
+            dateModified: lastModified,
             mainEntityOfPage: {
               "@type": "WebPage",
               "@id": `https://securecodereviews.com/blog/${post.slug}`,
@@ -249,7 +245,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                <Link href={`/blog?category=${encodeURIComponent(post.category)}`}>
+                <Link href={`/blog/category/${slugifyTaxonomy(post.category)}`}>
                   <Badge className="hover:bg-primary/90">{post.category}</Badge>
                 </Link>
                 {post.tags.slice(0, 4).map((tag) => (
@@ -284,6 +280,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                       year: "numeric",
                     })}
                   </div>
+                  {hasUpdatedDate && (
+                    <div>
+                      Updated {new Date(lastModified).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
                     {post.readTime}
@@ -322,7 +327,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <Separator className="my-8" />
 
         {/* In-Article Ad */}
-        <InArticleAd slot={AD_SLOTS.inArticle} />
+        <InArticleAd slot={adSlots.articleInContent} />
 
         {/* Internal Backlinks / Related Resources */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

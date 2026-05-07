@@ -770,6 +770,7 @@ Use OAuth 2.0 when a third-party app, external client, or delegated access model
 
 For most web applications, server-side sessions with secure cookies remain the safest and simplest default. If you need API-first mobile or SPA support, use short-lived JWTs with refresh rotation and strict cookie handling.`,
     date: "2026-03-04",
+    updatedAt: "2026-05-08",
     author: "SCRs Team",
     category: "Application Security",
     tags: ["API authentication", "JWT vs session", "OAuth 2.0", "authentication security", "API security", "cookies vs tokens", "JWT security"],

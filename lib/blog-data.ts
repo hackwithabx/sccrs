@@ -18,6 +18,8 @@ import { trafficBatch6Articles } from "./articles-traffic-batch6";
 import { aiSecurityArticles2 } from "./articles-ai-security-2";
 import { aiSecurityArticles3 } from "./articles-ai-security-3";
 import { cloudSecurityArticles } from "./articles-cloud-security";
+import { trafficBatch7Articles } from "./articles-traffic-batch7";
+import { trafficBatch8Articles } from "./articles-traffic-batch8";
 
 export interface BlogPost {
   slug: string;
@@ -25,6 +27,7 @@ export interface BlogPost {
   excerpt: string;
   content: string;
   date: string;
+  updatedAt?: string;
   author: string;
   category: string;
   tags: string[];
@@ -3760,6 +3763,8 @@ app.post('/api/refresh', async (req, res) => {
   ...trafficBatch4Articles,
   ...trafficBatch5Articles,
   ...trafficBatch6Articles,
+  ...trafficBatch7Articles,
+  ...trafficBatch8Articles,
   ...aiSecurityArticles2,
   ...aiSecurityArticles3,
   ...cloudSecurityArticles,

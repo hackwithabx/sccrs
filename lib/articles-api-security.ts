@@ -407,6 +407,7 @@ The most effective approach combines traffic analysis, source code discovery, AP
 - Salt Security (2025), "State of API Security Report" — Shadow API statistics
 - [Secure API Design Patterns](/blog/secure-api-design-patterns) — Building APIs securely from the start`,
     date: "2026-02-06",
+    updatedAt: "2026-05-08",
     author: "SCR Security Research Team",
     category: "API Security",
     tags: ["Shadow APIs", "Zombie APIs", "API discovery", "API inventory", "API attack surface", "hidden APIs", "API security"],
@@ -664,6 +665,7 @@ Use it as a testing and review framework. Map existing endpoints to the top risk
 - [Shadow APIs Guide](/blog/shadow-apis-zombie-apis-discovery-security) — Finding hidden APIs
 - [Broken Access Control Deep Dive](/blog/broken-access-control-owasp-number-one-risk) — Authorization patterns`,
     date: "2026-02-05",
+    updatedAt: "2026-05-08",
     author: "SCR Security Research Team",
     category: "API Security",
     tags: ["OWASP API Security Top 10", "API Security", "BOLA", "broken authentication", "SSRF", "rate limiting", "authorization"],

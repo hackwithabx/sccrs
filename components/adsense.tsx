@@ -35,16 +35,25 @@ export function AdSenseScript() {
 
 interface AdUnitProps {
   slot: string; // Ad unit slot ID from AdSense
-  format?: "auto" | "rectangle" | "horizontal" | "vertical";
+  format?: "auto" | "rectangle" | "horizontal" | "vertical" | "fluid";
+  layout?: "in-article" | "in-feed" | "";
   responsive?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
  * Individual Ad Unit component
  * Only renders when marketing consent is granted
  */
-export function AdUnit({ slot, format = "auto", responsive = true, className = "" }: AdUnitProps) {
+export function AdUnit({
+  slot,
+  format = "auto",
+  layout = "",
+  responsive = true,
+  className = "",
+  style,
+}: AdUnitProps) {
   const adRef = useRef<HTMLDivElement>(null);
   const isAdLoaded = useRef(false);
   const [allowed, setAllowed] = useState(false);
@@ -69,11 +78,14 @@ export function AdUnit({ slot, format = "auto", responsive = true, className = "
     }
   }, [allowed]);
 
-  if (!ADSENSE_CLIENT_ID || !allowed) {
+  if (!slot || !ADSENSE_CLIENT_ID || !allowed) {
     // Show placeholder in development
     if (process.env.NODE_ENV === "development") {
       return (
-        <div className={`bg-muted/30 border border-dashed border-muted-foreground/30 rounded-lg p-4 text-center text-muted-foreground text-sm ${className}`}>
+        <div
+          className={`bg-muted/30 border border-dashed border-muted-foreground/30 rounded-lg p-4 text-center text-muted-foreground text-sm ${className}`}
+          style={style}
+        >
           Ad Placeholder (slot: {slot})
         </div>
       );
@@ -85,10 +97,11 @@ export function AdUnit({ slot, format = "auto", responsive = true, className = "
     <div ref={adRef} className={className}>
       <ins
         className="adsbygoogle"
-        style={{ display: "block" }}
+        style={{ display: "block", ...style }}
         data-ad-client={ADSENSE_CLIENT_ID}
         data-ad-slot={slot}
         data-ad-format={format}
+        data-ad-layout={layout || undefined}
         data-full-width-responsive={responsive ? "true" : "false"}
       />
     </div>
@@ -102,7 +115,16 @@ export function InArticleAd({ slot, className = "" }: { slot: string; className?
   return (
     <div className={`my-8 ${className}`}>
       <p className="text-xs text-muted-foreground mb-2 text-center">Advertisement</p>
-      <AdUnit slot={slot} format="horizontal" />
+      <AdUnit slot={slot} format="fluid" layout="in-article" />
+    </div>
+  );
+}
+
+export function HorizontalBannerAd({ slot, className = "" }: { slot: string; className?: string }) {
+  return (
+    <div className={`my-8 ${className}`}>
+      <p className="mb-2 text-center text-xs text-muted-foreground">Advertisement</p>
+      <AdUnit slot={slot} format="horizontal" style={{ minHeight: "90px" }} />
     </div>
   );
 }
@@ -114,7 +136,16 @@ export function SidebarAd({ slot, className = "" }: { slot: string; className?: 
   return (
     <div className={`sticky top-24 ${className}`}>
       <p className="text-xs text-muted-foreground mb-2">Sponsored</p>
-      <AdUnit slot={slot} format="rectangle" />
+      <AdUnit slot={slot} format="rectangle" style={{ minWidth: "300px", minHeight: "250px" }} />
+    </div>
+  );
+}
+
+export function MultiplexAd({ slot, className = "" }: { slot: string; className?: string }) {
+  return (
+    <div className={`my-8 ${className}`}>
+      <p className="mb-2 text-center text-xs text-muted-foreground">Recommended resources</p>
+      <AdUnit slot={slot} format="auto" />
     </div>
   );
 }

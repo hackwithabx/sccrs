@@ -7,8 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { HorizontalBannerAd, MultiplexAd } from "@/components/adsense";
 import { SectionHeading } from "@/components/section-heading";
 import { blogPosts } from "@/lib/blog-data";
+import { adSlots } from "@/lib/adsense-config";
+import { categoryHubs, featuredTopicHubs } from "@/lib/blog-taxonomy";
 import { ArrowRight, Brain, Calendar, Clock, Code, Search, Shield, X, ChevronDown, Tag } from "lucide-react";
 
 export default function BlogPage() {
@@ -168,6 +171,53 @@ export default function BlogPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="mt-10 border-border/70 bg-background/80">
+          <CardContent className="p-6 sm:p-8">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+              <div>
+                <Badge className="w-fit">Topic Hubs</Badge>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Start with a crawlable topic page, then drill into the articles.
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                  These hub pages are built to cluster related posts around higher-intent search themes such as AI security,
+                  API security, OAuth, MCP, cloud security, and framework hardening.
+                </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {featuredTopicHubs.map((hub) => (
+                    <Link key={hub.slug} href={`/blog/topic/${hub.slug}`}>
+                      <div className="rounded-2xl border p-4 transition-all hover:border-primary/50 hover:bg-accent/40">
+                        <p className="text-sm font-semibold">{hub.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{hub.description}</p>
+                        <p className="mt-3 text-xs font-medium text-primary">{hub.postCount} guides</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold">Category Pages</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Prefer the broadest entry points? These category pages group articles by security domain and stay indexable.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {categoryHubs.map((hub) => (
+                    <Link key={hub.slug} href={`/blog/category/${hub.slug}`}>
+                      <Badge variant="outline" className="px-3 py-1 hover:border-primary/50 hover:text-primary">
+                        {hub.name} ({hub.postCount})
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <HorizontalBannerAd slot={adSlots.blogIndexBanner} className="mt-10" />
 
         {/* Search & Filters */}
         <div className="mt-10 space-y-4">
@@ -362,6 +412,10 @@ export default function BlogPage() {
               Clear all filters
             </Button>
           </div>
+        )}
+
+        {filteredPosts.length > 0 && (
+          <MultiplexAd slot={adSlots.blogIndexMultiplex} className="mt-12" />
         )}
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { blogPosts } from "@/lib/blog-data";
+import { categoryHubs, getPostLastModified, topicHubs } from "@/lib/blog-taxonomy";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://securecodereviews.com";
@@ -34,13 +35,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Dynamically generate blog post entries from all articles
   const blogPages = blogPosts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: post.date || now,
+    lastModified: getPostLastModified(post) || now,
     changeFrequency: "monthly" as const,
     priority: 0.7,
   }));
 
+  const categoryPages = categoryHubs.map((hub) => ({
+    url: `${baseUrl}/blog/category/${hub.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.78,
+  }));
+
+  const topicPages = topicHubs.map((hub) => ({
+    url: `${baseUrl}/blog/topic/${hub.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
   return [
     ...staticPages.map((page) => ({ ...page, lastModified: now })),
+    ...categoryPages,
+    ...topicPages,
     ...blogPages,
   ];
 }
