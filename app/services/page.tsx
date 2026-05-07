@@ -315,6 +315,48 @@ const engagementDeliverables = [
   "Follow-up validation after fixes",
 ];
 
+const serviceAlignedGuides = [
+  {
+    service: "Secure Code Review",
+    guides: [
+      {
+        title: "Next.js Security: The Complete Hardening Guide for 2026",
+        href: "/blog/nextjs-security-complete-guide-2026",
+      },
+      {
+        title: "7 Security Mistakes Every Express.js App Makes in Production",
+        href: "/blog/nodejs-express-security-mistakes-production",
+      },
+    ],
+  },
+  {
+    service: "AI / LLM Security Audit",
+    guides: [
+      {
+        title: "OWASP Top 10 for Agentic AI 2026: Complete Security Guide",
+        href: "/blog/owasp-top-10-agentic-ai-2026",
+      },
+      {
+        title: "MCP Server Security: Why Model Context Protocol Is the Next Big Attack Surface",
+        href: "/blog/mcp-server-security-model-context-protocol-risks",
+      },
+    ],
+  },
+  {
+    service: "Cloud / API Assessment",
+    guides: [
+      {
+        title: "OWASP API Security Top 10 (2023): Every Vulnerability Explained With Real Attacks",
+        href: "/blog/owasp-api-security-top-10-2023",
+      },
+      {
+        title: "Shadow APIs & Zombie APIs: How to Find and Secure Your Hidden Attack Surface",
+        href: "/blog/shadow-apis-zombie-apis-discovery-security",
+      },
+    ],
+  },
+];
+
 /* ═══════════════════════════════════════════
    PORTFOLIO
    ═══════════════════════════════════════════ */
@@ -412,6 +454,38 @@ export default function ServicesPage() {
               <div key={item} className="rounded-xl border bg-background px-4 py-3 text-sm text-muted-foreground">
                 {item}
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-primary/15 bg-gradient-to-r from-primary/5 via-background to-transparent p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-primary">Useful Before You Book</p>
+              <h3 className="text-lg font-semibold">Service-aligned guides for your team</h3>
+            </div>
+            <Link href="/blog">
+              <Button variant="ghost" className="gap-2 px-0 sm:px-3">
+                Browse the blog
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            {serviceAlignedGuides.map((group) => (
+              <Card key={group.service} className="border-border/70 bg-background/90">
+                <CardContent className="p-5">
+                  <p className="text-sm font-semibold text-foreground">{group.service}</p>
+                  <div className="mt-4 space-y-3">
+                    {group.guides.map((guide) => (
+                      <Link key={guide.href} href={guide.href} className="block rounded-lg border border-border/70 px-4 py-3 text-sm transition-colors hover:border-primary/40 hover:bg-muted/40">
+                        <span className="font-medium text-foreground">{guide.title}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

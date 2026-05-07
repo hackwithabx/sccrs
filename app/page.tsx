@@ -98,6 +98,39 @@ const features = [
   },
 ];
 
+const featuredSeoGuides = [
+  {
+    title: "Next.js Security: The Complete Hardening Guide for 2026",
+    href: "/blog/nextjs-security-complete-guide-2026",
+    summary: "High-intent framework security query with strong developer demand and service relevance.",
+  },
+  {
+    title: "OWASP API Security Top 10 (2023): Every Vulnerability Explained With Real Attacks",
+    href: "/blog/owasp-api-security-top-10-2023",
+    summary: "Evergreen API-security topic that supports both traffic and consulting conversions.",
+  },
+  {
+    title: "OAuth 2.0 Vulnerabilities: Every Attack and Defense Explained with Code",
+    href: "/blog/oauth-2-vulnerabilities-attacks-defense-guide",
+    summary: "Strong commercial intent around auth reviews, SSO hardening, and secure implementation.",
+  },
+  {
+    title: "MCP Server Security: Why Model Context Protocol Is the Next Big Attack Surface",
+    href: "/blog/mcp-server-security-model-context-protocol-risks",
+    summary: "Timely AI-security wedge topic with lower competition than generic AppSec terms.",
+  },
+  {
+    title: "OWASP Top 10 for Agentic AI 2026: Complete Security Guide",
+    href: "/blog/owasp-top-10-agentic-ai-2026",
+    summary: "A topical-authority play for AI security, audits, and LLM application hardening.",
+  },
+  {
+    title: "GitHub Actions Security: Script Injection, Secret Leaks & Hardening Your CI/CD",
+    href: "/blog/github-actions-security-vulnerabilities-hardening",
+    summary: "Good fit for DevSecOps and startup engineering teams searching for practical fixes.",
+  },
+];
+
 // Chart data
 const vulnerabilityTrends = [
   { year: "2019", critical: 320, high: 580, medium: 1200, low: 2100 },
@@ -620,6 +653,41 @@ export default function HomePage() {
               </motion.div>
             ))}
           </motion.div>
+
+          <div className="mt-12 rounded-2xl border border-primary/15 bg-gradient-to-r from-primary/5 via-background to-transparent p-6 sm:p-8">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-sm font-semibold text-primary">Start Here</p>
+                <h3 className="mt-1 text-2xl font-semibold tracking-tight">High-intent security guides we want Google to understand first</h3>
+                <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+                  These are the strongest blog targets for developer search intent, service relevance, and topical authority. They now get direct support from the homepage.
+                </p>
+              </div>
+              <Link href="/blog">
+                <Button variant="outline" className="gap-2">
+                  Explore all articles
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {featuredSeoGuides.map((guide) => (
+                <Link key={guide.href} href={guide.href}>
+                  <Card className="h-full border-border/70 transition-all hover:border-primary/40 hover:shadow-md">
+                    <CardContent className="p-5">
+                      <p className="text-base font-semibold leading-snug text-foreground">{guide.title}</p>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{guide.summary}</p>
+                      <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                        Read guide
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
