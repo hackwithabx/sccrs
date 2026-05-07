@@ -43,16 +43,16 @@ export const metadata: Metadata = {
 /* ── Reusable code block component ── */
 function CodeBlock({ title, code, variant }: { title: string; code: string; variant: "danger" | "safe" | "neutral" }) {
   const colors = {
-    danger: "border-red-500/40 bg-red-950/30",
-    safe: "border-emerald-500/40 bg-emerald-950/30",
-    neutral: "border-zinc-600/40 bg-zinc-900/60",
+    danger: "border-red-200 bg-red-50 dark:border-red-500/40 dark:bg-red-950/30",
+    safe: "border-emerald-200 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-950/30",
+    neutral: "border-zinc-200 bg-zinc-50 dark:border-zinc-600/40 dark:bg-zinc-900/60",
   };
   const labels = { danger: "❌ Vulnerable", safe: "✅ Secure", neutral: "" };
   return (
     <div className={`rounded-lg border ${colors[variant]} p-4 my-4 not-prose`}>
       <div className="flex items-center gap-2 mb-2">
         {labels[variant] && <span className="text-xs font-semibold tracking-wide uppercase opacity-80">{labels[variant]}</span>}
-        {title && <span className="text-xs text-zinc-400">{title}</span>}
+        {title && <span className="text-xs text-zinc-500 dark:text-zinc-400">{title}</span>}
       </div>
       <pre className="overflow-x-auto text-sm leading-relaxed"><code>{code}</code></pre>
     </div>
@@ -78,33 +78,33 @@ export default function NodeJsSecurityGuidePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <h1>Node.js Security Guide 2025</h1>
-      <p className="lead text-lg text-zinc-400">
+      <p className="lead text-lg text-muted-foreground">
         Node.js powers millions of production APIs, microservices, and web applications.
         Its non-blocking I/O model and vast npm ecosystem make it incredibly productive — but also expose a large attack surface if security is not treated as a first-class concern.
         This guide maps every major risk to the <strong>OWASP Top 10 (2021)</strong>, includes real vulnerable-vs-secure code examples, and gives you a production-ready checklist.
       </p>
 
-      <nav className="not-prose my-8 p-4 rounded-lg border border-zinc-700/50 bg-zinc-900/40">
-        <p className="text-sm font-semibold text-zinc-300 mb-3">Table of Contents</p>
-        <ol className="columns-2 gap-6 text-sm text-zinc-400 list-decimal list-inside space-y-1">
-          <li><a href="#injection" className="hover:text-white transition-colors">Injection Attacks (SQLi, NoSQLi, Command)</a></li>
-          <li><a href="#xss" className="hover:text-white transition-colors">Cross-Site Scripting (XSS)</a></li>
-          <li><a href="#auth" className="hover:text-white transition-colors">Authentication & Session Security</a></li>
-          <li><a href="#access-control" className="hover:text-white transition-colors">Broken Access Control</a></li>
-          <li><a href="#dependencies" className="hover:text-white transition-colors">Dependency & Supply Chain Security</a></li>
-          <li><a href="#prototype-pollution" className="hover:text-white transition-colors">Prototype Pollution</a></li>
-          <li><a href="#ssrf" className="hover:text-white transition-colors">Server-Side Request Forgery (SSRF)</a></li>
-          <li><a href="#file-uploads" className="hover:text-white transition-colors">Secure File Uploads</a></li>
-          <li><a href="#secrets" className="hover:text-white transition-colors">Secrets Management</a></li>
-          <li><a href="#headers" className="hover:text-white transition-colors">Security Headers & CORS</a></li>
-          <li><a href="#crypto" className="hover:text-white transition-colors">Cryptography Best Practices</a></li>
-          <li><a href="#error-handling" className="hover:text-white transition-colors">Error Handling & Logging</a></li>
-          <li><a href="#rate-limiting" className="hover:text-white transition-colors">Rate Limiting & DoS Protection</a></li>
-          <li><a href="#redos" className="hover:text-white transition-colors">ReDoS (Regex Denial of Service)</a></li>
-          <li><a href="#deserialization" className="hover:text-white transition-colors">Insecure Deserialization</a></li>
-          <li><a href="#https" className="hover:text-white transition-colors">HTTPS & Transport Security</a></li>
-          <li><a href="#checklist" className="hover:text-white transition-colors">Production Security Checklist</a></li>
-          <li><a href="#tools" className="hover:text-white transition-colors">Recommended Tools</a></li>
+      <nav className="not-prose my-8 rounded-lg border border-border bg-muted/40 p-4">
+        <p className="mb-3 text-sm font-semibold text-foreground">Table of Contents</p>
+        <ol className="columns-2 list-decimal list-inside space-y-1 gap-6 text-sm text-muted-foreground">
+          <li><a href="#injection" className="transition-colors hover:text-foreground">Injection Attacks (SQLi, NoSQLi, Command)</a></li>
+          <li><a href="#xss" className="transition-colors hover:text-foreground">Cross-Site Scripting (XSS)</a></li>
+          <li><a href="#auth" className="transition-colors hover:text-foreground">Authentication & Session Security</a></li>
+          <li><a href="#access-control" className="transition-colors hover:text-foreground">Broken Access Control</a></li>
+          <li><a href="#dependencies" className="transition-colors hover:text-foreground">Dependency & Supply Chain Security</a></li>
+          <li><a href="#prototype-pollution" className="transition-colors hover:text-foreground">Prototype Pollution</a></li>
+          <li><a href="#ssrf" className="transition-colors hover:text-foreground">Server-Side Request Forgery (SSRF)</a></li>
+          <li><a href="#file-uploads" className="transition-colors hover:text-foreground">Secure File Uploads</a></li>
+          <li><a href="#secrets" className="transition-colors hover:text-foreground">Secrets Management</a></li>
+          <li><a href="#headers" className="transition-colors hover:text-foreground">Security Headers & CORS</a></li>
+          <li><a href="#crypto" className="transition-colors hover:text-foreground">Cryptography Best Practices</a></li>
+          <li><a href="#error-handling" className="transition-colors hover:text-foreground">Error Handling & Logging</a></li>
+          <li><a href="#rate-limiting" className="transition-colors hover:text-foreground">Rate Limiting & DoS Protection</a></li>
+          <li><a href="#redos" className="transition-colors hover:text-foreground">ReDoS (Regex Denial of Service)</a></li>
+          <li><a href="#deserialization" className="transition-colors hover:text-foreground">Insecure Deserialization</a></li>
+          <li><a href="#https" className="transition-colors hover:text-foreground">HTTPS & Transport Security</a></li>
+          <li><a href="#checklist" className="transition-colors hover:text-foreground">Production Security Checklist</a></li>
+          <li><a href="#tools" className="transition-colors hover:text-foreground">Recommended Tools</a></li>
         </ol>
       </nav>
 
@@ -289,7 +289,7 @@ npx lockfile-lint --path package-lock.json --type npm --allowed-hosts npm`} />
         <li>Review new dependencies before adding: check maintenance activity, download counts, and known issues.</li>
         <li>Use <code>package-lock.json</code> and commit it to source control to prevent supply-chain attacks via version drift.</li>
         <li>Consider using <code>npm ci</code> in production builds for deterministic installs.</li>
-        <li>Use <Link href="/shieldx" className="text-emerald-400 hover:underline">ShieldX SAST Scanner</Link> to scan your project code for vulnerabilities alongside dependency checks.</li>
+        <li>Use <Link href="/shieldx" className="text-emerald-700 hover:underline dark:text-emerald-400">ShieldX SAST Scanner</Link> to scan your project code for vulnerabilities alongside dependency checks.</li>
       </ul>
 
       {/* ── 6. Prototype Pollution ── */}
@@ -425,7 +425,7 @@ const db = new Pool({
         <li>Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, Doppler) in production.</li>
         <li>Rotate API keys and database credentials on a regular schedule.</li>
         <li>Use separate credentials for development, staging, and production environments.</li>
-        <li>Audit your codebase with <Link href="/shieldx" className="text-emerald-400 hover:underline">ShieldX</Link> to detect hardcoded secrets automatically.</li>
+        <li>Audit your codebase with <Link href="/shieldx" className="text-emerald-700 hover:underline dark:text-emerald-400">ShieldX</Link> to detect hardcoded secrets automatically.</li>
       </ul>
 
       {/* ── 10. Headers & CORS ── */}
@@ -615,9 +615,9 @@ app.post("/api/restore", (req, res) => {
             "Node.js version is actively maintained (LTS) and up to date",
             "SAST scanning integrated in CI/CD pipeline",
           ].map((item, i) => (
-            <label key={i} className="flex items-start gap-3 p-2 rounded hover:bg-zinc-800/50 transition-colors cursor-pointer">
+            <label key={i} className="flex cursor-pointer items-start gap-3 rounded p-2 transition-colors hover:bg-muted/70">
               <input type="checkbox" className="mt-1 accent-emerald-500" />
-              <span className="text-sm text-zinc-300">{item}</span>
+              <span className="text-sm text-muted-foreground">{item}</span>
             </label>
           ))}
         </div>
@@ -644,12 +644,12 @@ app.post("/api/restore", (req, res) => {
               rel={tool.href.startsWith("/") ? undefined : "noopener noreferrer"}
               className={`block p-3 rounded-lg border transition-colors ${
                 tool.highlight
-                  ? "border-emerald-500/50 bg-emerald-950/20 hover:bg-emerald-950/40"
-                  : "border-zinc-700/50 bg-zinc-900/40 hover:bg-zinc-800/60"
+                  ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-500/50 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40"
+                  : "border-border bg-muted/40 hover:bg-muted/70"
               }`}
             >
-              <p className={`text-sm font-semibold ${tool.highlight ? "text-emerald-400" : "text-zinc-200"}`}>{tool.name}</p>
-              <p className="text-xs text-zinc-400 mt-1">{tool.desc}</p>
+              <p className={`text-sm font-semibold ${tool.highlight ? "text-emerald-700 dark:text-emerald-400" : "text-foreground"}`}>{tool.name}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{tool.desc}</p>
             </a>
           ))}
         </div>
@@ -665,9 +665,9 @@ app.post("/api/restore", (req, res) => {
       </ul>
 
       <hr />
-      <div className="not-prose my-8 p-6 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-center">
-        <p className="text-lg font-semibold text-white mb-2">Scan Your Node.js Code for Free</p>
-        <p className="text-sm text-zinc-400 mb-4">
+      <div className="not-prose my-8 rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-500/30 dark:bg-emerald-950/20">
+        <p className="mb-2 text-lg font-semibold text-foreground dark:text-white">Scan Your Node.js Code for Free</p>
+        <p className="mb-4 text-sm text-muted-foreground">
           ShieldX detects SQL injection, XSS, command injection, hardcoded secrets, prototype pollution, and 50+ more vulnerability types — directly in your browser, no install needed.
         </p>
         <Link
