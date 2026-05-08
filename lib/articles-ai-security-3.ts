@@ -407,6 +407,8 @@ If you cannot answer those questions during an incident, the controls may exist 
 - [Prompt Injection Attacks: Complete Prevention Guide for 2026](/blog/prompt-injection-attacks-prevention-guide-2026)
 - [LLM Output Security: Preventing XSS, Code Injection & Data Leakage in AI Apps (2026)](/blog/llm-output-security-preventing-xss-code-injection-data-leakage-2026)
 - [AI Red Teaming: How to Test LLM Applications for Security Vulnerabilities (2026)](/blog/ai-red-teaming-how-to-test-llm-applications-security-2026)
+- [LLM Hallucinations: Detection, Mitigation, and Enterprise Risk Reduction](/blog/llm-hallucinations-detection-mitigation-enterprise-risk-guide)
+- [AI Chatbot Security Best Practices: Production Checklist for 2026](/blog/ai-chatbot-security-best-practices-production-checklist-2026)
 
 ## Final Takeaway
 
@@ -764,6 +766,7 @@ Try these cases:
 - [API Security for AI Agents: Securing MCP, Function Calling & Tool Use](/blog/api-security-ai-agents-mcp-function-calling)
 - [How to Secure AI Agents: Identity & Access Management for Agentic AI](/blog/securing-ai-agents-identity-access-management)
 - [OWASP Top 10 for Agentic AI 2026: Complete Security Guide](/blog/owasp-top-10-agentic-ai-2026)
+- [Third-Party AI Integration Security: Plugins, APIs, and Agent Tool Chains](/blog/third-party-ai-integration-security-plugins-apis-agent-tool-chains)
 
 ## Final Takeaway
 

@@ -872,6 +872,7 @@ Based on analysis of 3.1 billion enterprise prompts (Cyberhaven DLP Report, 2025
 - Cyberhaven (2025), "AI Adoption and Data Risk Report" — Enterprise AI data leakage statistics
 - [OWASP Top 10 for Agentic AI](/blog/owasp-top-10-agentic-ai-2026) — Agentic AI risk framework
 - [AI Security & LLM Threats](/blog/ai-security-llm-threats) — Comprehensive AI vulnerability guide
+- [Third-Party AI Integration Security](/blog/third-party-ai-integration-security-plugins-apis-agent-tool-chains) — How plugins, APIs, and agent tool chains expand the AI attack surface
 - [Securing RAG Pipelines](/blog/securing-rag-pipelines) — RAG-specific security controls`,
     date: "2026-02-13",
     author: "SCR Security Research Team",
@@ -1040,7 +1041,9 @@ For organizations deploying AI in the EU/EEA:
 - [ISO/IEC 42001:2023](https://www.iso.org/standard/81230.html) — AI Management System standard
 - MIT Sloan / BCG (2025), "AI and the Enterprise: How AI Strategy Drives Value"
 - [OWASP AI Security & Privacy Guide](https://owasp.org/www-project-ai-security-and-privacy-guide/) — Technical security controls
-- [OWASP Top 10 for Agentic AI](/blog/owasp-top-10-agentic-ai-2026) — Agentic AI risk framework`,
+- [OWASP Top 10 for Agentic AI](/blog/owasp-top-10-agentic-ai-2026) — Agentic AI risk framework
+- [AI Compliance Checklist: GDPR, HIPAA, SOC 2, and Data Retention for LLM Apps](/blog/ai-compliance-checklist-gdpr-hipaa-soc2-data-retention-llm-apps) — Practical compliance controls for enterprise AI deployments
+- [LLM Hallucinations: Detection, Mitigation, and Enterprise Risk Reduction](/blog/llm-hallucinations-detection-mitigation-enterprise-risk-guide) — How to reduce model-error risk before it becomes an operational incident`,
     date: "2026-02-12",
     author: "SCR Security Research Team",
     category: "AI Security",

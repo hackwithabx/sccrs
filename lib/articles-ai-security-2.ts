@@ -1276,6 +1276,11 @@ async def secure_llm_pipeline(user_input: str) -> str:
 4. **Structured output schemas eliminate most output attacks** — use JSON mode
 5. **Monitor for data leakage** — PII, API keys, and secrets in LLM responses are real risks
 
+## Related SecureCodeReviews Guides
+
+- [AI Chatbot Security Best Practices: Production Checklist for 2026](/blog/ai-chatbot-security-best-practices-production-checklist-2026)
+- [LLM Hallucinations: Detection, Mitigation, and Enterprise Risk Reduction](/blog/llm-hallucinations-detection-mitigation-enterprise-risk-guide)
+
 > **Scan AI-generated code with [ShieldX SAST](https://securecodereviews.com/shieldx) — 80+ security checks, exploit PoC generation, and cross-file dataflow tracing. Free tier available.**
 `,
   },
