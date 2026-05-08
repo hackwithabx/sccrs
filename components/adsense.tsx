@@ -46,8 +46,7 @@ export function AdUnit({
   className = "",
   style,
 }: AdUnitProps) {
-  const adRef = useRef<HTMLDivElement>(null);
-  const isAdLoaded = useRef(false);
+  const adRef = useRef<HTMLModElement>(null);
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
@@ -58,17 +57,28 @@ export function AdUnit({
   }, []);
 
   useEffect(() => {
-    if (!ADSENSE_CLIENT_ID || isAdLoaded.current || !allowed) return;
+    if (!ADSENSE_CLIENT_ID || !allowed) return;
+
+    const adElement = adRef.current;
+    if (!adElement) return;
+
+    if (
+      adElement.dataset.scrInitialized === "true" ||
+      adElement.dataset.adsbygoogleStatus === "done" ||
+      adElement.dataset.adsbygoogleStatus === "filled"
+    ) {
+      return;
+    }
 
     try {
       // Push ad to Google
       ((window as unknown as { adsbygoogle: unknown[] }).adsbygoogle =
         (window as unknown as { adsbygoogle: unknown[] }).adsbygoogle || []).push({});
-      isAdLoaded.current = true;
+      adElement.dataset.scrInitialized = "true";
     } catch (error) {
       console.error("AdSense error:", error);
     }
-  }, [allowed]);
+  }, [allowed, slot]);
 
   if (!slot || !ADSENSE_CLIENT_ID || !allowed) {
     // Show placeholder in development
@@ -86,17 +96,16 @@ export function AdUnit({
   }
 
   return (
-    <div ref={adRef} className={className}>
-      <ins
-        className="adsbygoogle"
-        style={{ display: "block", ...style }}
-        data-ad-client={ADSENSE_CLIENT_ID}
-        data-ad-slot={slot}
-        data-ad-format={format}
-        data-ad-layout={layout || undefined}
-        data-full-width-responsive={responsive ? "true" : "false"}
-      />
-    </div>
+    <ins
+      ref={adRef}
+      className={`adsbygoogle ${className}`.trim()}
+      style={{ display: "block", ...style }}
+      data-ad-client={ADSENSE_CLIENT_ID}
+      data-ad-slot={slot}
+      data-ad-format={format}
+      data-ad-layout={layout || undefined}
+      data-full-width-responsive={responsive ? "true" : "false"}
+    />
   );
 }
 
