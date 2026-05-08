@@ -3,9 +3,9 @@ import { BlogPost } from "./blog-data";
 export const aiSecurityArticles: BlogPost[] = [
   {
     slug: "owasp-top-10-agentic-ai-2026",
-    title: "OWASP Top 10 for Agentic AI 2026: Complete Security Guide",
+    title: "OWASP Top 10 for Agentic AI 2026: Risks, Attack Paths, and Security Controls",
     excerpt:
-      "The definitive guide to the OWASP Top 10 for Agentic AI Applications — a brand-new framework released December 2025. Covers goal hijacking, tool manipulation, prompt injection, and 7 more critical agentic AI risks with real-world case studies and mitigations.",
+      "A detailed guide to the OWASP Top 10 for Agentic AI Applications covering goal hijacking, tool manipulation, prompt injection, uncontrolled autonomy, and the security controls teams need for agentic AI deployments.",
     content: `## What Is Agentic AI — and Why Does It Need Its Own Top 10?
 
 Traditional LLMs respond to prompts. Agentic AI systems act on them. An agentic AI application can browse the web, call APIs, write and execute code, manage databases, and chain together multi-step plans without continuous human oversight. This autonomy is what makes agentic AI transformative — and what makes it uniquely dangerous.

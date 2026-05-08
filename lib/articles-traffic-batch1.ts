@@ -428,7 +428,7 @@ Until then, treat AI-generated code the same way you'd treat code from a junior 
     slug: "nextjs-security-complete-guide-2026",
     title: "Next.js Security Best Practices: Server Actions, Auth, Headers & Hardening Guide",
     excerpt:
-      "A practical Next.js security guide covering Server Actions, middleware, authentication, security headers, environment variables, and App Router hardening for Next.js 15 and 16.",
+      "A practical Next.js security guide covering Server Actions, authentication, middleware, security headers, environment variables, and App Router hardening for Next.js 15 and 16 production apps.",
     content: `## Next.js Security Best Practices for Server Actions, Middleware, and the App Router
 
   If you are looking for **Next.js security best practices**, start with the parts of the framework that changed the trust boundary: **Server Actions**, **middleware**, **Route Handlers**, **Server Components**, and **environment variable exposure**. In Next.js 15 and 16, these features make it easier to ship fast, but also easier to expose server-side logic if authentication, authorization, and validation are not explicit.
@@ -718,9 +718,9 @@ Treat the App Router like a mixed trust boundary. Review which logic runs on the
   },
   {
     slug: "mcp-server-security-model-context-protocol-risks",
-    title: "MCP Server Security: Why Model Context Protocol Is the Next Big Attack Surface",
+    title: "MCP Server Security: Model Context Protocol Risks, Attack Paths, and Hardening Guide",
     excerpt:
-      "MCP connects AI agents to your tools, databases, and APIs. Here's why it's a massive security risk — and how to lock it down before attackers figure it out.",
+      "A practical MCP server security guide covering Model Context Protocol risks, tool execution abuse, prompt injection, overprivileged servers, package trust, and hardening patterns for Cursor, Claude, and AI agent deployments.",
     content: `## What Is MCP and Why Should Security Teams Care?
 
 The **Model Context Protocol (MCP)** is an open standard that lets AI assistants (Claude, Cursor, Windsurf, etc.) connect to external tools — databases, APIs, file systems, and cloud services.
@@ -928,9 +928,9 @@ The MCP ecosystem is moving fast. Security controls need to keep pace — or AI 
   },
   {
     slug: "oauth-2-vulnerabilities-attacks-defense-guide",
-    title: "OAuth 2.0 Vulnerabilities and Security Best Practices: PKCE, State, Redirect URI",
+    title: "OAuth 2.0 Vulnerabilities Explained: PKCE, State, Redirect URI and Token Security",
     excerpt:
-      "A complete OAuth 2.0 security guide covering redirect URI attacks, state parameter defenses, PKCE, token leakage, scope abuse, and production-ready OAuth best practices.",
+      "A complete OAuth 2.0 security guide covering redirect URI attacks, state parameter defenses, PKCE, token leakage, scope abuse, and production-ready OAuth 2.0 best practices.",
     content: `## OAuth 2.0 Security Best Practices and Common Vulnerabilities
 
   Teams searching for **OAuth 2.0 security best practices** usually need answers to three questions: how to stop redirect URI abuse, how to implement PKCE correctly, and how to prevent account-linking or token leakage attacks. Those are still the most common ways OAuth deployments fail in production.

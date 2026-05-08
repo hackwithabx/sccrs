@@ -416,9 +416,9 @@ The most effective approach combines traffic analysis, source code discovery, AP
 
   {
     slug: "owasp-api-security-top-10-2023",
-    title: "OWASP API Security Top 10 Explained: BOLA, Broken Auth, SSRF and Real Attack Examples",
+    title: "OWASP API Security Top 10 (2023) Explained: BOLA, Broken Auth, SSRF and Real API Attacks",
     excerpt:
-      "A practical OWASP API Security Top 10 guide covering BOLA, broken authentication, excessive data exposure, SSRF, rate limiting, and real API attack examples with secure fix patterns.",
+      "A practical OWASP API Security Top 10 guide covering BOLA, broken authentication, excessive data exposure, SSRF, rate limiting failures, and real API attack examples with secure fix patterns.",
     content: `## OWASP API Security Top 10 Explained
 
   If you are looking for a practical explanation of the **OWASP API Security Top 10**, focus on the few categories that show up repeatedly in real systems: **BOLA**, **broken authentication**, **rate limiting failures**, **business logic abuse**, **shadow APIs**, and **SSRF**. These are the issues that turn routine API mistakes into breach paths.

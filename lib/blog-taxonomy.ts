@@ -80,7 +80,7 @@ const TOPIC_DEFINITIONS: TopicDefinition[] = [
       "A focused collection of SecureCodeReviews guides on prompt injection, AI agents, governance, MCP, and enterprise LLM risk reduction.",
     intro:
       "If you want the site to lead with AI security, this is the commercial and SEO cluster to build around: agent misuse, LLM data exposure, identity, tooling, and governance.",
-    keywords: ["AI security", "LLM security", "agent security", "prompt injection", "enterprise AI security"],
+    keywords: ["AI security", "LLM security", "agent security", "prompt injection", "enterprise AI security", "AI security audit", "agentic AI security", "LLM application security"],
     relatedCategories: ["AI Security", "Application Security", "API Security"],
     matchCategories: ["AI Security"],
     matchTerms: ["ai security", "llm security", "agentic ai", "prompt injection", "shadow ai", "ai agents"],
@@ -92,7 +92,7 @@ const TOPIC_DEFINITIONS: TopicDefinition[] = [
       "Curated guides on OWASP API risks, API authentication, discovery, authorization, and abuse-resistant API design.",
     intro:
       "This topic hub is meant for teams tightening external interfaces and internal service APIs, especially where auth, inventory, and business logic are the main weak points.",
-    keywords: ["API security", "OWASP API Security Top 10", "API authentication", "BOLA", "API discovery"],
+    keywords: ["API security", "OWASP API Security Top 10", "API authentication", "BOLA", "API discovery", "API security best practices", "API penetration testing"],
     relatedCategories: ["API Security", "Application Security", "Authentication"],
     matchCategories: ["API Security"],
     matchTerms: ["api security", "api authentication", "bola", "graphql", "rate limiting", "shadow api"],
@@ -104,7 +104,7 @@ const TOPIC_DEFINITIONS: TopicDefinition[] = [
       "Next.js hardening guides covering Server Actions, App Router, middleware, headers, and common web vulnerabilities in production apps.",
     intro:
       "This page groups framework-specific SecureCodeReviews content for teams shipping Next.js applications and trying to reduce auth, data exposure, and header misconfiguration risk.",
-    keywords: ["Next.js security", "Next.js security best practices", "App Router security", "Server Actions security"],
+    keywords: ["Next.js security", "Next.js security best practices", "Next.js security guide", "Next.js hardening", "App Router security", "Server Actions security"],
     relatedCategories: ["Application Security", "API Security"],
     matchTerms: ["next.js", "nextjs", "app router", "server actions"],
   },
@@ -115,7 +115,7 @@ const TOPIC_DEFINITIONS: TopicDefinition[] = [
       "Guides on OAuth 2.0, PKCE, redirect URI validation, JWT vs sessions, and delegated access design decisions.",
     intro:
       "Use this hub when identity and delegated access are the problem: browser auth, token handling, SSO, third-party access, and modern auth trade-offs.",
-    keywords: ["OAuth security", "OAuth 2.0 vulnerabilities", "PKCE", "JWT vs session", "SSO security"],
+    keywords: ["OAuth security", "OAuth 2.0 vulnerabilities", "OAuth 2.0 security", "PKCE", "redirect URI validation", "JWT vs session", "SSO security"],
     relatedCategories: ["Authentication", "Application Security", "Identity & Access"],
     matchCategories: ["Authentication", "Identity & Access"],
     matchTerms: ["oauth", "pkce", "redirect uri", "state parameter", "jwt vs session", "sso", "webauthn", "passkeys"],
@@ -127,7 +127,7 @@ const TOPIC_DEFINITIONS: TopicDefinition[] = [
       "Coverage of Model Context Protocol security, tool delegation controls, function calling risk, and AI-agent execution boundaries.",
     intro:
       "MCP and tool-use security sits between AI security and API security. This hub groups the content most relevant to teams exposing tools, files, APIs, and privileged actions to models.",
-    keywords: ["MCP security", "Model Context Protocol", "tool use security", "function calling security", "AI agent security"],
+    keywords: ["MCP security", "MCP server security", "Model Context Protocol", "Model Context Protocol security", "tool use security", "function calling security", "AI agent security"],
     relatedCategories: ["AI Security", "API Security", "Application Security"],
     matchTerms: ["mcp", "model context protocol", "tool use", "function calling", "ai agents"],
   },
@@ -138,7 +138,7 @@ const TOPIC_DEFINITIONS: TopicDefinition[] = [
       "Practical cloud security guides on IAM, containers, Kubernetes, misconfiguration, and multi-cloud hardening.",
     intro:
       "This hub collects the strongest cloud-oriented SecureCodeReviews content for platform teams working across AWS, Azure, GCP, Kubernetes, and containerized delivery paths.",
-    keywords: ["cloud security", "AWS security", "Kubernetes security", "container security", "IAM security"],
+    keywords: ["cloud security", "cloud security best practices", "AWS security", "AWS security best practices", "Kubernetes security", "container security", "IAM security", "cloud misconfigurations", "CSPM"],
     relatedCategories: ["Cloud Security", "DevSecOps", "OWASP"],
     matchCategories: ["Cloud Security"],
     matchTerms: ["aws", "azure", "gcp", "kubernetes", "container security", "iam", "terraform"],

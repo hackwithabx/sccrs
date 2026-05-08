@@ -70,6 +70,17 @@ function extractHeadingLinks(content: string) {
   return links;
 }
 
+function buildPostKeywords(post: { title: string; category: string; tags: string[] }) {
+  return [...new Set([
+    post.title,
+    post.category,
+    `${post.category} guide`,
+    `${post.category} best practices`,
+    "SecureCodeReviews blog",
+    ...post.tags,
+  ])];
+}
+
 export async function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
 }
@@ -81,11 +92,12 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 
   const image = post.image || DEFAULT_OG_IMAGE;
   const lastModified = getPostLastModified(post);
+  const keywords = buildPostKeywords(post);
 
   return {
     title: `${post.title} | SecureCodeReviews Blog`,
     description: post.excerpt,
-    keywords: post.tags,
+    keywords,
     authors: [{ name: post.author }],
     creator: post.author,
     publisher: "SecureCodeReviews",
@@ -171,7 +183,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               "@type": "WebPage",
               "@id": `https://securecodereviews.com/blog/${post.slug}`,
             },
-            keywords: post.tags.join(", "),
+            keywords: buildPostKeywords(post).join(", "),
             articleSection: post.category,
             wordCount,
             timeRequired: post.readTime.replace(" read", ""),

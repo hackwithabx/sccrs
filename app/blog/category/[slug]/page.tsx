@@ -31,10 +31,13 @@ export async function generateMetadata({ params }: CategoryHubPageProps): Promis
     return { title: "Category Not Found | SecureCodeReviews Blog" };
   }
 
+  const posts = getPostsForCategorySlug(slug);
+  const keywords = [...new Set([hub.name, hub.title, `${hub.name} security`, `${hub.name} best practices`, ...getTopTags(posts, 8), "SecureCodeReviews blog"])];
+
   return {
     title: `${hub.title} | SecureCodeReviews Blog`,
     description: hub.description,
-    keywords: [hub.name, `${hub.name} security`, `${hub.name} best practices`],
+    keywords,
     alternates: {
       canonical: `/blog/category/${hub.slug}`,
     },
@@ -44,11 +47,13 @@ export async function generateMetadata({ params }: CategoryHubPageProps): Promis
       type: "website",
       url: `https://securecodereviews.com/blog/category/${hub.slug}`,
       siteName: "SecureCodeReviews",
+      images: ["/og-image.png"],
     },
     twitter: {
       card: "summary_large_image",
       title: hub.title,
       description: hub.description,
+      images: ["/og-image.png"],
     },
     robots: {
       index: true,
@@ -85,6 +90,7 @@ export default async function CategoryHubPage({ params }: CategoryHubPageProps) 
             name: hub.title,
             description: hub.description,
             url: `https://securecodereviews.com/blog/category/${hub.slug}`,
+            keywords: [...new Set([hub.name, ...topTags])].join(", "),
             about: {
               "@type": "Thing",
               name: hub.name,

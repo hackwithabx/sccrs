@@ -252,9 +252,9 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   },
   {
     slug: "github-actions-security-vulnerabilities-hardening",
-    title: "GitHub Actions Security: Script Injection, Secret Leaks & Hardening Your CI/CD",
+    title: "GitHub Actions Security Best Practices: Script Injection, Secret Leaks and CI/CD Hardening",
     excerpt:
-      "GitHub Actions workflows are a goldmine for attackers — script injection via PR titles, secret exfiltration, and supply chain attacks through third-party actions.",
+      "A practical GitHub Actions security guide covering script injection, secret exfiltration, third-party action risk, pull_request_target abuse, and CI/CD hardening best practices.",
     content: `## Why GitHub Actions Is a High-Value Target
 
 GitHub Actions runs code with access to your **source code, secrets, cloud credentials, and deployment pipelines**. A compromised workflow means compromised production.

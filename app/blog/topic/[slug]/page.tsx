@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   getPostLastModified,
   getPostsForTopicSlug,
+  getTopTags,
   getTopicHubBySlug,
   slugifyTaxonomy,
   topicHubs,
@@ -29,10 +30,13 @@ export async function generateMetadata({ params }: TopicHubPageProps): Promise<M
     return { title: "Topic Not Found | SecureCodeReviews Blog" };
   }
 
+  const posts = getPostsForTopicSlug(slug);
+  const keywords = [...new Set([...hub.keywords, ...getTopTags(posts, 8), "SecureCodeReviews blog"])];
+
   return {
     title: `${hub.title} | SecureCodeReviews Blog`,
     description: hub.description,
-    keywords: hub.keywords,
+    keywords,
     alternates: {
       canonical: `/blog/topic/${hub.slug}`,
     },
@@ -42,11 +46,13 @@ export async function generateMetadata({ params }: TopicHubPageProps): Promise<M
       type: "website",
       url: `https://securecodereviews.com/blog/topic/${hub.slug}`,
       siteName: "SecureCodeReviews",
+      images: ["/og-image.png"],
     },
     twitter: {
       card: "summary_large_image",
       title: hub.title,
       description: hub.description,
+      images: ["/og-image.png"],
     },
     robots: {
       index: true,
@@ -81,6 +87,7 @@ export default async function TopicHubPage({ params }: TopicHubPageProps) {
             name: hub.title,
             description: hub.description,
             url: `https://securecodereviews.com/blog/topic/${hub.slug}`,
+            keywords: [...new Set([...hub.keywords, ...getTopTags(posts, 8)])].join(", "),
             about: hub.keywords.map((keyword) => ({
               "@type": "Thing",
               name: keyword,
