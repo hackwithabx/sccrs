@@ -17,6 +17,7 @@ import { trafficBatch5Articles } from "./articles-traffic-batch5";
 import { trafficBatch6Articles } from "./articles-traffic-batch6";
 import { aiSecurityArticles2 } from "./articles-ai-security-2";
 import { aiSecurityArticles3 } from "./articles-ai-security-3";
+import { aiSecurityArticles4 } from "./articles-ai-security-4";
 import { cloudSecurityArticles } from "./articles-cloud-security";
 import { trafficBatch7Articles } from "./articles-traffic-batch7";
 import { trafficBatch8Articles } from "./articles-traffic-batch8";
@@ -3767,5 +3768,6 @@ app.post('/api/refresh', async (req, res) => {
   ...trafficBatch8Articles,
   ...aiSecurityArticles2,
   ...aiSecurityArticles3,
+  ...aiSecurityArticles4,
   ...cloudSecurityArticles,
 ];
