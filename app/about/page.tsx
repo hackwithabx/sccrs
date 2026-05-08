@@ -34,8 +34,6 @@ const fadeIn = {
 const stats = [
   { value: "10+", label: "Years of Expertise", icon: Award },
   { value: "500+", label: "Security Assessments", icon: Target },
-  { value: "200+", label: "Enterprise Clients", icon: Briefcase },
-  { value: "50+", label: "CVEs Discovered", icon: Eye },
 ];
 
 const values = [
@@ -158,7 +156,7 @@ export default function AboutPage() {
       {/* Stats Section */}
       <section className="py-12 border-y bg-muted/50">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 gap-8 max-w-3xl mx-auto">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
