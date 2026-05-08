@@ -1,29 +1,35 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About Us | SecureCodeReviews",
+  title: "About SecureCodeReviews | Application Security Company & ShieldX Team",
   description:
-    "Meet the SecureCodeReviews team — experienced application security professionals with 10+ years of expertise in secure code review, penetration testing, and DevSecOps.",
+    "Learn about SecureCodeReviews, the application security company behind ShieldX. Meet the team focused on secure code review, penetration testing, DevSecOps, cloud security, and AI security guidance.",
   keywords: [
     "about SecureCodeReviews",
+    "SecureCodeReviews company",
+    "application security company",
     "application security team",
     "cybersecurity experts",
     "security consulting company",
     "AppSec professionals",
+    "ShieldX team",
     "penetration testing team",
   ],
   openGraph: {
     title: "About Us | SecureCodeReviews",
     description:
-      "Meet the team behind SecureCodeReviews — 10+ years of AppSec expertise protecting enterprises worldwide.",
+      "Meet the team behind SecureCodeReviews and ShieldX — focused on code review, penetration testing, DevSecOps, and application security.",
     url: "https://securecodereviews.com/about",
     type: "website",
+    siteName: "SecureCodeReviews",
+    images: ["/og-image.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "About Us | SecureCodeReviews",
     description:
-      "Meet the team behind SecureCodeReviews — 10+ years of AppSec expertise.",
+      "Meet the SecureCodeReviews team behind our application security services and ShieldX platform.",
+    images: ["/og-image.png"],
   },
   alternates: {
     canonical: "/about",
@@ -39,7 +45,7 @@ export default function AboutLayout({
     "@context": "https://schema.org",
     "@type": "AboutPage",
     name: "About SecureCodeReviews",
-    description: "Meet the SecureCodeReviews team — experienced application security professionals with expertise in secure code review, penetration testing, and DevSecOps.",
+    description: "About SecureCodeReviews, the application security company behind ShieldX and a range of secure code review, penetration testing, DevSecOps, and cloud security services.",
     url: "https://securecodereviews.com/about",
     mainEntity: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
   };

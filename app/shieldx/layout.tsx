@@ -2,20 +2,23 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title:
-    "ShieldX — Free SAST Scanner with 14 Security Modules | Static Code Analysis, Secrets, API, Cloud & CI/CD",
+    "ShieldX — Free SAST Scanner & Application Security Platform | Secrets, SBOM, API, Cloud & CI/CD",
   description:
-    "ShieldX is a free online SAST security scanner with 14 built-in modules: AST-based static code analysis, secrets detection, dependency CVE scanning, API security testing, cloud posture assessment, threat log analysis, license compliance, and CI/CD pipeline gates. Try the free demo or upgrade to Pro ($79/mo) for unlimited scans.",
+    "ShieldX is a free SAST scanner and application security platform with AST-based code analysis, secrets detection, dependency vulnerability scanning, SBOM generation, API security testing, cloud posture checks, compliance mapping, and CI/CD security gates.",
   keywords: [
     "ShieldX",
     "ShieldX security scanner",
+    "ShieldX SAST",
     "free SAST scanner",
     "free SAST tool online",
+    "application security platform",
     "static application security testing",
     "SAST code analyzer",
     "AST-based code analysis",
     "secrets scanner",
     "secrets detection tool",
     "dependency vulnerability scanner",
+    "SBOM generator",
     "CVE scanner",
     "API security scanner",
     "API security testing tool",
@@ -24,7 +27,6 @@ export const metadata: Metadata = {
     "CI/CD security gate",
     "DevSecOps scanner",
     "DevSecOps platform",
-    "application security platform",
     "code security scanner online",
     "open source vulnerability scanner",
     "license compliance checker",
@@ -41,9 +43,9 @@ export const metadata: Metadata = {
     canonical: "/shieldx",
   },
   openGraph: {
-    title: "ShieldX — Free SAST Scanner with 14 Security Modules",
+    title: "ShieldX — Free SAST Scanner & Application Security Platform",
     description:
-      "Scan your code for vulnerabilities with 14 security modules: SAST, secrets, dependencies, APIs, cloud posture, CI/CD gates & more. Free demo available — no credit card required.",
+      "Free SAST scanner with secrets detection, dependency scanning, SBOM generation, API security checks, cloud posture review, and CI/CD gates.",
     url: "https://securecodereviews.com/shieldx",
     siteName: "SecureCodeReviews",
     type: "website",
@@ -58,9 +60,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShieldX — Free SAST Scanner | 14 Security Modules",
+    title: "ShieldX — Free SAST Scanner & AppSec Platform",
     description:
-      "Free online SAST scanner with secrets detection, dependency CVE scanning, API security, cloud posture, and CI/CD gates. Try it free.",
+      "Free SAST scanner with secrets, dependency, SBOM, API, cloud, and CI/CD security checks. Try ShieldX online.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -98,7 +100,7 @@ export default function ShieldXLayout({
       url: "https://securecodereviews.com",
     },
     description:
-      "ShieldX is a web-based security scanning platform with 14 modules including AST-based SAST analysis, secrets scanning, dependency CVE auditing, API security testing, cloud posture assessment, threat log analysis, license compliance checking, and CI/CD pipeline gates. Free demo available.",
+      "ShieldX is a web-based application security platform with SAST analysis, secrets scanning, dependency CVE auditing, SBOM generation, API security testing, cloud posture assessment, license compliance, and CI/CD pipeline gates.",
     offers: [
       {
         "@type": "Offer",

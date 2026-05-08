@@ -19,33 +19,40 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Cloud Security Guide — AWS, Azure, GCP Security Best Practices",
+  title: "Cloud Security Guide | AWS, Azure, GCP, CSPM & Misconfiguration Defense",
   description:
-    "Comprehensive cloud security guide covering AWS, Azure, and GCP. IAM best practices, network security, data encryption, compliance, CSPM, and real-world breach case studies.",
+    "Cloud security guide for AWS, Azure, and GCP covering IAM hardening, misconfiguration defense, CSPM, data protection, compliance, and real-world cloud breach lessons.",
   keywords: [
     "cloud security",
     "AWS security",
     "Azure security",
     "GCP security",
+    "cloud security assessment",
     "IAM",
     "cloud misconfiguration",
     "CSPM",
     "cloud compliance",
     "cloud data breach",
+    "AWS security best practices",
+    "Azure security best practices",
+    "GCP security best practices",
     "zero trust cloud",
   ],
   openGraph: {
-    title: "Cloud Security Guide — AWS, Azure, GCP | SecureCodeReviews",
+    title: "Cloud Security Guide — AWS, Azure, GCP & CSPM | SecureCodeReviews",
     description:
-      "Comprehensive cloud security guide: IAM, network security, data encryption, compliance, and real-world breach case studies.",
+      "AWS, Azure, and GCP cloud security guidance covering IAM, CSPM, misconfigurations, compliance, and breach lessons.",
     url: "https://securecodereviews.com/cloud-security",
     type: "article",
+    siteName: "SecureCodeReviews",
+    images: ["/og-image.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Cloud Security Guide | SecureCodeReviews",
     description:
-      "AWS, Azure, GCP security best practices — IAM, encryption, compliance, and CSPM.",
+      "AWS, Azure, and GCP security best practices covering IAM, CSPM, misconfigurations, and compliance.",
+    images: ["/og-image.png"],
   },
   alternates: {
     canonical: "/cloud-security",
@@ -190,8 +197,8 @@ export default function CloudSecurityPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    headline: "Cloud Security Guide — AWS, Azure, GCP Security Best Practices",
-    description: "Comprehensive cloud security guide covering AWS, Azure, and GCP. IAM best practices, network security, data encryption, compliance, CSPM, and real-world breach case studies.",
+    headline: "Cloud Security Guide — AWS, Azure, GCP, CSPM & Misconfiguration Defense",
+    description: "Cloud security guide covering AWS, Azure, and GCP with IAM best practices, misconfiguration defense, CSPM, data protection, and real-world breach case studies.",
     url: "https://securecodereviews.com/cloud-security",
     publisher: { "@type": "Organization", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
     mainEntityOfPage: "https://securecodereviews.com/cloud-security",

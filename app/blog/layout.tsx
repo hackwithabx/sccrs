@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Application Security Blog — Latest Cybersecurity Insights & Guides",
+  title: "Application Security Blog | OWASP, AI Security, API Security & DevSecOps Guides",
   description:
-    "Expert application security articles covering OWASP Top 10, API security, DevSecOps, cloud security, AI/ML security, zero trust architecture, and secure coding best practices. Updated weekly.",
+    "Application security blog from SecureCodeReviews covering OWASP Top 10, AI security, API security, DevSecOps, cloud security, secure coding, and penetration testing insights for engineering teams.",
   keywords: [
+    "SecureCodeReviews blog",
     "application security blog",
     "cybersecurity articles",
     "OWASP Top 10 guide",
+    "AI security blog",
     "API security best practices",
     "DevSecOps pipeline",
     "cloud security AWS Azure GCP",
@@ -19,15 +21,18 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Application Security Blog | SecureCodeReviews",
     description:
-      "Expert cybersecurity articles on OWASP, API security, DevSecOps, cloud security, and secure coding best practices.",
+      "OWASP, AI security, API security, DevSecOps, cloud security, and secure coding guides from SecureCodeReviews.",
     url: "https://securecodereviews.com/blog",
     type: "website",
+    siteName: "SecureCodeReviews",
+    images: ["/og-image.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "AppSec Blog | SecureCodeReviews",
     description:
-      "Latest application security insights, OWASP guides, and secure coding tutorials.",
+      "Latest AppSec insights covering OWASP, AI security, API security, DevSecOps, and secure coding.",
+    images: ["/og-image.png"],
   },
   alternates: {
     canonical: "/blog",
@@ -43,7 +48,7 @@ export default function BlogLayout({
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: "Application Security Blog",
-    description: "Expert application security articles covering OWASP Top 10, API security, DevSecOps, cloud security, AI/ML security, and secure coding best practices.",
+    description: "Application security blog covering OWASP, AI security, API security, DevSecOps, cloud security, and secure coding guides from SecureCodeReviews.",
     url: "https://securecodereviews.com/blog",
     isPartOf: { "@type": "WebSite", name: "SecureCodeReviews", url: "https://securecodereviews.com" },
   };

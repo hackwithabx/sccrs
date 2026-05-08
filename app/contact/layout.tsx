@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Contact Us — Application Security Consulting | SecureCodeReviews",
+  title: "Contact SecureCodeReviews | AppSec Consulting, Code Review & ShieldX",
   description:
-    "Get in touch with SecureCodeReviews for application security services, secure code review, penetration testing, DevSecOps consulting, and security assessments. Free initial consultation available.",
+    "Contact SecureCodeReviews for application security consulting, secure code review, penetration testing, DevSecOps services, AI security audits, cloud security assessments, and ShieldX product inquiries.",
   keywords: [
+    "SecureCodeReviews contact",
+    "ShieldX contact",
     "contact security consultant",
     "application security consulting",
+    "application security services contact",
     "hire penetration tester",
     "security assessment quote",
     "DevSecOps consulting contact",
@@ -16,15 +19,18 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Contact Us | SecureCodeReviews",
     description:
-      "Reach out for application security services — code review, pen testing, DevSecOps consulting, and more.",
+      "Reach out for code review, penetration testing, DevSecOps consulting, AI security audits, and ShieldX inquiries.",
     url: "https://securecodereviews.com/contact",
     type: "website",
+    siteName: "SecureCodeReviews",
+    images: ["/og-image.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Contact SecureCodeReviews",
     description:
-      "Get in touch for application security services and consulting.",
+      "Get in touch for application security services, consulting, and ShieldX product questions.",
+    images: ["/og-image.png"],
   },
   alternates: {
     canonical: "/contact",
@@ -40,7 +46,7 @@ export default function ContactLayout({
     "@context": "https://schema.org",
     "@type": "ContactPage",
     name: "Contact SecureCodeReviews",
-    description: "Get in touch with SecureCodeReviews for application security services, consulting, and assessments.",
+    description: "Get in touch with SecureCodeReviews for application security consulting, product inquiries, and security assessments.",
     url: "https://securecodereviews.com/contact",
     mainEntity: {
       "@type": "Organization",

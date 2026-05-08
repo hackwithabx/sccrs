@@ -23,15 +23,24 @@ const ADSENSE_CLIENT_ID =
 
 export const metadata: Metadata = {
   title: {
-    default: "SecureCodeReviews — Application Security Platform & Free SAST Scanner | ShieldX, Code Review, Pen Testing",
+    default: "SecureCodeReviews — Application Security Services & ShieldX Free SAST Scanner",
     template: "%s | SecureCodeReviews",
   },
   description:
-    "SecureCodeReviews is an application security platform featuring ShieldX — a free SAST scanner with 14 security modules. Get secure code reviews, penetration testing, OWASP Top 10 guides, vulnerability analysis, cloud security, and DevSecOps tools for developers and enterprises.",
+    "SecureCodeReviews provides application security services, secure code review, penetration testing, DevSecOps consulting, cloud security assessments, and ShieldX — a free SAST scanner and application security platform for modern engineering teams.",
   keywords: [
+    "SecureCodeReviews",
+    "Secure Code Reviews",
+    "securecodereviews",
+    "ShieldX",
+    "SecureCodeReviews ShieldX",
     "application security",
+    "application security platform",
+    "application security services",
     "secure code review",
+    "secure code review service",
     "penetration testing",
+    "penetration testing service",
     "vulnerability assessment",
     "OWASP Top 10",
     "OWASP Top 10 AI",
@@ -41,15 +50,17 @@ export const metadata: Metadata = {
     "code review services",
     "web application security",
     "cloud security",
+    "cloud security assessment",
     "security tools",
     "SQL injection",
     "XSS prevention",
     "security consulting",
     "DevSecOps",
+    "DevSecOps consulting",
     "API security",
     "cybersecurity",
-    "ShieldX",
     "free SAST scanner",
+    "source code security scanner",
     "static code analysis",
     "secrets scanner",
     "dependency scanner",
@@ -69,9 +80,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://securecodereviews.com",
     siteName: "SecureCodeReviews",
-    title: "SecureCodeReviews — Application Security Platform & Free SAST Scanner",
+    title: "SecureCodeReviews — Application Security Services & ShieldX Free SAST Scanner",
     description:
-      "Application security platform with ShieldX free SAST scanner (14 modules), OWASP guides, vulnerability research, code review services, and cloud security tools.",
+      "Application security services and platform for secure code review, penetration testing, DevSecOps consulting, cloud security assessments, and ShieldX free SAST scanning.",
     images: [
       {
         url: "/og-image.png",
@@ -83,9 +94,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SecureCodeReviews — Application Security Platform & ShieldX SAST Scanner",
+    title: "SecureCodeReviews — AppSec Services & ShieldX Free SAST Scanner",
     description:
-      "Free SAST scanner with 14 security modules, OWASP Top 10 guides, vulnerability research, and expert code review services.",
+      "Application security services, expert code review, penetration testing, DevSecOps consulting, and ShieldX free SAST scanning.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -143,13 +154,57 @@ export default function RootLayout({
     "@type": "WebSite",
     name: "SecureCodeReviews",
     url: "https://securecodereviews.com",
-    description: "Application security platform featuring ShieldX free SAST scanner, OWASP guides, vulnerability research, and expert code review services.",
+    description: "Application security services and platform featuring ShieldX free SAST scanner, secure code review, penetration testing, DevSecOps consulting, and cloud security guidance.",
     publisher: { "@type": "Organization", name: "SecureCodeReviews" },
     potentialAction: {
       "@type": "SearchAction",
       target: "https://securecodereviews.com/blog?q={search_term_string}",
       "query-input": "required name=search_term_string",
     },
+  };
+
+  const navigationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "SecureCodeReviews Primary Navigation",
+    itemListElement: [
+      {
+        "@type": "SiteNavigationElement",
+        position: 1,
+        name: "Home",
+        url: "https://securecodereviews.com",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 2,
+        name: "Services",
+        url: "https://securecodereviews.com/services",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 3,
+        name: "ShieldX",
+        url: "https://securecodereviews.com/shieldx",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 4,
+        name: "Blog",
+        url: "https://securecodereviews.com/blog",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 5,
+        name: "Cloud Security",
+        url: "https://securecodereviews.com/cloud-security",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 6,
+        name: "Contact",
+        url: "https://securecodereviews.com/contact",
+      },
+    ],
   };
 
   return (
@@ -183,6 +238,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(navigationJsonLd) }}
         />
         <AuthProvider>
           <ThemeProvider
