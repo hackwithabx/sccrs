@@ -23,11 +23,11 @@ const ADSENSE_CLIENT_ID =
 
 export const metadata: Metadata = {
   title: {
-    default: "SecureCodeReviews — Application Security Services & ShieldX Free SAST Scanner",
+    default: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
     template: "%s | SecureCodeReviews",
   },
   description:
-    "SecureCodeReviews provides application security services, secure code review, penetration testing, DevSecOps consulting, cloud security assessments, and ShieldX — a free SAST scanner and application security platform for modern engineering teams.",
+    "Application security services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and ShieldX, a free SAST scanner for modern engineering teams.",
   keywords: [
     "SecureCodeReviews",
     "Secure Code Reviews",
@@ -80,9 +80,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://securecodereviews.com",
     siteName: "SecureCodeReviews",
-    title: "SecureCodeReviews — Application Security Services & ShieldX Free SAST Scanner",
+    title: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
     description:
-      "Application security services and platform for secure code review, penetration testing, DevSecOps consulting, cloud security assessments, and ShieldX free SAST scanning.",
+      "Application security services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and ShieldX free SAST scanning.",
     images: [
       {
         url: "/og-image.png",
@@ -94,9 +94,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SecureCodeReviews — AppSec Services & ShieldX Free SAST Scanner",
+    title: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
     description:
-      "Application security services, expert code review, penetration testing, DevSecOps consulting, and ShieldX free SAST scanning.",
+      "Application security services, secure code reviews, penetration testing, DevSecOps consulting, and ShieldX free SAST scanning.",
     images: ["/og-image.png"],
   },
   robots: {
