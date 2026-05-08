@@ -1,7 +1,7 @@
 import { blogPosts } from "@/lib/blog-data";
 
 export async function GET() {
-  const siteUrl = "https://securecodereviews.com";
+  const siteUrl = "https://www.securecodereviews.com";
 
   const items = blogPosts
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())

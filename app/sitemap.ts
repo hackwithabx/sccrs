@@ -3,7 +3,7 @@ import { blogPosts } from "@/lib/blog-data";
 import { categoryHubs, getPostLastModified, topicHubs } from "@/lib/blog-taxonomy";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://securecodereviews.com";
+  const baseUrl = "https://www.securecodereviews.com";
   const now = new Date().toISOString();
 
   const staticPages = [
