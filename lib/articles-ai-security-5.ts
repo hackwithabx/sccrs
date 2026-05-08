@@ -6,6 +6,7 @@ export const aiSecurityArticles5: BlogPost[] = [
     title: "What Is Agentic AI? Security Risks, Use Cases, Challenges, and Future",
     excerpt:
       "A detailed guide to agentic AI for engineering and security teams. Learn what agentic AI is, how it works, where it creates business value, why it is harder to secure than a standard chatbot, and what the future of agentic AI security looks like.",
+    image: "/blog/agentic-ai-overview.svg",
     date: "2026-05-09",
     updatedAt: "2026-05-09",
     author: "SCR Security Research Team",
@@ -29,6 +30,8 @@ That is why agentic AI feels so powerful. It is also why it creates a much bigge
 An ordinary LLM can be wrong, misleading, or vulnerable to prompt injection. An agentic AI system can be all of those things and still have access to email, internal APIs, cloud consoles, ticketing systems, code repositories, or financial workflows. Once autonomy and tool use enter the picture, the blast radius changes.
 
 This is the real reason security teams are paying attention. Agentic AI is not just another interface trend. It is a new operational layer that sits between humans and business systems.
+
+![Agentic AI overview showing goals, planning, tool use, security risks, and future direction](/blog/agentic-ai-overview.svg)
 
 ---
 
@@ -214,6 +217,8 @@ Nothing about that failure requires a Hollywood-style hack. It is just a normal 
 ---
 
 ## What Secure Agentic AI Deployment Looks Like
+
+![Agentic AI security architecture showing input controls, planning and memory, retrieval and tool controls, output validation, and operational guardrails](/blog/agentic-ai-security-architecture.svg)
 
 ### Start with narrow scope
 
