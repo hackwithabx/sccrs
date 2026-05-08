@@ -22,6 +22,7 @@ import { aiSecurityArticles5 } from "./articles-ai-security-5";
 import { cloudSecurityArticles } from "./articles-cloud-security";
 import { trafficBatch7Articles } from "./articles-traffic-batch7";
 import { trafficBatch8Articles } from "./articles-traffic-batch8";
+import { trafficBatch9Articles } from "./articles-traffic-batch9";
 
 export interface BlogPost {
   slug: string;
@@ -3958,6 +3959,7 @@ app.post('/api/refresh', async (req, res) => {
   ...trafficBatch6Articles,
   ...trafficBatch7Articles,
   ...trafficBatch8Articles,
+  ...trafficBatch9Articles,
   ...aiSecurityArticles2,
   ...aiSecurityArticles3,
   ...aiSecurityArticles4,

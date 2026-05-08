@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" font-family="system-ui,-apple-system,sans-serif">
+  <defs>
+    <linearGradient id="bgCaseHero" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+    <filter id="caseShadow">
+      <feDropShadow dx="0" dy="5" stdDeviation="10" flood-opacity="0.26"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" rx="18" fill="url(#bgCaseHero)"/>
+  <text x="600" y="58" text-anchor="middle" fill="#f8fafc" font-size="34" font-weight="700">Supply Chain Attack Examples</text>
+  <text x="600" y="92" text-anchor="middle" fill="#cbd5e1" font-size="18">How they happen, why they succeed, and what engineering teams should learn</text>
+
+  <rect x="55" y="140" width="320" height="380" rx="18" fill="#111827" stroke="#334155" stroke-width="1.5" filter="url(#caseShadow)"/>
+  <text x="215" y="178" text-anchor="middle" fill="#67e8f9" font-size="22" font-weight="700">Recent Cases</text>
+  <rect x="85" y="208" width="260" height="48" rx="10" fill="#082f49" stroke="#38bdf8"/>
+  <text x="215" y="229" text-anchor="middle" fill="#e0f2fe" font-size="14" font-weight="700">SolarWinds</text>
+  <text x="215" y="245" text-anchor="middle" fill="#93c5fd" font-size="11">Trusted software update path</text>
+  <rect x="85" y="272" width="260" height="48" rx="10" fill="#1e1b4b" stroke="#8b5cf6"/>
+  <text x="215" y="293" text-anchor="middle" fill="#ede9fe" font-size="14" font-weight="700">Codecov</text>
+  <text x="215" y="309" text-anchor="middle" fill="#c4b5fd" font-size="11">CI secrets leaked from build environments</text>
+  <rect x="85" y="336" width="260" height="48" rx="10" fill="#3f0d12" stroke="#ef4444"/>
+  <text x="215" y="357" text-anchor="middle" fill="#fecaca" font-size="14" font-weight="700">xz Utils</text>
+  <text x="215" y="373" text-anchor="middle" fill="#fda4af" font-size="11">Long-term maintainer trust abuse</text>
+  <rect x="85" y="400" width="260" height="48" rx="10" fill="#052e16" stroke="#22c55e"/>
+  <text x="215" y="421" text-anchor="middle" fill="#dcfce7" font-size="14" font-weight="700">Polyfill.io</text>
+  <text x="215" y="437" text-anchor="middle" fill="#86efac" font-size="11">Third-party script delivery risk</text>
+
+  <rect x="415" y="140" width="370" height="380" rx="18" fill="#0f172a" stroke="#334155" stroke-width="1.5" filter="url(#caseShadow)"/>
+  <text x="600" y="178" text-anchor="middle" fill="#f8fafc" font-size="24" font-weight="700">Attack Pattern</text>
+  <rect x="465" y="220" width="270" height="48" rx="10" fill="#082f49" stroke="#38bdf8"/>
+  <text x="600" y="241" text-anchor="middle" fill="#e0f2fe" font-size="14" font-weight="700">Compromise upstream trust</text>
+  <text x="600" y="257" text-anchor="middle" fill="#93c5fd" font-size="11">Package, maintainer, workflow, vendor, or CDN</text>
+  <line x1="600" y1="268" x2="600" y2="304" stroke="#67e8f9" stroke-width="3"/>
+  <rect x="465" y="304" width="270" height="48" rx="10" fill="#422006" stroke="#f59e0b"/>
+  <text x="600" y="325" text-anchor="middle" fill="#fef3c7" font-size="14" font-weight="700">Deliver through routine operations</text>
+  <text x="600" y="341" text-anchor="middle" fill="#fcd34d" font-size="11">Install, build, publish, update, or load</text>
+  <line x1="600" y1="352" x2="600" y2="388" stroke="#fde68a" stroke-width="3"/>
+  <rect x="465" y="388" width="270" height="48" rx="10" fill="#3f0d12" stroke="#ef4444"/>
+  <text x="600" y="409" text-anchor="middle" fill="#fecaca" font-size="14" font-weight="700">Exploit downstream trust</text>
+  <text x="600" y="425" text-anchor="middle" fill="#fda4af" font-size="11">Steal secrets, tamper artifacts, pivot further</text>
+  <text x="600" y="472" text-anchor="middle" fill="#cbd5e1" font-size="15">The attacker wins because the delivery path already looked legitimate.</text>
+
+  <rect x="825" y="140" width="320" height="380" rx="18" fill="#111827" stroke="#334155" stroke-width="1.5" filter="url(#caseShadow)"/>
+  <text x="985" y="178" text-anchor="middle" fill="#fca5a5" font-size="22" font-weight="700">Core Lessons</text>
+  <rect x="855" y="212" width="260" height="56" rx="10" fill="#1f2937" stroke="#94a3b8"/>
+  <text x="985" y="234" text-anchor="middle" fill="#e5e7eb" font-size="14" font-weight="700">Trust is a control surface</text>
+  <text x="985" y="252" text-anchor="middle" fill="#cbd5e1" font-size="11">Routine delivery paths need verification</text>
+  <rect x="855" y="286" width="260" height="56" rx="10" fill="#172554" stroke="#3b82f6"/>
+  <text x="985" y="308" text-anchor="middle" fill="#bfdbfe" font-size="14" font-weight="700">CI is a high-value target</text>
+  <text x="985" y="326" text-anchor="middle" fill="#93c5fd" font-size="11">Pipelines hold code, secrets, and release power</text>
+  <rect x="855" y="360" width="260" height="56" rx="10" fill="#052e16" stroke="#22c55e"/>
+  <text x="985" y="382" text-anchor="middle" fill="#dcfce7" font-size="14" font-weight="700">Provenance matters</text>
+  <text x="985" y="400" text-anchor="middle" fill="#86efac" font-size="11">Teams need evidence of what they shipped</text>
+  <rect x="855" y="434" width="260" height="56" rx="10" fill="#3f1d0a" stroke="#f59e0b"/>
+  <text x="985" y="456" text-anchor="middle" fill="#fef3c7" font-size="14" font-weight="700">Response must be rehearsed</text>
+  <text x="985" y="474" text-anchor="middle" fill="#fcd34d" font-size="11">Fast scoping is as important as patching</text>
+
+  <text x="600" y="585" text-anchor="middle" fill="#64748b" font-size="14">securecodereviews.com  |  Supply chain attack case-study guide</text>
+</svg>
