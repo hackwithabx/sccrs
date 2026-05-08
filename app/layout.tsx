@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s | SecureCodeReviews",
   },
   description:
-    "Application security services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and ShieldX, a free SAST scanner for modern engineering teams.",
+    "AppSec services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and free SAST scanning.",
   keywords: [
     "SecureCodeReviews",
     "Secure Code Reviews",
@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     siteName: "SecureCodeReviews",
     title: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
     description:
-      "Application security services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and ShieldX free SAST scanning.",
+      "AppSec services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and free SAST scanning.",
     images: [
       {
         url: "/og-image.png",
@@ -96,7 +96,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
     description:
-      "Application security services, secure code reviews, penetration testing, DevSecOps consulting, and ShieldX free SAST scanning.",
+      "AppSec services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and free SAST scanning.",
     images: ["/og-image.png"],
   },
   robots: {
