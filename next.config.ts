@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { CONTENT_SECURITY_POLICY } from "./lib/security-headers";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -53,17 +54,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https: blob:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://www.google-analytics.com https://analytics.google.com",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join("; "),
+            value: CONTENT_SECURITY_POLICY,
           },
         ],
       },
