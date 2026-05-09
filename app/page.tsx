@@ -282,6 +282,110 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══ AI SECURITY AUDITOR PROMO ═══ */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="overflow-hidden rounded-3xl border border-primary/15 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_30%),linear-gradient(135deg,_rgba(15,23,42,1),_rgba(17,24,39,0.96))] p-8 text-white shadow-2xl shadow-primary/10 sm:p-10 lg:p-12">
+              <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+                <div>
+                  <Badge className="border-0 bg-white/10 text-white hover:bg-white/10">
+                    New Free Tool
+                  </Badge>
+                  <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                    Audit prompts, agent permissions, and LLM outputs with our AI Security Auditor.
+                  </h2>
+                  <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+                    Run fast local checks or deeper server-backed AI analysis for prompt injection,
+                    data leakage, unsafe tool use, insecure output handling, and missing guardrails.
+                    Export a branded PDF report with findings, severity breakdown, and remediation guidance.
+                  </p>
+
+                  <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-300">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      Prompt injection and jailbreak testing
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      Deep AI workflow review mode
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      Branded downloadable security report
+                    </span>
+                  </div>
+
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                    <Link href="/tools/ai-security-auditor">
+                      <Button size="lg" className="gap-2 rounded-xl bg-white text-slate-950 hover:bg-slate-100">
+                        Open AI Security Auditor
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/blog/topic/ai-security">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="gap-2 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                      >
+                        Explore AI security guides
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+
+                <Card className="border-white/10 bg-white/5 text-white shadow-none backdrop-blur">
+                  <CardContent className="p-6 sm:p-7">
+                    <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+                      <div>
+                        <p className="text-sm font-medium text-slate-300">AI Auditor Snapshot</p>
+                        <p className="mt-1 text-2xl font-bold">What teams get from one run</p>
+                      </div>
+                      <div className="rounded-2xl bg-emerald-500/15 p-3 text-emerald-300">
+                        <Brain className="h-7 w-7" />
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-4 text-sm text-slate-300">
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                          Inputs
+                        </div>
+                        <p className="mt-2 leading-6">
+                          System prompts, user prompts, model outputs, connected tools, deployment notes, and control coverage.
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">
+                          Findings
+                        </div>
+                        <p className="mt-2 leading-6">
+                          OWASP-aligned findings for prompt injection, secrets leakage, excessive agency, unsafe output, and weak guardrails.
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">
+                          Output
+                        </div>
+                        <p className="mt-2 leading-6">
+                          Security score, remediation guidance, source-tagged findings, presets for common attack paths, and a client-ready PDF report.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ═══ SHIELDX PRODUCT PREVIEW ═══ */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
