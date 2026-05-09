@@ -47,6 +47,13 @@ import { Textarea } from "@/components/ui/textarea";
 type AuditMode = "prompt" | "output" | "full";
 type AnalysisStrategy = "local" | "deep";
 
+const BRAND = {
+  name: "SecureCodeReviews",
+  product: "AI Security Auditor",
+  website: "https://www.securecodereviews.com",
+  logoPath: "/logos/logo-with-text.svg",
+};
+
 const controlsContent: Array<{
   key: keyof AuditorControls;
   title: string;
@@ -138,6 +145,68 @@ function modeLabel(mode: AuditMode): string {
   if (mode === "prompt") return "Prompt audit";
   if (mode === "output") return "Output audit";
   return "Full workflow audit";
+}
+
+function severityRgb(severity: Severity): [number, number, number] {
+  switch (severity) {
+    case "Critical":
+      return [185, 28, 28];
+    case "High":
+      return [194, 65, 12];
+    case "Medium":
+      return [180, 83, 9];
+    case "Low":
+      return [3, 105, 161];
+    case "Pass":
+      return [5, 150, 105];
+    default:
+      return [51, 65, 85];
+  }
+}
+
+async function loadBrandLogoDataUrl(): Promise<string | null> {
+  try {
+    const response = await fetch(BRAND.logoPath, { cache: "force-cache" });
+    if (!response.ok) return null;
+
+    const svgMarkup = await response.text();
+    const svgBlob = new Blob([svgMarkup], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const objectUrl = URL.createObjectURL(svgBlob);
+
+    return await new Promise((resolve) => {
+      const image = new Image();
+
+      image.onload = () => {
+        const targetWidth = 240;
+        const scale = targetWidth / image.width;
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = Math.max(48, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          URL.revokeObjectURL(objectUrl);
+          resolve(null);
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL("image/png"));
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+      };
+
+      image.src = objectUrl;
+    });
+  } catch {
+    return null;
+  }
 }
 
 export default function AiSecurityAuditorPage() {
@@ -269,52 +338,273 @@ export default function AiSecurityAuditorPage() {
     setAuditError(null);
   }
 
-  function downloadPdfReport() {
+  async function downloadPdfReport() {
     if (!report) return;
 
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("AI Security Auditor Report", 14, 18);
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const logoDataUrl = await loadBrandLogoDataUrl();
+    const generatedAt = new Date().toLocaleString();
 
-    doc.setFontSize(11);
-    doc.text(`Mode: ${modeLabel(lastAuditMode)}`, 14, 28);
-    doc.text(`Overall score: ${report.score.overall}/100`, 14, 35);
+    const addFooter = (pageNumber: number, totalPages: number) => {
+      doc.setPage(pageNumber);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(margin, pageHeight - 34, pageWidth - margin, pageHeight - 34);
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`${BRAND.name} | ${BRAND.product}`, margin, pageHeight - 18);
+      doc.text(
+        `${BRAND.website} | Page ${pageNumber} of ${totalPages}`,
+        pageWidth - margin,
+        pageHeight - 18,
+        { align: "right" }
+      );
+    };
+
+    const addSectionHeading = (title: string, y: number) => {
+      doc.setFontSize(13);
+      doc.setTextColor(15, 23, 42);
+      doc.text(title, margin, y);
+    };
+
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 165, "F");
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 165, pageWidth, 4, "F");
+
+    if (logoDataUrl) {
+      doc.addImage(logoDataUrl, "PNG", margin, 26, 170, 34);
+    } else {
+      doc.setFontSize(22);
+      doc.setTextColor(255, 255, 255);
+      doc.text(BRAND.name, margin, 48);
+    }
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(26);
+    doc.text("AI Security Audit Report", margin, 92);
+    doc.setFontSize(12);
+    doc.setTextColor(203, 213, 225);
     doc.text(
-      `Critical: ${report.score.summary.critical}  High: ${report.score.summary.high}  Medium: ${report.score.summary.medium}  Low: ${report.score.summary.low}`,
-      14,
-      42
+      "Branded report generated from the SecureCodeReviews AI Security Auditor",
+      margin,
+      114
     );
+    doc.text(`Generated: ${generatedAt}`, margin, 132);
+    doc.text(`Mode: ${modeLabel(lastAuditMode)}`, pageWidth - margin, 132, {
+      align: "right",
+    });
 
-    const narrativeLines = doc.splitTextToSize(report.score.narrative, 180);
-    doc.text(narrativeLines, 14, 52);
+    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(margin, 190, pageWidth - margin * 2, 88, 14, 14, "FD");
+    doc.setFontSize(12);
+    doc.setTextColor(71, 85, 105);
+    doc.text("Overall Security Score", margin + 18, 216);
+    doc.setFontSize(34);
+    doc.setTextColor(...severityRgb(report.score.overall >= 85 ? "Pass" : report.score.overall >= 65 ? "Medium" : "Critical"));
+    doc.text(`${report.score.overall}/100`, margin + 18, 252);
+    doc.setFontSize(11);
+    doc.setTextColor(51, 65, 85);
+    const summaryText = doc.splitTextToSize(report.score.narrative, pageWidth - margin * 2 - 180);
+    doc.text(summaryText, margin + 170, 222);
+
+    addSectionHeading("Assessment Snapshot", 315);
+    autoTable(doc, {
+      startY: 326,
+      theme: "grid",
+      margin: { left: margin, right: margin },
+      head: [["Field", "Value"]],
+      body: [
+        ["Analysis type", report.meta?.analysisType === "deep" ? "Deep AI analysis" : "Fast local analysis"],
+        ["Audit mode", modeLabel(lastAuditMode)],
+        ["Provider", report.meta?.provider || "Local heuristic engine"],
+        ["Model", report.meta?.model || "Deterministic rules"],
+        ["Rule packs", report.meta?.rulePacks?.join(", ") || "Prompt, output, tool access, controls"],
+        ["Findings", String(report.findings.length)],
+      ],
+      styles: {
+        fontSize: 9,
+        cellPadding: 6,
+      },
+      headStyles: {
+        fillColor: [15, 23, 42],
+      },
+      columnStyles: {
+        0: { cellWidth: 130, fontStyle: "bold" },
+      },
+    });
 
     autoTable(doc, {
-      startY: 68,
-      head: [["Severity", "Finding", "Category", "OWASP", "Evidence"]],
-      body: report.findings.map((finding) => [
-        finding.severity,
-        finding.finding,
-        finding.category,
-        finding.owasp.join(", "),
-        finding.evidence.join(" | "),
-      ]),
+      startY: ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 360) + 16,
+      theme: "grid",
+      margin: { left: margin, right: margin },
+      head: [["Critical", "High", "Medium", "Low", "Pass"]],
+      body: [[
+        String(report.score.summary.critical),
+        String(report.score.summary.high),
+        String(report.score.summary.medium),
+        String(report.score.summary.low),
+        String(report.score.summary.pass),
+      ]],
       styles: {
-        fontSize: 8,
-        cellPadding: 2.5,
+        fontSize: 9,
+        cellPadding: 8,
+        halign: "center",
       },
       headStyles: {
         fillColor: [16, 185, 129],
       },
     });
 
-    const finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 70;
-    const controlLines = controlsContent.map(
-      (control) => `${control.title}: ${form.controls[control.key] ? "enabled" : "not enabled"}`
+    addSectionHeading(
+      "Audit Scope & Defensive Controls",
+      ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 430) + 24
     );
-    doc.text("Controls", 14, finalY + 12);
-    doc.text(controlLines, 14, finalY + 19);
+    autoTable(doc, {
+      startY: ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 430) + 34,
+      theme: "grid",
+      margin: { left: margin, right: margin },
+      head: [["Area", "Included", "Submitted size / status"]],
+      body: [
+        ["System prompt", form.systemPrompt ? "Yes" : "No", `${form.systemPrompt.length} chars`],
+        ["User prompt", form.userPrompt ? "Yes" : "No", `${form.userPrompt.length} chars`],
+        ["Model output", form.modelOutput ? "Yes" : "No", `${form.modelOutput.length} chars`],
+        ["Connected tools", form.connectedTools ? "Yes" : "No", `${form.connectedTools.length} chars`],
+        ["Deployment notes", form.deploymentNotes ? "Yes" : "No", `${form.deploymentNotes.length} chars`],
+        [
+          "Enabled controls",
+          `${enabledControls} of ${controlsContent.length}`,
+          controlsContent
+            .filter((control) => form.controls[control.key])
+            .map((control) => control.title)
+            .join(", ") || "None marked enabled",
+        ],
+      ],
+      styles: {
+        fontSize: 9,
+        cellPadding: 6,
+      },
+      headStyles: {
+        fillColor: [30, 41, 59],
+      },
+      columnStyles: {
+        0: { cellWidth: 120, fontStyle: "bold" },
+        1: { cellWidth: 85 },
+      },
+    });
 
-    doc.save("ai-security-audit-report.pdf");
+    doc.addPage();
+    let currentY = 54;
+    addSectionHeading("Findings Overview", currentY);
+    autoTable(doc, {
+      startY: currentY + 12,
+      theme: "grid",
+      margin: { left: margin, right: margin },
+      head: [["Severity", "Finding", "Category", "Source", "OWASP"]],
+      body: report.findings.map((finding) => [
+        finding.severity,
+        finding.finding,
+        finding.category,
+        finding.source === "llm" ? "Deep AI" : "Heuristic",
+        finding.owasp.join(", "),
+      ]),
+      styles: {
+        fontSize: 8,
+        cellPadding: 5,
+      },
+      headStyles: {
+        fillColor: [15, 23, 42],
+      },
+      columnStyles: {
+        0: { cellWidth: 58 },
+        2: { cellWidth: 100 },
+        3: { cellWidth: 58 },
+        4: { cellWidth: 85 },
+      },
+    });
+
+    currentY = ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 120) + 28;
+    addSectionHeading("Detailed Findings", currentY);
+    currentY += 18;
+
+    const usableWidth = pageWidth - margin * 2;
+    const ensureSpace = (requiredHeight: number) => {
+      if (currentY + requiredHeight <= pageHeight - 70) return;
+      doc.addPage();
+      currentY = 54;
+    };
+
+    for (const finding of report.findings) {
+      const evidenceText = finding.evidence.length > 0 ? finding.evidence.join(" | ") : "No explicit evidence captured";
+      const lines = {
+        description: doc.splitTextToSize(finding.description, usableWidth - 24),
+        remediation: doc.splitTextToSize(finding.remediation, usableWidth - 24),
+        evidence: doc.splitTextToSize(evidenceText, usableWidth - 24),
+      };
+      const blockHeight =
+        84 +
+        lines.description.length * 12 +
+        lines.remediation.length * 12 +
+        lines.evidence.length * 12;
+
+      ensureSpace(blockHeight);
+
+      doc.setDrawColor(226, 232, 240);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(margin, currentY, usableWidth, blockHeight, 12, 12, "FD");
+
+      const [r, g, b] = severityRgb(finding.severity);
+      doc.setFillColor(r, g, b);
+      doc.roundedRect(margin + 14, currentY + 14, 68, 20, 10, 10, "F");
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255);
+      doc.text(finding.severity, margin + 48, currentY + 28, { align: "center" });
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(12);
+      doc.text(finding.finding, margin + 96, currentY + 28);
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      doc.text(
+        `${finding.category} | ${finding.source === "llm" ? "Deep AI" : "Heuristic"} | Confidence ${finding.confidence}`,
+        margin + 96,
+        currentY + 44
+      );
+
+      let textY = currentY + 64;
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Description", margin + 14, textY);
+      textY += 12;
+      doc.setTextColor(51, 65, 85);
+      doc.text(lines.description, margin + 14, textY);
+      textY += lines.description.length * 12 + 8;
+
+      doc.setTextColor(15, 23, 42);
+      doc.text("Evidence", margin + 14, textY);
+      textY += 12;
+      doc.setTextColor(51, 65, 85);
+      doc.text(lines.evidence, margin + 14, textY);
+      textY += lines.evidence.length * 12 + 8;
+
+      doc.setTextColor(15, 23, 42);
+      doc.text("Recommended fix", margin + 14, textY);
+      textY += 12;
+      doc.setTextColor(51, 65, 85);
+      doc.text(lines.remediation, margin + 14, textY);
+
+      currentY += blockHeight + 16;
+    }
+
+    const totalPages = doc.getNumberOfPages();
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+      addFooter(pageNumber, totalPages);
+    }
+
+    doc.save(`securecodereviews-ai-security-audit-${Date.now()}.pdf`);
   }
 
   const summaryCards = report
@@ -649,7 +939,7 @@ export default function AiSecurityAuditorPage() {
                     {report ? (
                       <Button variant="outline" onClick={downloadPdfReport}>
                         <Download className="mr-2 h-4 w-4" />
-                        PDF
+                        Download report
                       </Button>
                     ) : null}
                   </div>
@@ -673,6 +963,9 @@ export default function AiSecurityAuditorPage() {
                         </div>
                         <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                           {report.score.narrative}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          Export a branded SecureCodeReviews PDF with summary, scope, severity breakdown, and detailed findings.
                         </p>
                       </div>
 
