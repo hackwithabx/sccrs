@@ -147,6 +147,22 @@ function modeLabel(mode: AuditMode): string {
   return "Full workflow audit";
 }
 
+function buildExportFilename(extension: "pdf" | "json" | "csv"): string {
+  return `securecodereviews-ai-security-audit-${Date.now()}.${extension}`;
+}
+
+function downloadTextFile(content: string, mimeType: string, filename: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 function severityRgb(severity: Severity): [number, number, number] {
   switch (severity) {
     case "Critical":
@@ -336,6 +352,78 @@ export default function AiSecurityAuditorPage() {
     setForm(preset.input);
     setActiveTab(preset.mode);
     setAuditError(null);
+  }
+
+  function downloadJsonReport() {
+    if (!report) return;
+
+    const payload = {
+      brand: BRAND,
+      exportedAt: new Date().toISOString(),
+      auditMode: modeLabel(lastAuditMode),
+      analysisStrategy,
+      inputSummary: {
+        systemPromptLength: form.systemPrompt.length,
+        userPromptLength: form.userPrompt.length,
+        modelOutputLength: form.modelOutput.length,
+        connectedToolsLength: form.connectedTools.length,
+        deploymentNotesLength: form.deploymentNotes.length,
+        enabledControls: controlsContent
+          .filter((control) => form.controls[control.key])
+          .map((control) => control.title),
+      },
+      report,
+    };
+
+    downloadTextFile(
+      JSON.stringify(payload, null, 2),
+      "application/json;charset=utf-8",
+      buildExportFilename("json")
+    );
+  }
+
+  function escapeCsvValue(value: string): string {
+    if (/[",\n]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
+
+  function downloadCsvReport() {
+    if (!report) return;
+
+    const rows = [
+      [
+        "severity",
+        "category",
+        "source",
+        "confidence",
+        "finding",
+        "description",
+        "remediation",
+        "evidence",
+        "owasp",
+        "cvss",
+      ],
+      ...report.findings.map((finding) => [
+        finding.severity,
+        finding.category,
+        finding.source === "llm" ? "Deep AI" : "Heuristic",
+        finding.confidence,
+        finding.finding,
+        finding.description,
+        finding.remediation,
+        finding.evidence.join(" | "),
+        finding.owasp.join(" | "),
+        finding.cvss || "",
+      ]),
+    ];
+
+    const csvContent = rows
+      .map((row) => row.map((cell) => escapeCsvValue(String(cell))).join(","))
+      .join("\n");
+
+    downloadTextFile(csvContent, "text/csv;charset=utf-8", buildExportFilename("csv"));
   }
 
   async function downloadPdfReport() {
@@ -604,7 +692,7 @@ export default function AiSecurityAuditorPage() {
       addFooter(pageNumber, totalPages);
     }
 
-    doc.save(`securecodereviews-ai-security-audit-${Date.now()}.pdf`);
+    doc.save(buildExportFilename("pdf"));
   }
 
   const summaryCards = report
@@ -937,10 +1025,20 @@ export default function AiSecurityAuditorPage() {
                       </CardDescription>
                     </div>
                     {report ? (
-                      <Button variant="outline" onClick={downloadPdfReport}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download report
-                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={downloadPdfReport}>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download PDF
+                        </Button>
+                        <Button variant="outline" onClick={downloadJsonReport}>
+                          <Download className="mr-2 h-4 w-4" />
+                          JSON
+                        </Button>
+                        <Button variant="outline" onClick={downloadCsvReport}>
+                          <Download className="mr-2 h-4 w-4" />
+                          CSV
+                        </Button>
+                      </div>
                     ) : null}
                   </div>
                 </CardHeader>
@@ -965,7 +1063,7 @@ export default function AiSecurityAuditorPage() {
                           {report.score.narrative}
                         </p>
                         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                          Export a branded SecureCodeReviews PDF with summary, scope, severity breakdown, and detailed findings.
+                          Export a branded SecureCodeReviews PDF or machine-readable JSON and CSV with findings, severity breakdown, scope, and remediation data.
                         </p>
                       </div>
 

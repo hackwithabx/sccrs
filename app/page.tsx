@@ -758,6 +758,44 @@ export default function HomePage() {
             ))}
           </motion.div>
 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            viewport={{ once: true }}
+            className="mt-10"
+          >
+            <Card className="overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-background to-cyan-500/5 shadow-lg">
+              <CardContent className="p-6 sm:p-8">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-2xl">
+                    <Badge className="mb-3 bg-cyan-100 text-cyan-900 hover:bg-cyan-100 dark:bg-cyan-500/15 dark:text-cyan-200">
+                      AI Security Auditor
+                    </Badge>
+                    <h3 className="text-2xl font-semibold tracking-tight">Audit prompts, outputs, and tool usage before they ship.</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground sm:text-base">
+                      Use our free AI Security Auditor to review system prompts, model outputs, connected tools, and deployment notes for prompt injection,
+                      data leakage, unsafe tool calling, insecure output handling, and missing guardrails. Export findings as branded PDF, JSON, or CSV.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:min-w-[220px]">
+                    <Link href="/tools/ai-security-auditor">
+                      <Button size="lg" className="w-full gap-2">
+                        Open AI Auditor
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/blog/topic/ai-security">
+                      <Button size="lg" variant="outline" className="w-full">
+                        Explore AI Security Content
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
           <div className="mt-12 rounded-2xl border border-primary/15 bg-gradient-to-r from-primary/5 via-background to-transparent p-6 sm:p-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
