@@ -108,7 +108,7 @@ interface RegexRule {
   cvss: string;
   pattern: RegExp;
   owasp: string[];
-  validator?: (value: string) => boolean;
+  validator?: (value: string, input: string, index: number) => boolean;
 }
 
 const severityWeight: Record<Exclude<Severity, "Pass">, number> = {
@@ -413,7 +413,7 @@ const toolRules: PhraseRule[] = [
     description: "Filesystem tools with wide scopes can expose secrets, source code, customer data, and deployment artifacts.",
     remediation: "Scope filesystem tools to narrow directories, block dotfiles and secrets, and avoid mounting entire workspaces or root paths into agent tools.",
     cvss: "8.6",
-    patterns: ["filesystem", "read file", "write file", "local disk", "/", "workspace root"],
+    patterns: ["filesystem", "read file", "write file", "local disk", "workspace root", "read/write", "directory access"],
     owasp: ["tooling-access"],
   },
   {
@@ -549,6 +549,17 @@ const outputRules: RegexRule[] = [
     remediation: "Mask customer emails when not required, and apply output filtering for regulated or internal datasets.",
     cvss: "4.8",
     pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+    validator: (value, input, index) => {
+      const previousChar = input[index - 1] || "";
+      const nextChar = input[index + value.length] || "";
+
+      // Ignore user:pass@host fragments inside connection strings.
+      if ((previousChar === ":" || previousChar === "/") && nextChar === "/") {
+        return false;
+      }
+
+      return true;
+    },
     owasp: ["sensitive-disclosure"],
   },
   {
@@ -649,10 +660,14 @@ function collectPhraseEvidence(text: string, phrases: string[]): string[] {
   );
 }
 
-function collectRegexEvidence(text: string, pattern: RegExp, validator?: (value: string) => boolean): string[] {
+function collectRegexEvidence(
+  text: string,
+  pattern: RegExp,
+  validator?: (value: string, input: string, index: number) => boolean
+): string[] {
   const matches = [...text.matchAll(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))]
-    .map((match) => match[0])
-    .filter((value) => (validator ? validator(value) : true));
+    .filter((match) => (validator ? validator(match[0], text, match.index ?? 0) : true))
+    .map((match) => match[0]);
 
   return uniqueEvidence(matches);
 }
@@ -943,7 +958,7 @@ export function buildAuditReport(
       description: "The provided prompts, outputs, and workflow notes do not show common prompt injection or data leakage indicators based on this heuristic audit.",
       remediation: "Keep validating prompts, scope tool permissions, and run deeper manual security testing before production launch.",
       evidence: ["No matching risky phrases or output patterns were found"],
-      owasp: ["monitoring-controls"],
+      owasp: [],
     });
   }
 

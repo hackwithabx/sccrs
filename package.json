@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:ai-auditor": "node --experimental-strip-types scripts/validate-ai-auditor.mjs",
     "migrate:plans": "node ./scripts/backfill-plan-tiers.js"
   },
   "keywords": [],
