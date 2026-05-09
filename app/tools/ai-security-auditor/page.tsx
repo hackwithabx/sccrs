@@ -121,24 +121,24 @@ const emptyForm: AuditInput = {
 function severityClasses(severity: Severity): string {
   switch (severity) {
     case "Critical":
-      return "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300";
+      return "border-red-200 bg-red-50 text-red-700";
     case "High":
-      return "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-300";
+      return "border-orange-200 bg-orange-50 text-orange-700";
     case "Medium":
-      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300";
+      return "border-amber-200 bg-amber-50 text-amber-700";
     case "Low":
-      return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300";
+      return "border-sky-200 bg-sky-50 text-sky-700";
     case "Pass":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
     default:
       return "border-muted bg-muted/40 text-foreground";
   }
 }
 
 function scoreClasses(score: number): string {
-  if (score >= 85) return "text-emerald-600 dark:text-emerald-400";
-  if (score >= 65) return "text-amber-600 dark:text-amber-400";
-  return "text-red-600 dark:text-red-400";
+  if (score >= 85) return "text-emerald-600";
+  if (score >= 65) return "text-amber-600";
+  return "text-red-600";
 }
 
 function modeLabel(mode: AuditMode): string {
@@ -162,6 +162,45 @@ function downloadTextFile(content: string, mimeType: string, filename: string) {
   anchor.remove();
   URL.revokeObjectURL(url);
 }
+
+const pageShellClass =
+  "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_30%),radial-gradient(circle_at_18%_12%,_rgba(14,165,233,0.14),_transparent_24%),linear-gradient(180deg,_#f4f8fc_0%,_#f8fbff_48%,_#edf6ff_100%)] text-slate-900";
+
+const heroCardClass =
+  "border-white/70 bg-white/86 text-slate-900 shadow-[0_28px_90px_-42px_rgba(15,23,42,0.30)] backdrop-blur-xl";
+
+const spotlightCardClass =
+  "border-cyan-900/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.96),rgba(8,47,73,0.93),rgba(14,116,144,0.90))] text-white shadow-[0_30px_90px_-40px_rgba(8,47,73,0.58)]";
+
+const surfaceCardClass =
+  "border-white/70 bg-white/90 text-slate-900 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.26)] backdrop-blur";
+
+const softPanelClass =
+  "rounded-3xl border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.96))]";
+
+const accentPanelClass =
+  "rounded-3xl border border-cyan-100 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(236,254,255,0.94))]";
+
+const outlineButtonClass =
+  "border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900";
+
+const ghostButtonClass = "text-slate-600 hover:bg-slate-100 hover:text-slate-900";
+
+const primaryButtonClass =
+  "bg-slate-900 text-white shadow-lg shadow-slate-900/10 hover:bg-cyan-700";
+
+const tabsListClass =
+  "grid w-full grid-cols-3 rounded-2xl bg-slate-100 p-1 text-slate-500";
+
+const tabsTriggerClass =
+  "rounded-xl text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm";
+
+const textAreaClass =
+  "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:border-cyan-400 focus-visible:ring-cyan-500";
+
+const mutedTextClass = "text-slate-600";
+
+const softMutedTextClass = "text-slate-500";
 
 function severityRgb(severity: Severity): [number, number, number] {
   switch (severity) {
@@ -703,13 +742,13 @@ export default function AiSecurityAuditorPage() {
         {
           label: "Controls",
           value: enabledControls,
-          tone: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300",
+          tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
         },
       ]
     : [];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.10),_transparent_26%),linear-gradient(to_bottom,_rgba(255,255,255,1),_rgba(248,250,252,1))] dark:bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.12),_transparent_22%),linear-gradient(to_bottom,_rgba(2,6,23,1),_rgba(3,7,18,1))]">
+    <div className={pageShellClass}>
       <section className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -718,31 +757,31 @@ export default function AiSecurityAuditorPage() {
           className="mx-auto max-w-6xl"
         >
           <div className="mb-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-            <Card className="border-emerald-200/70 bg-white/85 shadow-xl shadow-emerald-100/50 backdrop-blur dark:border-emerald-900/40 dark:bg-slate-950/70 dark:shadow-none">
+            <Card className={heroCardClass}>
               <CardHeader className="space-y-5">
-                <Badge className="w-fit border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <Badge className="w-fit border border-cyan-200 bg-cyan-50 px-3 py-1 text-cyan-800">
                   Free AI Security Auditor
                 </Badge>
                 <div className="space-y-4">
                   <CardTitle className="text-4xl font-bold tracking-tight sm:text-5xl">
                     Audit prompts, outputs, and agent permissions for real AI security risk.
                   </CardTitle>
-                  <CardDescription className="max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                  <CardDescription className={`max-w-3xl text-base leading-7 ${mutedTextClass}`}>
                     This AI security auditor scans for prompt injection, sensitive data leakage,
                     unsafe tool access, insecure output handling, and missing control layers across
                     LLM apps, RAG workflows, copilots, and autonomous agents.
                   </CardDescription>
                 </div>
-                <div className="flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 dark:border-slate-800 dark:bg-slate-900/70">
+                <div className={`flex flex-wrap gap-3 text-sm ${mutedTextClass}`}>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">
                     <Shield className="h-4 w-4 text-emerald-500" />
                     Prompt injection and jailbreak detection
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 dark:border-slate-800 dark:bg-slate-900/70">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">
                     <Database className="h-4 w-4 text-sky-500" />
                     Sensitive output and secret leakage review
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 dark:border-slate-800 dark:bg-slate-900/70">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">
                     <TerminalSquare className="h-4 w-4 text-orange-500" />
                     Agent tool and permission boundary checks
                   </span>
@@ -750,7 +789,7 @@ export default function AiSecurityAuditorPage() {
               </CardHeader>
             </Card>
 
-            <Card className="border-slate-200/80 bg-slate-950 text-slate-50 shadow-xl shadow-slate-200/80 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
+            <Card className={spotlightCardClass}>
               <CardHeader className="space-y-4">
                 <Badge className="w-fit bg-white/10 text-white hover:bg-white/10">Fast triage</Badge>
                 <CardTitle className="text-3xl font-semibold">What this tool catches best</CardTitle>
@@ -774,7 +813,7 @@ export default function AiSecurityAuditorPage() {
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-            <Card className="border-slate-200/70 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-950/70">
+            <Card className={surfaceCardClass}>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -786,20 +825,20 @@ export default function AiSecurityAuditorPage() {
                     </CardDescription>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={loadSampleData}>
+                    <Button variant="outline" className={outlineButtonClass} onClick={loadSampleData}>
                       Load sample
                     </Button>
-                    <Button variant="ghost" onClick={resetForm}>
+                    <Button variant="ghost" className={ghostButtonClass} onClick={resetForm}>
                       Reset
                     </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-900/60 lg:grid-cols-[1fr_auto]">
+                <div className={`mb-6 grid gap-4 p-4 lg:grid-cols-[1fr_auto] ${accentPanelClass}`}>
                   <div>
                     <div className="text-sm font-semibold">Analysis depth</div>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    <p className={`mt-1 text-sm ${mutedTextClass}`}>
                       Fast local mode stays in the browser. Deep AI mode sends the submitted audit
                       context to your configured backend model for a richer workflow review.
                     </p>
@@ -807,12 +846,14 @@ export default function AiSecurityAuditorPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant={analysisStrategy === "local" ? "default" : "outline"}
+                      className={analysisStrategy === "local" ? primaryButtonClass : outlineButtonClass}
                       onClick={() => setAnalysisStrategy("local")}
                     >
                       Fast local
                     </Button>
                     <Button
                       variant={analysisStrategy === "deep" ? "default" : "outline"}
+                      className={analysisStrategy === "deep" ? primaryButtonClass : outlineButtonClass}
                       onClick={() => setAnalysisStrategy("deep")}
                     >
                       Deep AI
@@ -820,11 +861,11 @@ export default function AiSecurityAuditorPage() {
                   </div>
                 </div>
 
-                <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/70">
+                <div className={`mb-6 p-4 ${softPanelClass}`}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold">Test-case presets</div>
-                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      <p className={`mt-1 text-sm ${mutedTextClass}`}>
                         Load common attack paths to validate prompt security, RAG safety, agent permissions, and output handling.
                       </p>
                     </div>
@@ -835,7 +876,7 @@ export default function AiSecurityAuditorPage() {
                       <Button
                         key={preset.id}
                         variant="outline"
-                        className="justify-start"
+                        className={`justify-start ${outlineButtonClass}`}
                         onClick={() => applyPreset(preset.id)}
                       >
                         {preset.name}
@@ -845,16 +886,16 @@ export default function AiSecurityAuditorPage() {
                 </div>
 
                 {auditError ? (
-                  <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+                  <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {auditError}
                   </div>
                 ) : null}
 
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AuditMode)}>
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="prompt">Prompt audit</TabsTrigger>
-                    <TabsTrigger value="output">Output audit</TabsTrigger>
-                    <TabsTrigger value="full">Full audit</TabsTrigger>
+                  <TabsList className={tabsListClass}>
+                    <TabsTrigger className={tabsTriggerClass} value="prompt">Prompt audit</TabsTrigger>
+                    <TabsTrigger className={tabsTriggerClass} value="output">Output audit</TabsTrigger>
+                    <TabsTrigger className={tabsTriggerClass} value="full">Full audit</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="prompt" className="space-y-6 pt-4">
@@ -866,7 +907,7 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Paste your system prompt, assistant policy, or orchestration instructions."
                           value={form.systemPrompt}
                           onChange={(event) => updateField("systemPrompt", event.target.value)}
-                          className="min-h-[160px]"
+                          className={`min-h-[160px] ${textAreaClass}`}
                         />
                       </div>
                       <div className="space-y-2">
@@ -876,11 +917,11 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Paste the user message, injected content, document chunk, or adversarial test case."
                           value={form.userPrompt}
                           onChange={(event) => updateField("userPrompt", event.target.value)}
-                          className="min-h-[180px]"
+                          className={`min-h-[180px] ${textAreaClass}`}
                         />
                       </div>
                     </div>
-                    <Button className="w-full sm:w-auto" onClick={() => runAudit("prompt")} disabled={isRunning}>
+                    <Button className={`w-full sm:w-auto ${primaryButtonClass}`} onClick={() => runAudit("prompt")} disabled={isRunning}>
                       <Radar className="mr-2 h-4 w-4" />
                       {isRunning ? "Running audit..." : `Run ${analysisStrategy === "deep" ? "deep" : "local"} prompt audit`}
                     </Button>
@@ -895,7 +936,7 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Paste the LLM response, hidden trace, generated HTML, code, or tool response shown to users."
                           value={form.modelOutput}
                           onChange={(event) => updateField("modelOutput", event.target.value)}
-                          className="min-h-[220px]"
+                          className={`min-h-[220px] ${textAreaClass}`}
                         />
                       </div>
                       <div className="space-y-2">
@@ -905,11 +946,11 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Describe how output is rendered, logged, executed, or sent to other tools."
                           value={form.deploymentNotes}
                           onChange={(event) => updateField("deploymentNotes", event.target.value)}
-                          className="min-h-[140px]"
+                          className={`min-h-[140px] ${textAreaClass}`}
                         />
                       </div>
                     </div>
-                    <Button className="w-full sm:w-auto" onClick={() => runAudit("output")} disabled={isRunning}>
+                    <Button className={`w-full sm:w-auto ${primaryButtonClass}`} onClick={() => runAudit("output")} disabled={isRunning}>
                       <FileSearch className="mr-2 h-4 w-4" />
                       {isRunning ? "Running audit..." : `Run ${analysisStrategy === "deep" ? "deep" : "local"} output audit`}
                     </Button>
@@ -924,7 +965,7 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Assistant policy, router instructions, or tool orchestration logic."
                           value={form.systemPrompt}
                           onChange={(event) => updateField("systemPrompt", event.target.value)}
-                          className="min-h-[160px]"
+                          className={`min-h-[160px] ${textAreaClass}`}
                         />
                       </div>
                       <div className="space-y-2">
@@ -934,7 +975,7 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Adversarial prompt, retrieved content, hidden instructions, or jailbreak payload."
                           value={form.userPrompt}
                           onChange={(event) => updateField("userPrompt", event.target.value)}
-                          className="min-h-[160px]"
+                          className={`min-h-[160px] ${textAreaClass}`}
                         />
                       </div>
                       <div className="space-y-2">
@@ -944,7 +985,7 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Generated answer, HTML, code, tool trace, or leaked context."
                           value={form.modelOutput}
                           onChange={(event) => updateField("modelOutput", event.target.value)}
-                          className="min-h-[160px]"
+                          className={`min-h-[160px] ${textAreaClass}`}
                         />
                       </div>
                       <div className="space-y-2">
@@ -954,7 +995,7 @@ export default function AiSecurityAuditorPage() {
                           placeholder="Describe shell, filesystem, browser, database, email, webhook, payment, or admin integrations."
                           value={form.connectedTools}
                           onChange={(event) => updateField("connectedTools", event.target.value)}
-                          className="min-h-[160px]"
+                          className={`min-h-[160px] ${textAreaClass}`}
                         />
                       </div>
                     </div>
@@ -966,19 +1007,19 @@ export default function AiSecurityAuditorPage() {
                         placeholder="Explain approvals, authz, sandboxing, logging, RAG sources, tenant boundaries, or data access assumptions."
                         value={form.deploymentNotes}
                         onChange={(event) => updateField("deploymentNotes", event.target.value)}
-                        className="min-h-[140px]"
+                        className={`min-h-[140px] ${textAreaClass}`}
                       />
                     </div>
 
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-800 dark:bg-slate-900/60">
+                    <div className={`${accentPanelClass} p-5`}>
                       <div className="mb-4 flex items-center justify-between gap-3">
                         <div>
                           <h3 className="text-lg font-semibold">Controls currently in place</h3>
-                          <p className="text-sm text-slate-600 dark:text-slate-300">
+                          <p className={`text-sm ${mutedTextClass}`}>
                             Mark controls that already exist in production. The audit treats missing controls as part of the risk picture.
                           </p>
                         </div>
-                        <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                        <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700">
                           {enabledControls} enabled
                         </Badge>
                       </div>
@@ -986,7 +1027,7 @@ export default function AiSecurityAuditorPage() {
                         {controlsContent.map((control) => (
                           <label
                             key={control.key}
-                            className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-emerald-300 dark:border-slate-800 dark:bg-slate-950/70 dark:hover:border-emerald-800"
+                            className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-cyan-300 hover:shadow-sm"
                           >
                             <input
                               type="checkbox"
@@ -996,7 +1037,7 @@ export default function AiSecurityAuditorPage() {
                             />
                             <span>
                               <span className="block font-medium">{control.title}</span>
-                              <span className="mt-1 block text-sm text-slate-600 dark:text-slate-300">
+                              <span className={`mt-1 block text-sm ${mutedTextClass}`}>
                                 {control.description}
                               </span>
                             </span>
@@ -1005,7 +1046,7 @@ export default function AiSecurityAuditorPage() {
                       </div>
                     </div>
 
-                    <Button className="w-full sm:w-auto" onClick={() => runAudit("full")} disabled={isRunning}>
+                    <Button className={`w-full sm:w-auto ${primaryButtonClass}`} onClick={() => runAudit("full")} disabled={isRunning}>
                       <Shield className="mr-2 h-4 w-4" />
                       {isRunning ? "Running audit..." : `Run ${analysisStrategy === "deep" ? "deep" : "local"} full audit`}
                     </Button>
@@ -1015,7 +1056,7 @@ export default function AiSecurityAuditorPage() {
             </Card>
 
             <div className="space-y-6">
-              <Card className="border-slate-200/70 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-950/70">
+              <Card className={surfaceCardClass}>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -1026,15 +1067,15 @@ export default function AiSecurityAuditorPage() {
                     </div>
                     {report ? (
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={downloadPdfReport}>
+                        <Button variant="outline" className={outlineButtonClass} onClick={downloadPdfReport}>
                           <Download className="mr-2 h-4 w-4" />
                           Download PDF
                         </Button>
-                        <Button variant="outline" onClick={downloadJsonReport}>
+                        <Button variant="outline" className={outlineButtonClass} onClick={downloadJsonReport}>
                           <Download className="mr-2 h-4 w-4" />
                           JSON
                         </Button>
-                        <Button variant="outline" onClick={downloadCsvReport}>
+                        <Button variant="outline" className={outlineButtonClass} onClick={downloadCsvReport}>
                           <Download className="mr-2 h-4 w-4" />
                           CSV
                         </Button>
@@ -1045,7 +1086,7 @@ export default function AiSecurityAuditorPage() {
                 <CardContent className="space-y-5">
                   {report ? (
                     <>
-                      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/70">
+                      <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(240,249,255,0.92))] p-6">
                         {report.meta ? (
                           <div className="mb-3 flex flex-wrap gap-2">
                             <Badge variant="outline">
@@ -1057,12 +1098,12 @@ export default function AiSecurityAuditorPage() {
                         ) : null}
                         <div className={`text-5xl font-bold ${scoreClasses(report.score.overall)}`}>
                           {report.score.overall}
-                          <span className="text-lg text-slate-500 dark:text-slate-400">/100</span>
+                          <span className={`text-lg ${softMutedTextClass}`}>/100</span>
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        <p className={`mt-3 text-sm leading-6 ${mutedTextClass}`}>
                           {report.score.narrative}
                         </p>
-                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        <p className={`mt-2 text-xs ${softMutedTextClass}`}>
                           Export a branded SecureCodeReviews PDF or machine-readable JSON and CSV with findings, severity breakdown, scope, and remediation data.
                         </p>
                       </div>
@@ -1080,12 +1121,12 @@ export default function AiSecurityAuditorPage() {
                         {report.score.categories.map((category) => (
                           <div
                             key={category.key}
-                            className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/70"
+                            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div>
                                 <div className="font-medium">{category.name}</div>
-                                <div className="text-sm text-slate-600 dark:text-slate-300">
+                                <div className={`text-sm ${mutedTextClass}`}>
                                   {category.summary}
                                 </div>
                               </div>
@@ -1098,10 +1139,10 @@ export default function AiSecurityAuditorPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/60">
+                    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
                       <Sparkles className="mx-auto h-10 w-10 text-emerald-500" />
                       <p className="mt-4 text-base font-medium">No audit has been run yet.</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
                         Paste a prompt, output, or agent workflow description and run an audit to get a scored security review.
                       </p>
                     </div>
@@ -1109,7 +1150,7 @@ export default function AiSecurityAuditorPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200/70 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-950/70">
+              <Card className={surfaceCardClass}>
                 <CardHeader>
                   <CardTitle className="text-xl">Coverage areas</CardTitle>
                   <CardDescription>
@@ -1120,13 +1161,13 @@ export default function AiSecurityAuditorPage() {
                   {auditorCategories.map((category) => (
                     <div
                       key={category.key}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60"
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="font-medium">{category.title}</div>
                         <Badge variant="outline">CVSS {category.cvss}</Badge>
                       </div>
-                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
                         {category.description}
                       </p>
                     </div>
@@ -1137,7 +1178,7 @@ export default function AiSecurityAuditorPage() {
           </div>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <Card className="border-slate-200/70 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-950/70">
+            <Card className={surfaceCardClass}>
               <CardHeader>
                 <CardTitle className="text-2xl">Findings and remediation</CardTitle>
                 <CardDescription>
@@ -1151,7 +1192,7 @@ export default function AiSecurityAuditorPage() {
                     return (
                       <div
                         key={finding.id}
-                        className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/60"
+                        className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-50/80"
                       >
                         <button
                           type="button"
@@ -1167,7 +1208,7 @@ export default function AiSecurityAuditorPage() {
                             </div>
                             <div>
                               <div className="text-lg font-semibold">{finding.finding}</div>
-                              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                              <p className={`mt-1 text-sm leading-6 ${mutedTextClass}`}>
                                 {finding.description}
                               </p>
                             </div>
@@ -1178,15 +1219,15 @@ export default function AiSecurityAuditorPage() {
                         </button>
 
                         {expanded ? (
-                          <div className="border-t border-slate-200 px-5 pb-5 pt-4 dark:border-slate-800">
+                          <div className="border-t border-slate-200 px-5 pb-5 pt-4">
                             <div className="space-y-4">
                               <div>
-                                <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Evidence</div>
+                                <div className="text-sm font-medium text-slate-900">Evidence</div>
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {finding.evidence.map((item) => (
                                     <span
                                       key={item}
-                                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
                                     >
                                       {item}
                                     </span>
@@ -1195,8 +1236,8 @@ export default function AiSecurityAuditorPage() {
                               </div>
 
                               <div>
-                                <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Recommended fix</div>
-                                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                <div className="text-sm font-medium text-slate-900">Recommended fix</div>
+                                <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
                                   {finding.remediation}
                                 </p>
                               </div>
@@ -1216,9 +1257,9 @@ export default function AiSecurityAuditorPage() {
                     );
                   })
                 ) : (
-                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 dark:border-slate-700 dark:bg-slate-900/60">
+                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8">
                     <p className="text-base font-medium">Findings will appear here after you run an audit.</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
                       The full audit mode is the most accurate because it includes prompts, outputs, tool scope, and control coverage.
                     </p>
                   </div>
@@ -1227,33 +1268,33 @@ export default function AiSecurityAuditorPage() {
             </Card>
 
             <div className="space-y-8">
-              <Card className="border-slate-200/70 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-950/70">
+              <Card className={surfaceCardClass}>
                 <CardHeader>
                   <CardTitle className="text-2xl">How to use this AI security scanner</CardTitle>
                   <CardDescription>
                       The strongest results come from giving the tool enough context to assess both attack paths and blast radius.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                <CardContent className={`space-y-4 text-sm leading-7 ${mutedTextClass}`}>
+                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-red-500" />
                     <p>
                       Paste both the system prompt and the untrusted user or retrieved content when testing prompt injection or hidden instruction abuse.
                     </p>
                   </div>
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <Lock className="mt-1 h-5 w-5 shrink-0 text-emerald-500" />
                     <p>
                       Include connected tools, data stores, and environment access notes to measure excessive agency and permission boundary risk accurately.
                     </p>
                   </div>
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-sky-500" />
                     <p>
                       Mark the controls you already enforce in production. This lets the score reflect real defensive depth, not only raw findings.
                     </p>
                   </div>
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <Sparkles className="mt-1 h-5 w-5 shrink-0 text-violet-500" />
                     <p>
                       Use deep AI mode when you want higher-accuracy workflow analysis. It adds server-backed reasoning on top of the deterministic checks and is best for agentic systems, RAG pipelines, and production rollouts.
@@ -1262,7 +1303,7 @@ export default function AiSecurityAuditorPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200/70 bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg dark:border-slate-800 dark:from-emerald-700 dark:to-teal-900">
+              <Card className={spotlightCardClass}>
                 <CardHeader>
                   <CardTitle className="text-2xl">Need a deeper review?</CardTitle>
                   <CardDescription className="text-emerald-50/90">
@@ -1270,7 +1311,7 @@ export default function AiSecurityAuditorPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-3">
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" className="border-white/20 bg-white text-slate-900 hover:bg-slate-100">
                     <Link href="/shieldx">Explore ShieldX</Link>
                   </Button>
                   <Button
@@ -1294,13 +1335,13 @@ export default function AiSecurityAuditorPage() {
               {aiAuditorFaqs.map((faq) => (
                 <Card
                   key={faq.question}
-                  className="border-slate-200/70 bg-white/90 shadow-md dark:border-slate-800 dark:bg-slate-950/70"
+                  className={surfaceCardClass}
                 >
                   <CardHeader>
                     <CardTitle className="text-lg">{faq.question}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{faq.answer}</p>
+                    <p className={`text-sm leading-7 ${mutedTextClass}`}>{faq.answer}</p>
                   </CardContent>
                 </Card>
               ))}
