@@ -22,6 +22,7 @@ import {
 import {
   aiAuditorFaqs,
   analyzeAiSecurity,
+  auditPresets,
   auditorCategories,
   defaultAuditorControls,
   type AuditInput,
@@ -44,6 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
 type AuditMode = "prompt" | "output" | "full";
+type AnalysisStrategy = "local" | "deep";
 
 const controlsContent: Array<{
   key: keyof AuditorControls;
@@ -144,6 +146,9 @@ export default function AiSecurityAuditorPage() {
   const [report, setReport] = useState<AuditReport | null>(null);
   const [expandedFindingId, setExpandedFindingId] = useState<string | null>(null);
   const [lastAuditMode, setLastAuditMode] = useState<AuditMode>("full");
+  const [analysisStrategy, setAnalysisStrategy] = useState<AnalysisStrategy>("local");
+  const [isRunning, setIsRunning] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
 
   const enabledControls = Object.values(form.controls).filter(Boolean).length;
 
@@ -183,11 +188,48 @@ export default function AiSecurityAuditorPage() {
     return form;
   }
 
-  function runAudit(mode: AuditMode) {
-    const nextReport = analyzeAiSecurity(buildScopedInput(mode));
-    setLastAuditMode(mode);
-    setReport(nextReport);
-    setExpandedFindingId(nextReport.findings[0]?.id ?? null);
+  async function runAudit(mode: AuditMode) {
+    setIsRunning(true);
+    setAuditError(null);
+
+    try {
+      const scopedInput = buildScopedInput(mode);
+      let nextReport: AuditReport;
+
+      if (analysisStrategy === "deep") {
+        const response = await fetch("/api/tools/ai-security-auditor", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mode,
+            input: scopedInput,
+          }),
+        });
+
+        const payload = (await response.json()) as {
+          error?: string;
+          report?: AuditReport;
+        };
+
+        if (!response.ok || !payload.report) {
+          throw new Error(payload.error || "Deep AI analysis failed.");
+        }
+
+        nextReport = payload.report;
+      } else {
+        nextReport = analyzeAiSecurity(scopedInput);
+      }
+
+      setLastAuditMode(mode);
+      setReport(nextReport);
+      setExpandedFindingId(nextReport.findings[0]?.id ?? null);
+    } catch (error) {
+      setAuditError(error instanceof Error ? error.message : "Audit failed.");
+    } finally {
+      setIsRunning(false);
+    }
   }
 
   function loadSampleData() {
@@ -215,6 +257,16 @@ export default function AiSecurityAuditorPage() {
     setReport(null);
     setExpandedFindingId(null);
     setLastAuditMode("full");
+    setAuditError(null);
+  }
+
+  function applyPreset(presetId: string) {
+    const preset = auditPresets.find((item) => item.id === presetId);
+    if (!preset) return;
+
+    setForm(preset.input);
+    setActiveTab(preset.mode);
+    setAuditError(null);
   }
 
   function downloadPdfReport() {
@@ -350,8 +402,9 @@ export default function AiSecurityAuditorPage() {
                   <div>
                     <CardTitle className="text-2xl">Run an audit</CardTitle>
                     <CardDescription className="mt-2">
-                      Choose a focused mode or run a full workflow audit with prompts, outputs,
-                      connected tools, and deployed controls.
+                      Choose fast local analysis or a server-backed deep AI review, then run a
+                      focused mode or a full workflow audit with prompts, outputs, connected tools,
+                      and deployed controls.
                     </CardDescription>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -365,6 +418,60 @@ export default function AiSecurityAuditorPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                <div className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-900/60 lg:grid-cols-[1fr_auto]">
+                  <div>
+                    <div className="text-sm font-semibold">Analysis depth</div>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      Fast local mode stays in the browser. Deep AI mode sends the submitted audit
+                      context to your configured backend model for a richer workflow review.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={analysisStrategy === "local" ? "default" : "outline"}
+                      onClick={() => setAnalysisStrategy("local")}
+                    >
+                      Fast local
+                    </Button>
+                    <Button
+                      variant={analysisStrategy === "deep" ? "default" : "outline"}
+                      onClick={() => setAnalysisStrategy("deep")}
+                    >
+                      Deep AI
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/70">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold">Test-case presets</div>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                        Load common attack paths to validate prompt security, RAG safety, agent permissions, and output handling.
+                      </p>
+                    </div>
+                    <Badge variant="outline">{auditPresets.length} presets</Badge>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {auditPresets.map((preset) => (
+                      <Button
+                        key={preset.id}
+                        variant="outline"
+                        className="justify-start"
+                        onClick={() => applyPreset(preset.id)}
+                      >
+                        {preset.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {auditError ? (
+                  <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+                    {auditError}
+                  </div>
+                ) : null}
+
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AuditMode)}>
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="prompt">Prompt audit</TabsTrigger>
@@ -395,9 +502,9 @@ export default function AiSecurityAuditorPage() {
                         />
                       </div>
                     </div>
-                    <Button className="w-full sm:w-auto" onClick={() => runAudit("prompt")}>
+                    <Button className="w-full sm:w-auto" onClick={() => runAudit("prompt")} disabled={isRunning}>
                       <Radar className="mr-2 h-4 w-4" />
-                      Audit prompt path
+                      {isRunning ? "Running audit..." : `Run ${analysisStrategy === "deep" ? "deep" : "local"} prompt audit`}
                     </Button>
                   </TabsContent>
 
@@ -424,9 +531,9 @@ export default function AiSecurityAuditorPage() {
                         />
                       </div>
                     </div>
-                    <Button className="w-full sm:w-auto" onClick={() => runAudit("output")}>
+                    <Button className="w-full sm:w-auto" onClick={() => runAudit("output")} disabled={isRunning}>
                       <FileSearch className="mr-2 h-4 w-4" />
-                      Audit output path
+                      {isRunning ? "Running audit..." : `Run ${analysisStrategy === "deep" ? "deep" : "local"} output audit`}
                     </Button>
                   </TabsContent>
 
@@ -520,9 +627,9 @@ export default function AiSecurityAuditorPage() {
                       </div>
                     </div>
 
-                    <Button className="w-full sm:w-auto" onClick={() => runAudit("full")}>
+                    <Button className="w-full sm:w-auto" onClick={() => runAudit("full")} disabled={isRunning}>
                       <Shield className="mr-2 h-4 w-4" />
-                      Run full AI security audit
+                      {isRunning ? "Running audit..." : `Run ${analysisStrategy === "deep" ? "deep" : "local"} full audit`}
                     </Button>
                   </TabsContent>
                 </Tabs>
@@ -551,6 +658,15 @@ export default function AiSecurityAuditorPage() {
                   {report ? (
                     <>
                       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/70">
+                        {report.meta ? (
+                          <div className="mb-3 flex flex-wrap gap-2">
+                            <Badge variant="outline">
+                              {report.meta.analysisType === "deep" ? "Deep AI analysis" : "Fast local analysis"}
+                            </Badge>
+                            {report.meta.provider ? <Badge variant="outline">{report.meta.provider}</Badge> : null}
+                            {report.meta.model ? <Badge variant="outline">{report.meta.model}</Badge> : null}
+                          </div>
+                        ) : null}
                         <div className={`text-5xl font-bold ${scoreClasses(report.score.overall)}`}>
                           {report.score.overall}
                           <span className="text-lg text-slate-500 dark:text-slate-400">/100</span>
@@ -656,6 +772,7 @@ export default function AiSecurityAuditorPage() {
                               <Badge className={severityClasses(finding.severity)}>{finding.severity}</Badge>
                               <Badge variant="outline">{finding.category}</Badge>
                               <Badge variant="outline">Confidence {finding.confidence}</Badge>
+                              <Badge variant="outline">{finding.source === "llm" ? "Deep AI" : "Heuristic"}</Badge>
                             </div>
                             <div>
                               <div className="text-lg font-semibold">{finding.finding}</div>
@@ -723,7 +840,7 @@ export default function AiSecurityAuditorPage() {
                 <CardHeader>
                   <CardTitle className="text-2xl">How to use this AI security scanner</CardTitle>
                   <CardDescription>
-                    The strongest results come from giving the tool enough context to assess both attack paths and blast radius.
+                      The strongest results come from giving the tool enough context to assess both attack paths and blast radius.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
@@ -743,6 +860,12 @@ export default function AiSecurityAuditorPage() {
                     <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-sky-500" />
                     <p>
                       Mark the controls you already enforce in production. This lets the score reflect real defensive depth, not only raw findings.
+                    </p>
+                  </div>
+                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                    <Sparkles className="mt-1 h-5 w-5 shrink-0 text-violet-500" />
+                    <p>
+                      Use deep AI mode when you want higher-accuracy workflow analysis. It adds server-backed reasoning on top of the deterministic checks and is best for agentic systems, RAG pipelines, and production rollouts.
                     </p>
                   </div>
                 </CardContent>
