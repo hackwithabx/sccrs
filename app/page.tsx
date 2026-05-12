@@ -35,7 +35,7 @@ const marketChips = [
 const heroStats = [
   { value: "2", label: "Analysis modes: local plus deep AI" },
   { value: "OWASP", label: "LLM-aligned review and mapped findings" },
-  { value: "PDF/JSON/CSV", label: "Exportable report formats" },
+  { value: "PDF/JSON/CSV", label: "Exportable report formats", compact: true },
   { value: "60s", label: "To first audit results" },
 ];
 
@@ -231,8 +231,10 @@ export default function HomePage() {
 
               <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4">
                 {heroStats.map((stat) => (
-                  <div key={stat.label} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
-                    <div className="text-3xl font-semibold text-white">{stat.value}</div>
+                  <div key={stat.label} className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
+                    <div className={stat.compact ? "text-xl font-semibold leading-tight text-white [overflow-wrap:anywhere] sm:text-2xl" : "text-3xl font-semibold leading-tight text-white"}>
+                      {stat.value}
+                    </div>
                     <div className="mt-2 text-sm leading-6 text-slate-400">{stat.label}</div>
                   </div>
                 ))}
