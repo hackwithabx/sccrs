@@ -24,22 +24,35 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const marketChips = [
-  "Startups",
+  "AI product teams",
+  "Agent builders",
+  "RAG platforms",
   "SaaS platforms",
-  "Fintech teams",
-  "Cloud-native products",
   "Developer tooling",
   "Security-conscious engineering orgs",
 ];
 
 const heroStats = [
-  { value: "14", label: "Integrated security modules" },
-  { value: "80+", label: "SAST and workflow checks" },
-  { value: "60s", label: "To first scan results" },
-  { value: "$79", label: "Starting ShieldX Pro plan" },
+  { value: "2", label: "Analysis modes: local plus deep AI" },
+  { value: "OWASP", label: "LLM-aligned review and mapped findings" },
+  { value: "PDF/JSON/CSV", label: "Exportable report formats" },
+  { value: "60s", label: "To first audit results" },
 ];
 
 const operatingModels = [
+  {
+    eyebrow: "AI Security Auditor",
+    title: "Lead with the AI security product teams can use immediately.",
+    description:
+      "Start with browser-based auditing for prompts, outputs, connected tools, and agent workflows before expanding into broader application security coverage.",
+    bullets: [
+      "Prompt injection, leakage, unsafe tool use, and output-risk coverage",
+      "Fast local analysis with an optional deeper AI review mode",
+      "Exportable reports for engineering review, customer trust, and launch sign-off",
+    ],
+    href: "/tools/ai-security-auditor",
+    cta: "Open AI Auditor",
+  },
   {
     eyebrow: "ShieldX Platform",
     title: "Operate the platform with your own team.",
@@ -70,6 +83,12 @@ const operatingModels = [
 
 const capabilities = [
   {
+    icon: Radar,
+    title: "A dedicated AI Security Auditor for prompts and agents",
+    description:
+      "Audit prompts, outputs, connected tools, and deployment notes for prompt injection, leakage, unsafe autonomy, and missing guardrails.",
+  },
+  {
     icon: Shield,
     title: "A full AppSec surface, not a single scanner",
     description:
@@ -82,12 +101,6 @@ const capabilities = [
       "Use AI-assisted analysis for business logic, auth gaps, workflow abuse, and deeper review paths that static signatures miss.",
   },
   {
-    icon: Radar,
-    title: "A dedicated AI Security Auditor for prompts and agents",
-    description:
-      "Audit prompts, outputs, connected tools, and deployment notes for prompt injection, leakage, unsafe autonomy, and missing guardrails.",
-  },
-  {
     icon: LineChart,
     title: "Evidence and reporting built for real teams",
     description:
@@ -98,19 +111,19 @@ const capabilities = [
 const foundationCards = [
   {
     icon: Code,
-    title: "Built around developer workflows",
+    title: "Built for AI and agent workflows",
     description:
-      "The platform is designed for teams shipping code every day, with fast analysis, practical findings, and clear remediation paths.",
+      "Start with prompts, outputs, connected tools, and runtime behavior instead of forcing AI teams through generic scanner workflows first.",
   },
   {
     icon: Zap,
-    title: "Fast by default",
+    title: "Fast enough for pre-launch review",
     description:
-      "Local-first tools, focused workflows, and direct outputs let teams get value in minutes instead of waiting on heavyweight security rollouts.",
+      "Run a focused audit before demos, releases, customer diligence, or internal security review without setting up a heavyweight program first.",
   },
   {
     icon: Lock,
-    title: "Trust through visibility",
+    title: "Trust through evidence",
     description:
       "Show exactly what was scanned, what triggered, which controls are missing, and what should happen next before production release.",
   },
@@ -118,14 +131,8 @@ const foundationCards = [
 
 const resources = [
   {
-    icon: BookOpen,
-    title: "AppSec research and guides",
-    description: "Deep articles on OWASP, AI security, API hardening, cloud risks, and practical developer-focused defenses.",
-    href: "/blog",
-  },
-  {
     icon: FileSearch,
-    title: "Free AI Security Auditor",
+    title: "AI Security Auditor",
     description: "Prompt injection and LLM workflow auditing with local analysis, deep AI mode, and exportable reports.",
     href: "/tools/ai-security-auditor",
   },
@@ -136,6 +143,12 @@ const resources = [
     href: "/tools",
   },
   {
+    icon: BookOpen,
+    title: "AppSec research and guides",
+    description: "Deep articles on OWASP, AI security, API hardening, cloud risks, and practical developer-focused defenses.",
+    href: "/blog",
+  },
+  {
     icon: Briefcase,
     title: "Security review services",
     description: "When you need manual review, adversarial testing, or guidance for a high-stakes launch, bring in the SCR team.",
@@ -144,10 +157,10 @@ const resources = [
 ];
 
 const workflowRows = [
-  { label: "Secrets and tokens", status: "Clear", tone: "emerald" },
-  { label: "Dependency exposure", status: "2 issues", tone: "amber" },
-  { label: "Prompt safety", status: "Needs review", tone: "cyan" },
-  { label: "Unsafe output paths", status: "Blocked", tone: "rose" },
+  { label: "Prompt injection", status: "Blocked", tone: "rose" },
+  { label: "Sensitive data leakage", status: "Needs review", tone: "amber" },
+  { label: "Tool permissions", status: "Restricted", tone: "cyan" },
+  { label: "Output handling", status: "Sanitized", tone: "emerald" },
 ] as const;
 
 function toneClasses(tone: (typeof workflowRows)[number]["tone"]) {
@@ -172,22 +185,22 @@ export default function HomePage() {
               transition={{ duration: 0.6 }}
             >
               <Badge className="border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-cyan-200 hover:bg-cyan-400/10">
-                AI-Native AppSec Platform
+                AI Security Auditor + AppSec Platform
               </Badge>
 
               <h1 className="mt-6 max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl">
-                Security that feels like a real platform, not a pile of disconnected tools.
+                Audit prompts, agents, and LLM workflows before they ship.
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-                SecureCodeReviews combines ShieldX, free developer tools, AI workflow auditing,
-                and expert services into one sharper security experience for modern engineering teams.
+                SecureCodeReviews puts the AI Security Auditor at the front of the product: scan for prompt injection,
+                leakage, unsafe tool use, and output risks, then expand into ShieldX and expert review when coverage needs to go wider.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-12 rounded-full bg-white px-7 text-slate-950 hover:bg-slate-100">
-                  <Link href="/shieldx">
-                    Open ShieldX
+                  <Link href="/tools/ai-security-auditor">
+                    Open AI Security Auditor
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -197,22 +210,22 @@ export default function HomePage() {
                   variant="outline"
                   className="h-12 rounded-full border-white/15 bg-white/5 px-7 text-white hover:bg-white/10 hover:text-white"
                 >
-                  <Link href="/contact">Talk to SCRs</Link>
+                  <Link href="/shieldx">Open ShieldX</Link>
                 </Button>
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-300">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                  No code-storage positioning
+                  Browser-based AI workflow audit
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                  AI auditor and AppSec tooling in one brand
+                  Local mode plus deeper AI analysis
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                  Platform plus expert review model
+                  Broader platform and expert review path
                 </span>
               </div>
 
@@ -234,11 +247,11 @@ export default function HomePage() {
               <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,20,31,0.95),rgba(7,16,26,0.94))] p-5 shadow-[0_40px_120px_-52px_rgba(34,211,238,0.45)] backdrop-blur-xl">
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                   <div>
-                    <div className="text-sm font-medium text-slate-200">Unified security control room</div>
-                    <div className="text-xs text-slate-400">Platform, tooling, review, and remediation in one flow</div>
+                    <div className="text-sm font-medium text-slate-200">AI Security Auditor</div>
+                    <div className="text-xs text-slate-400">Prompt, output, and tool-risk review in one flow</div>
                   </div>
                   <Badge className="border border-emerald-400/20 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/10">
-                    Live posture
+                    Live audit preview
                   </Badge>
                 </div>
 
@@ -247,8 +260,8 @@ export default function HomePage() {
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-medium text-white">Security pipeline</div>
-                          <div className="text-xs text-slate-400">What the team sees before release</div>
+                          <div className="text-sm font-medium text-white">Audit workflow</div>
+                          <div className="text-xs text-slate-400">What the team reviews before release</div>
                         </div>
                         <Sparkles className="h-4 w-4 text-cyan-300" />
                       </div>
@@ -314,17 +327,17 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <Badge className="border border-white/10 bg-white/5 text-slate-200 hover:bg-white/5">
-              Operating model
+              Product path
             </Badge>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              A platform you can run yourself, with expert backup when you need it.
+              Start with AI workflow risk, then expand into broader AppSec coverage.
             </h2>
             <p className="mt-4 text-lg leading-8 text-slate-300">
-              The strongest version of the brand is not just a scanner. It is a complete AppSec operating layer with a clear path from self-serve tooling to higher-assurance expert review.
+              Many teams need an immediate answer on prompt injection, agent permissions, and unsafe output before they need a full platform rollout. The homepage now makes that entry point explicit.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-6 lg:grid-cols-2">
+          <div className="mt-12 grid gap-6 lg:grid-cols-3">
             {operatingModels.map((item, index) => (
               <motion.div
                 key={item.title}
@@ -412,10 +425,10 @@ export default function HomePage() {
                 Built for modern security teams
               </Badge>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                From overloaded to in control, without pretending one scanner solves everything.
+                From AI workflow risk to broader AppSec control, without a dead-end starting point.
               </h2>
               <p className="mt-4 text-lg leading-8 text-slate-300">
-                The visual direction takes cues from a sharper enterprise cyber look, but the story is your own: practical AppSec tooling, AI-native workflows, and expert review paths designed for real delivery teams.
+                Teams can begin with the free AI Security Auditor when they need immediate answers on prompts, agents, and tool use, then move into ShieldX and expert review as the attack surface grows.
               </p>
             </div>
 
@@ -441,13 +454,13 @@ export default function HomePage() {
           <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-start">
             <div className="rounded-[2rem] border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(8,28,38,0.92),rgba(5,19,29,0.94))] p-8 shadow-[0_36px_110px_-54px_rgba(34,211,238,0.38)]">
               <Badge className="border border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/10">
-                Free AI Security Auditor
+                Featured product
               </Badge>
               <h3 className="mt-4 text-3xl font-semibold tracking-tight text-white">
-                Audit prompts, model output, tool access, and deployment notes in one workflow.
+                AI Security Auditor for prompt injection, leakage, tool abuse, and agent workflow risk.
               </h3>
               <p className="mt-4 text-base leading-8 text-slate-300">
-                This route becomes a stronger product surface when it inherits the same visual language as the homepage: darker atmosphere, clearer hierarchy, and a more premium enterprise feel.
+                Paste prompts, outputs, connected tools, and deployment context to get immediate findings, mapped risk categories, remediation guidance, and exportable reports your team can act on.
               </p>
               <div className="mt-6 space-y-3 text-sm leading-6 text-slate-300">
                 <div className="flex gap-3">
@@ -456,11 +469,11 @@ export default function HomePage() {
                 </div>
                 <div className="flex gap-3">
                   <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
-                  <span>Prompt injection, leakage, autonomy, and output-risk coverage</span>
+                  <span>Prompt injection, data leakage, unsafe autonomy, and output-risk coverage</span>
                 </div>
                 <div className="flex gap-3">
                   <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
-                  <span>Branded PDF, JSON, and CSV reporting</span>
+                  <span>Branded PDF, JSON, and CSV reporting for review and sign-off</span>
                 </div>
               </div>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -520,15 +533,15 @@ export default function HomePage() {
                   Start here
                 </Badge>
                 <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Bring the site into a more premium enterprise posture without losing your AppSec identity.
+                  Start with the AI Security Auditor, then widen coverage when the risk surface grows.
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-slate-300">
-                  The homepage now establishes the visual system. From here, the same direction can be extended across tools, services, blog surfaces, and product pages until the whole brand feels consistent.
+                  Use the free AI auditor for immediate workflow review, move into ShieldX for broader AppSec scanning, or bring in SCR experts for manual testing and code review when the stakes are higher.
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                 <Button asChild size="lg" className="rounded-full bg-white text-slate-950 hover:bg-slate-100">
-                  <Link href="/contact">Request a security review</Link>
+                  <Link href="/tools/ai-security-auditor">Open AI Security Auditor</Link>
                 </Button>
                 <Button
                   asChild
@@ -536,7 +549,7 @@ export default function HomePage() {
                   variant="outline"
                   className="rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
                 >
-                  <Link href="/shieldx">See ShieldX</Link>
+                  <Link href="/contact">Talk to SCRs</Link>
                 </Button>
               </div>
             </div>

@@ -23,11 +23,11 @@ const ADSENSE_CLIENT_ID =
 
 export const metadata: Metadata = {
   title: {
-    default: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
+    default: "SecureCodeReviews | AI Security Auditor, ShieldX & AppSec Services",
     template: "%s | SecureCodeReviews",
   },
   description:
-    "AppSec services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and free SAST scanning.",
+    "AI Security Auditor for prompt injection and LLM risk review, plus ShieldX, secure code reviews, penetration testing, and broader AppSec services.",
   keywords: [
     "SecureCodeReviews",
     "Secure Code Reviews",
@@ -35,6 +35,10 @@ export const metadata: Metadata = {
     "ShieldX",
     "SecureCodeReviews ShieldX",
     "application security",
+    "AI security auditor",
+    "LLM security",
+    "prompt injection",
+    "agent security",
     "application security platform",
     "application security services",
     "secure code review",
@@ -80,9 +84,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://www.securecodereviews.com",
     siteName: "SecureCodeReviews",
-    title: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
+    title: "SecureCodeReviews | AI Security Auditor, ShieldX & AppSec Services",
     description:
-      "AppSec services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and free SAST scanning.",
+      "Audit prompts and LLM workflows with the AI Security Auditor, then expand into ShieldX, secure code review, penetration testing, and broader AppSec coverage.",
     images: [
       {
         url: "/og-image.png",
@@ -94,9 +98,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SecureCodeReviews | AppSec Services & Free SAST Scanner",
+    title: "SecureCodeReviews | AI Security Auditor, ShieldX & AppSec Services",
     description:
-      "AppSec services, secure code reviews, penetration testing, DevSecOps consulting, cloud assessments, and free SAST scanning.",
+      "AI Security Auditor for prompt injection and LLM risk review, plus ShieldX and broader AppSec services.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -136,7 +140,7 @@ export default function RootLayout({
     url: "https://www.securecodereviews.com",
     logo: "https://www.securecodereviews.com/logo.png",
     description:
-      "Expert application security platform featuring ShieldX — a free SAST scanner with 14 modules. Offering secure code reviews, penetration testing, OWASP guides, and DevSecOps tools.",
+      "Application security company behind the AI Security Auditor and ShieldX, offering prompt injection review, secure code assessments, penetration testing, and AppSec guidance.",
     contactPoint: {
       "@type": "ContactPoint",
       email: "support@securecodereviews.com",
@@ -154,7 +158,7 @@ export default function RootLayout({
     "@type": "WebSite",
     name: "SecureCodeReviews",
     url: "https://www.securecodereviews.com",
-    description: "Application security services and platform featuring ShieldX free SAST scanner, secure code review, penetration testing, DevSecOps consulting, and cloud security guidance.",
+    description: "Application security platform featuring the AI Security Auditor, ShieldX, secure code review, penetration testing, and broader AppSec guidance.",
     publisher: { "@type": "Organization", name: "SecureCodeReviews" },
     potentialAction: {
       "@type": "SearchAction",
