@@ -335,7 +335,7 @@ export default function HomePage() {
               Start with AI workflow risk, then expand into broader AppSec coverage.
             </h2>
             <p className="mt-4 text-lg leading-8 text-slate-300">
-              Many teams need an immediate answer on prompt injection, agent permissions, and unsafe output before they need a full platform rollout. The homepage now makes that entry point explicit.
+              Use the AI Security Auditor to assess prompt injection, agent permissions, and unsafe output before launch, then expand into broader AppSec coverage as your environment grows.
             </p>
           </div>
 
@@ -391,7 +391,7 @@ export default function HomePage() {
               </h2>
             </div>
             <p className="max-w-2xl text-base leading-7 text-slate-400">
-              Instead of splitting the story across unrelated pages and products, the homepage now frames SecureCodeReviews as one cohesive system: tools, platform, AI review, and human expertise.
+                SecureCodeReviews combines AI security auditing, AppSec tooling, and expert review in one place for teams that need fast answers and deeper coverage.
             </p>
           </div>
 
