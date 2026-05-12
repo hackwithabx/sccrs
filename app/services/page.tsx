@@ -10,10 +10,8 @@ import {
   Code,
   Search,
   FileCheck,
-  GraduationCap,
   Brain,
   Cloud,
-  Bug,
   Workflow,
   Globe,
   Zap,
@@ -113,20 +111,6 @@ const securityServices = [
     color: "from-cyan-500 to-blue-500",
   },
   {
-    icon: Bug,
-    title: "Bug Bounty Program Management",
-    description:
-      "Set up and manage a bug bounty program for your organization. We handle triage, validation, and responsible disclosure with top security researchers.",
-    features: [
-      "Program design & launch",
-      "Vulnerability triage & validation",
-      "Researcher management & payouts",
-      "Remediation tracking & metrics",
-    ],
-    badge: null,
-    color: "from-red-500 to-orange-500",
-  },
-  {
     icon: Workflow,
     title: "DevSecOps Implementation",
     description:
@@ -153,20 +137,6 @@ const securityServices = [
     ],
     badge: null,
     color: "from-violet-500 to-purple-500",
-  },
-  {
-    icon: GraduationCap,
-    title: "Security Training & Workshops",
-    description:
-      "Customized security training for development teams. Hands-on workshops covering secure coding, OWASP risks, threat modeling, and security tools.",
-    features: [
-      "Hands-on labs & exercises",
-      "Custom curriculum per team skill level",
-      "CTF (Capture The Flag) exercises",
-      "Certification preparation guidance",
-    ],
-    badge: null,
-    color: "from-indigo-500 to-blue-500",
   },
 ];
 
