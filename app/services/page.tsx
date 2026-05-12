@@ -10,6 +10,7 @@ import {
   Code,
   Search,
   FileCheck,
+  GraduationCap,
   Brain,
   Cloud,
   Workflow,

@@ -121,24 +121,24 @@ const emptyForm: AuditInput = {
 function severityClasses(severity: Severity): string {
   switch (severity) {
     case "Critical":
-      return "border-red-200 bg-red-50 text-red-700";
+      return "border-red-400/25 bg-red-500/12 text-red-200";
     case "High":
-      return "border-orange-200 bg-orange-50 text-orange-700";
+      return "border-orange-400/25 bg-orange-500/12 text-orange-200";
     case "Medium":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "border-amber-400/25 bg-amber-500/12 text-amber-200";
     case "Low":
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return "border-sky-400/25 bg-sky-500/12 text-sky-200";
     case "Pass":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "border-emerald-400/25 bg-emerald-500/12 text-emerald-200";
     default:
-      return "border-muted bg-muted/40 text-foreground";
+      return "border-white/10 bg-white/5 text-slate-200";
   }
 }
 
 function scoreClasses(score: number): string {
-  if (score >= 85) return "text-emerald-600";
-  if (score >= 65) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 85) return "text-emerald-300";
+  if (score >= 65) return "text-amber-300";
+  return "text-red-300";
 }
 
 function modeLabel(mode: AuditMode): string {
@@ -164,43 +164,43 @@ function downloadTextFile(content: string, mimeType: string, filename: string) {
 }
 
 const pageShellClass =
-  "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_30%),radial-gradient(circle_at_18%_12%,_rgba(14,165,233,0.14),_transparent_24%),linear-gradient(180deg,_#f4f8fc_0%,_#f8fbff_48%,_#edf6ff_100%)] text-slate-900";
+  "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_26%),radial-gradient(circle_at_18%_12%,_rgba(14,165,233,0.14),_transparent_22%),linear-gradient(180deg,_#07111d_0%,_#081523_46%,_#06111d_100%)] text-white";
 
 const heroCardClass =
-  "border-white/70 bg-white/86 text-slate-900 shadow-[0_28px_90px_-42px_rgba(15,23,42,0.30)] backdrop-blur-xl";
+  "border-white/10 bg-[linear-gradient(145deg,rgba(11,19,30,0.94),rgba(8,24,40,0.96),rgba(8,47,73,0.90))] text-white shadow-[0_28px_90px_-42px_rgba(3,7,18,0.72)] backdrop-blur-xl";
 
 const spotlightCardClass =
   "border-cyan-900/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.96),rgba(8,47,73,0.93),rgba(14,116,144,0.90))] text-white shadow-[0_30px_90px_-40px_rgba(8,47,73,0.58)]";
 
 const surfaceCardClass =
-  "border-white/70 bg-white/90 text-slate-900 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.26)] backdrop-blur";
+  "border-white/10 bg-[linear-gradient(180deg,rgba(10,18,31,0.94),rgba(8,17,29,0.98))] text-white shadow-[0_24px_70px_-40px_rgba(3,7,18,0.72)] backdrop-blur";
 
 const softPanelClass =
-  "rounded-3xl border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.96))]";
+  "rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]";
 
 const accentPanelClass =
-  "rounded-3xl border border-cyan-100 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(236,254,255,0.94))]";
+  "rounded-3xl border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(6,22,35,0.96),rgba(7,28,39,0.94))]";
 
 const outlineButtonClass =
-  "border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900";
+  "border-white/15 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white";
 
-const ghostButtonClass = "text-slate-600 hover:bg-slate-100 hover:text-slate-900";
+const ghostButtonClass = "text-slate-300 hover:bg-white/5 hover:text-white";
 
 const primaryButtonClass =
-  "bg-slate-900 text-white shadow-lg shadow-slate-900/10 hover:bg-cyan-700";
+  "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-950/20 hover:bg-cyan-300";
 
 const tabsListClass =
-  "grid w-full grid-cols-3 rounded-2xl bg-slate-100 p-1 text-slate-500";
+  "grid w-full grid-cols-3 rounded-2xl border border-white/10 bg-[#0a1623] p-1 text-slate-400";
 
 const tabsTriggerClass =
-  "rounded-xl text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm";
+  "rounded-xl text-sm font-medium data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-sm";
 
 const textAreaClass =
-  "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:border-cyan-400 focus-visible:ring-cyan-500";
+  "border-white/10 bg-[#091522] text-white placeholder:text-slate-500 focus-visible:border-cyan-400 focus-visible:ring-cyan-500";
 
-const mutedTextClass = "text-slate-600";
+const mutedTextClass = "text-slate-300";
 
-const softMutedTextClass = "text-slate-500";
+const softMutedTextClass = "text-slate-400";
 
 function severityRgb(severity: Severity): [number, number, number] {
   switch (severity) {
@@ -742,7 +742,7 @@ export default function AiSecurityAuditorPage() {
         {
           label: "Controls",
           value: enabledControls,
-          tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+          tone: "border-emerald-400/25 bg-emerald-500/12 text-emerald-200",
         },
       ]
     : [];
@@ -759,7 +759,7 @@ export default function AiSecurityAuditorPage() {
           <div className="mb-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
             <Card className={heroCardClass}>
               <CardHeader className="space-y-5">
-                <Badge className="w-fit border border-cyan-200 bg-cyan-50 px-3 py-1 text-cyan-800">
+                <Badge className="w-fit border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-cyan-200">
                   Free AI Security Auditor
                 </Badge>
                 <div className="space-y-4">
@@ -773,15 +773,15 @@ export default function AiSecurityAuditorPage() {
                   </CardDescription>
                 </div>
                 <div className={`flex flex-wrap gap-3 text-sm ${mutedTextClass}`}>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 shadow-sm shadow-black/10">
                     <Shield className="h-4 w-4 text-emerald-500" />
                     Prompt injection and jailbreak detection
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 shadow-sm shadow-black/10">
                     <Database className="h-4 w-4 text-sky-500" />
                     Sensitive output and secret leakage review
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 shadow-sm shadow-black/10">
                     <TerminalSquare className="h-4 w-4 text-orange-500" />
                     Agent tool and permission boundary checks
                   </span>
@@ -886,7 +886,7 @@ export default function AiSecurityAuditorPage() {
                 </div>
 
                 {auditError ? (
-                  <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                     {auditError}
                   </div>
                 ) : null}
@@ -1019,7 +1019,7 @@ export default function AiSecurityAuditorPage() {
                             Mark controls that already exist in production. The audit treats missing controls as part of the risk picture.
                           </p>
                         </div>
-                        <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700">
+                        <Badge className="border border-emerald-400/20 bg-emerald-500/10 text-emerald-200">
                           {enabledControls} enabled
                         </Badge>
                       </div>
@@ -1027,13 +1027,13 @@ export default function AiSecurityAuditorPage() {
                         {controlsContent.map((control) => (
                           <label
                             key={control.key}
-                            className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-cyan-300 hover:shadow-sm"
+                            className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-cyan-400/30 hover:bg-white/[0.07] hover:shadow-sm"
                           >
                             <input
                               type="checkbox"
                               checked={form.controls[control.key]}
                               onChange={(event) => updateControl(control.key, event.target.checked)}
-                              className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                              className="mt-1 h-4 w-4 rounded border-white/20 bg-[#091522] text-emerald-500 focus:ring-emerald-500"
                             />
                             <span>
                               <span className="block font-medium">{control.title}</span>
@@ -1086,7 +1086,7 @@ export default function AiSecurityAuditorPage() {
                 <CardContent className="space-y-5">
                   {report ? (
                     <>
-                      <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(240,249,255,0.92))] p-6">
+                      <div className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(34,211,238,0.06))] p-6">
                         {report.meta ? (
                           <div className="mb-3 flex flex-wrap gap-2">
                             <Badge variant="outline">
@@ -1121,7 +1121,7 @@ export default function AiSecurityAuditorPage() {
                         {report.score.categories.map((category) => (
                           <div
                             key={category.key}
-                            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                            className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm shadow-black/10"
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div>
@@ -1139,7 +1139,7 @@ export default function AiSecurityAuditorPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                    <div className="rounded-3xl border border-dashed border-white/15 bg-white/[0.03] p-8 text-center">
                       <Sparkles className="mx-auto h-10 w-10 text-emerald-500" />
                       <p className="mt-4 text-base font-medium">No audit has been run yet.</p>
                       <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
@@ -1161,7 +1161,7 @@ export default function AiSecurityAuditorPage() {
                   {auditorCategories.map((category) => (
                     <div
                       key={category.key}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="font-medium">{category.title}</div>
@@ -1192,7 +1192,7 @@ export default function AiSecurityAuditorPage() {
                     return (
                       <div
                         key={finding.id}
-                        className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-50/80"
+                        className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]"
                       >
                         <button
                           type="button"
@@ -1219,15 +1219,15 @@ export default function AiSecurityAuditorPage() {
                         </button>
 
                         {expanded ? (
-                          <div className="border-t border-slate-200 px-5 pb-5 pt-4">
+                          <div className="border-t border-white/10 px-5 pb-5 pt-4">
                             <div className="space-y-4">
                               <div>
-                                <div className="text-sm font-medium text-slate-900">Evidence</div>
+                                <div className="text-sm font-medium text-white">Evidence</div>
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {finding.evidence.map((item) => (
                                     <span
                                       key={item}
-                                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+                                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200"
                                     >
                                       {item}
                                     </span>
@@ -1236,7 +1236,7 @@ export default function AiSecurityAuditorPage() {
                               </div>
 
                               <div>
-                                <div className="text-sm font-medium text-slate-900">Recommended fix</div>
+                                <div className="text-sm font-medium text-white">Recommended fix</div>
                                 <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
                                   {finding.remediation}
                                 </p>
@@ -1257,7 +1257,7 @@ export default function AiSecurityAuditorPage() {
                     );
                   })
                 ) : (
-                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8">
+                  <div className="rounded-3xl border border-dashed border-white/15 bg-white/[0.03] p-8">
                     <p className="text-base font-medium">Findings will appear here after you run an audit.</p>
                     <p className={`mt-2 text-sm leading-6 ${mutedTextClass}`}>
                       The full audit mode is the most accurate because it includes prompts, outputs, tool scope, and control coverage.
@@ -1276,25 +1276,25 @@ export default function AiSecurityAuditorPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className={`space-y-4 text-sm leading-7 ${mutedTextClass}`}>
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-red-500" />
                     <p>
                       Paste both the system prompt and the untrusted user or retrieved content when testing prompt injection or hidden instruction abuse.
                     </p>
                   </div>
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <Lock className="mt-1 h-5 w-5 shrink-0 text-emerald-500" />
                     <p>
                       Include connected tools, data stores, and environment access notes to measure excessive agency and permission boundary risk accurately.
                     </p>
                   </div>
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-sky-500" />
                     <p>
                       Mark the controls you already enforce in production. This lets the score reflect real defensive depth, not only raw findings.
                     </p>
                   </div>
-                  <div className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <Sparkles className="mt-1 h-5 w-5 shrink-0 text-violet-500" />
                     <p>
                       Use deep AI mode when you want higher-accuracy workflow analysis. It adds server-backed reasoning on top of the deterministic checks and is best for agentic systems, RAG pipelines, and production rollouts.
