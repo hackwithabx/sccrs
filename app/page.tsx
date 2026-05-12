@@ -1,1377 +1,546 @@
-﻿﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { SectionHeading } from "@/components/section-heading";
 import {
-  Shield,
-  Code,
-  BarChart3,
-  FileText,
-  BookOpen,
   ArrowRight,
+  BookOpen,
+  Bot,
+  Briefcase,
   CheckCircle2,
-  Lock,
-  Zap,
-  Cloud,
-  Brain,
-  AlertTriangle,
+  Code,
   FileSearch,
-  Building2,
-  Key,
-  Package,
-  Globe,
-  GitBranch,
-  Rocket,
-  ShieldCheck,
-  Fingerprint,
-  Scale,
+  LineChart,
+  Lock,
+  Radar,
+  Shield,
+  Sparkles,
+  Wrench,
+  Zap,
 } from "lucide-react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from "recharts";
 
-const shieldxModules = [
-  { icon: Key, title: "Secrets Scanner", desc: "Detect 30+ secret patterns including API keys, tokens, and certificates with entropy analysis" },
-  { icon: Package, title: "Dependency Audit", desc: "Real-time CVE scanning for npm, pip, Go, and Gradle dependencies via OSV database" },
-  { icon: Cloud, title: "Cloud Security", desc: "18-point checklist for AWS, GCP, Azure — IAM, storage, network, logging" },
-  { icon: Globe, title: "API Scanner", desc: "OWASP API Top 10 compliance testing with header analysis for any HTTP endpoint" },
-  { icon: Fingerprint, title: "SAST Code Analyzer", desc: "AST-based taint analysis with 80+ checks — traces user input to dangerous sinks across 25+ vulnerability classes" },
-  { icon: Brain, title: "AI Security Review", desc: "AI-powered deep review for business logic flaws, IDOR, race conditions, and auth gaps beyond pattern-based SAST" },
-  { icon: Shield, title: "Container Security", desc: "Scan Dockerfiles for 15+ CIS Benchmark checks — root user, secrets in ENV, curl|bash, open ports" },
-  { icon: Cloud, title: "IaC Scanner", desc: "Terraform, CloudFormation & K8s manifest scanning for public S3 buckets, IAM wildcards, missing encryption" },
-  { icon: FileSearch, title: "SBOM Generator", desc: "CycloneDX 1.5 Software Bill of Materials from package.json, requirements.txt, go.mod — regulatory-ready" },
-  { icon: Scale, title: "Compliance Report", desc: "Map findings to SOC 2, ISO 27001, PCI-DSS, HIPAA, NIST 800-53, CIS, and GDPR frameworks" },
-  { icon: Scale, title: "License Compliance", desc: "Detect GPL, AGPL, and copyleft licenses that can block acquisitions or compliance audits" },
-  { icon: GitBranch, title: "CI/CD Pipeline Gate", desc: "GitHub Actions, GitLab CI, and cURL templates for automated security gates with pass/fail verdicts" },
-  { icon: BarChart3, title: "Security Score", desc: "Unified composite security posture score across all modules with trend tracking" },
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+const marketChips = [
+  "Startups",
+  "SaaS platforms",
+  "Fintech teams",
+  "Cloud-native products",
+  "Developer tooling",
+  "Security-conscious engineering orgs",
 ];
 
-const features = [
+const heroStats = [
+  { value: "14", label: "Integrated security modules" },
+  { value: "80+", label: "SAST and workflow checks" },
+  { value: "60s", label: "To first scan results" },
+  { value: "$79", label: "Starting ShieldX Pro plan" },
+];
+
+const operatingModels = [
+  {
+    eyebrow: "ShieldX Platform",
+    title: "Operate the platform with your own team.",
+    description:
+      "Run scanning, review, reporting, AI-assisted remediation, and release gates directly inside your engineering workflow while keeping full visibility into every finding and control.",
+    bullets: [
+      "Unified scanners for code, dependencies, cloud, containers, IaC, and CI/CD",
+      "Fast triage with evidence, CWE and OWASP mapping, and remediation guidance",
+      "Exports and reports your team can use internally or share with customers and auditors",
+    ],
+    href: "/shieldx",
+    cta: "Open ShieldX",
+  },
+  {
+    eyebrow: "Expert Services",
+    title: "Bring in SecureCodeReviews when you need deeper coverage.",
+    description:
+      "Pair the platform with manual code review, penetration testing, cloud assessment, and AppSec guidance when automation is not enough or when a launch needs higher assurance.",
+    bullets: [
+      "Human-led code review and architecture review for high-risk releases",
+      "Pen testing and secure design feedback for APIs, cloud, and auth flows",
+      "A practical path from free tools to ongoing AppSec support",
+    ],
+    href: "/services",
+    cta: "Explore Services",
+  },
+];
+
+const capabilities = [
+  {
+    icon: Shield,
+    title: "A full AppSec surface, not a single scanner",
+    description:
+      "Cover secrets, dependencies, SAST, API security, IaC, containers, SBOM, compliance, and CI/CD gates from one workspace.",
+  },
+  {
+    icon: Bot,
+    title: "AI security review that goes beyond pattern matching",
+    description:
+      "Use AI-assisted analysis for business logic, auth gaps, workflow abuse, and deeper review paths that static signatures miss.",
+  },
+  {
+    icon: Radar,
+    title: "A dedicated AI Security Auditor for prompts and agents",
+    description:
+      "Audit prompts, outputs, connected tools, and deployment notes for prompt injection, leakage, unsafe autonomy, and missing guardrails.",
+  },
+  {
+    icon: LineChart,
+    title: "Evidence and reporting built for real teams",
+    description:
+      "Get posture scores, findings with context, exportable reports, and concrete remediation guidance instead of vague severity labels.",
+  },
+];
+
+const foundationCards = [
+  {
+    icon: Code,
+    title: "Built around developer workflows",
+    description:
+      "The platform is designed for teams shipping code every day, with fast analysis, practical findings, and clear remediation paths.",
+  },
+  {
+    icon: Zap,
+    title: "Fast by default",
+    description:
+      "Local-first tools, focused workflows, and direct outputs let teams get value in minutes instead of waiting on heavyweight security rollouts.",
+  },
+  {
+    icon: Lock,
+    title: "Trust through visibility",
+    description:
+      "Show exactly what was scanned, what triggered, which controls are missing, and what should happen next before production release.",
+  },
+];
+
+const resources = [
   {
     icon: BookOpen,
-    title: "Security Blog",
-    description: "Latest AppSec trends, OWASP guidelines, and security best practices from experts.",
+    title: "AppSec research and guides",
+    description: "Deep articles on OWASP, AI security, API hardening, cloud risks, and practical developer-focused defenses.",
     href: "/blog",
   },
   {
-    icon: Code,
-    title: "Secure Code Examples",
-    description: "Vulnerable vs. secure code patterns across Python, Java, Go, C#, PHP, Ruby, and more.",
-    href: "/secure-code",
+    icon: FileSearch,
+    title: "Free AI Security Auditor",
+    description: "Prompt injection and LLM workflow auditing with local analysis, deep AI mode, and exportable reports.",
+    href: "/tools/ai-security-auditor",
   },
   {
-    icon: BarChart3,
-    title: "Vulnerability Dashboard",
-    description: "Interactive visualizations showing real-time vulnerability trends and severity data.",
-    href: "/vulnerabilities",
+    icon: Wrench,
+    title: "Free security tools",
+    description: "Practical developer utilities you can use before upgrading to the broader ShieldX platform.",
+    href: "/tools",
   },
   {
-    icon: Shield,
-    title: "Expert Services",
-    description: "Professional code reviews, penetration testing, and security consulting.",
+    icon: Briefcase,
+    title: "Security review services",
+    description: "When you need manual review, adversarial testing, or guidance for a high-stakes launch, bring in the SCR team.",
     href: "/services",
   },
-  {
-    icon: Cloud,
-    title: "Cloud Security",
-    description: "In-depth guides for securing AWS, Azure, and GCP infrastructure.",
-    href: "/cloud-security",
-  },
-  {
-    icon: Brain,
-    title: "AI/LLM Security",
-    description: "OWASP Top 10 for AI, prompt injection defense, and LLM threat analysis.",
-    href: "/owasp/top-10-ai",
-  },
 ];
 
-const featuredSeoGuides = [
-  {
-    title: "Next.js Security: The Complete Hardening Guide for 2026",
-    href: "/blog/nextjs-security-complete-guide-2026",
-    summary: "High-intent framework security query with strong developer demand and service relevance.",
-  },
-  {
-    title: "OWASP API Security Top 10 (2023): Every Vulnerability Explained With Real Attacks",
-    href: "/blog/owasp-api-security-top-10-2023",
-    summary: "Evergreen API-security topic that supports both traffic and consulting conversions.",
-  },
-  {
-    title: "OAuth 2.0 Vulnerabilities: Every Attack and Defense Explained with Code",
-    href: "/blog/oauth-2-vulnerabilities-attacks-defense-guide",
-    summary: "Strong commercial intent around auth reviews, SSO hardening, and secure implementation.",
-  },
-  {
-    title: "MCP Server Security: Why Model Context Protocol Is the Next Big Attack Surface",
-    href: "/blog/mcp-server-security-model-context-protocol-risks",
-    summary: "Timely AI-security wedge topic with lower competition than generic AppSec terms.",
-  },
-  {
-    title: "OWASP Top 10 for Agentic AI 2026: Complete Security Guide",
-    href: "/blog/owasp-top-10-agentic-ai-2026",
-    summary: "A topical-authority play for AI security, audits, and LLM application hardening.",
-  },
-  {
-    title: "GitHub Actions Security: Script Injection, Secret Leaks & Hardening Your CI/CD",
-    href: "/blog/github-actions-security-vulnerabilities-hardening",
-    summary: "Good fit for DevSecOps and startup engineering teams searching for practical fixes.",
-  },
-];
+const workflowRows = [
+  { label: "Secrets and tokens", status: "Clear", tone: "emerald" },
+  { label: "Dependency exposure", status: "2 issues", tone: "amber" },
+  { label: "Prompt safety", status: "Needs review", tone: "cyan" },
+  { label: "Unsafe output paths", status: "Blocked", tone: "rose" },
+] as const;
 
-// Chart data
-const vulnerabilityTrends = [
-  { year: "2019", critical: 320, high: 580, medium: 1200, low: 2100 },
-  { year: "2020", critical: 410, high: 720, medium: 1450, low: 2400 },
-  { year: "2021", critical: 530, high: 890, medium: 1700, low: 2800 },
-  { year: "2022", critical: 620, high: 1050, medium: 2000, low: 3200 },
-  { year: "2023", critical: 780, high: 1300, medium: 2400, low: 3700 },
-  { year: "2024", critical: 950, high: 1580, medium: 2900, low: 4200 },
-];
-
-const attackVectors = [
-  { name: "Injection", value: 28, color: "#10b981", gradient: "from-emerald-500 to-emerald-600" },
-  { name: "Broken Auth", value: 22, color: "#3b82f6", gradient: "from-blue-500 to-blue-600" },
-  { name: "Misconfiguration", value: 18, color: "#f59e0b", gradient: "from-yellow-500 to-yellow-600" },
-  { name: "XSS", value: 14, color: "#8b5cf6", gradient: "from-violet-500 to-violet-600" },
-  { name: "SSRF", value: 10, color: "#ec4899", gradient: "from-pink-500 to-pink-600" },
-  { name: "Other", value: 8, color: "#64748b", gradient: "from-slate-500 to-slate-600" },
-];
-
-const breachCosts = [
-  { industry: "Healthcare", cost: 9.77, fill: "#ef4444" },
-  { industry: "Financial", cost: 6.08, fill: "#f59e0b" },
-  { industry: "Technology", cost: 5.45, fill: "#3b82f6" },
-  { industry: "Energy", cost: 5.29, fill: "#8b5cf6" },
-  { industry: "Pharma", cost: 4.97, fill: "#ec4899" },
-  { industry: "Average", cost: 4.88, fill: "#64748b" },
-];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
+function toneClasses(tone: (typeof workflowRows)[number]["tone"]) {
+  if (tone === "emerald") return "bg-emerald-400/15 text-emerald-300 border-emerald-400/20";
+  if (tone === "amber") return "bg-amber-400/15 text-amber-200 border-amber-400/20";
+  if (tone === "rose") return "bg-rose-400/15 text-rose-200 border-rose-400/20";
+  return "bg-cyan-400/15 text-cyan-200 border-cyan-400/20";
+}
 
 export default function HomePage() {
   return (
-    <div className="relative">
-      {/* === HERO — ShieldX Showcase === */}
-      <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
-        {/* Background effects */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[700px] w-[1000px] rounded-full bg-primary/5 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-[400px] w-[600px] rounded-full bg-blue-400/5 blur-3xl" />
-          <div className="absolute top-1/3 left-10 h-[300px] w-[300px] rounded-full bg-cyan-500/5 blur-3xl" />
-        </div>
+    <div className="min-h-screen bg-[#06111d] text-white">
+      <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.20),_transparent_26%),radial-gradient(circle_at_80%_14%,_rgba(59,130,246,0.18),_transparent_24%),linear-gradient(180deg,_#07111d_0%,_#081523_54%,_#06111d_100%)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-8">
-              <ShieldCheck className="h-4 w-4" />
-              ShieldX for Startups
-              <ArrowRight className="h-3.5 w-3.5" />
-            </div>
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <div className="grid gap-16 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <Badge className="border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-cyan-200 hover:bg-cyan-400/10">
+                AI-Native AppSec Platform
+              </Badge>
 
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-              <span className="block mb-2 text-foreground">Enterprise-Grade AppSec</span>
-              <span className="bg-gradient-to-r from-primary via-blue-500 to-cyan-500 bg-clip-text text-transparent text-4xl sm:text-5xl lg:text-6xl xl:text-7xl">
-                Without The Enterprise Price
-              </span>
-            </h1>
+              <h1 className="mt-6 max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl">
+                Security that feels like a real platform, not a pile of disconnected tools.
+              </h1>
 
-            <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-              14 scanners. 80+ SAST checks. Exploit PoC generation, SBOM generation, compliance mapping, and cross-file dataflow tracing — all in under 60 seconds.
-            </p>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
+                SecureCodeReviews combines ShieldX, free developer tools, AI workflow auditing,
+                and expert services into one sharper security experience for modern engineering teams.
+              </p>
 
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
-                <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
-                  <Rocket className="h-5 w-5" />
-                  Request Pro Access
-                </Button>
-              </Link>
-              <Link href="/shieldx">
-                <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl">
-                  Open ShieldX Demo
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Trust badges */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Zero code storage</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> AST-based taint analysis</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> CWE/OWASP mapped</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Exploit PoC generation</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Cross-file dataflow</span>
-            </div>
-          </motion.div>
-
-          {/* ShieldX Module Cards */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mt-20 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-          >
-            {shieldxModules.map((mod, i) => (
-              <motion.div
-                key={mod.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.06 }}
-              >
-                <Card className="h-full border border-border hover:border-primary/40 hover:shadow-lg transition-all duration-300 group">
-                  <CardContent className="p-5">
-                    <div className="mb-3 inline-flex rounded-xl bg-primary/10 p-2.5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                      <mod.icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-sm font-semibold mb-1">{mod.title}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{mod.desc}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {[ 
-              { value: "14", label: "Security Modules" },
-              { value: "80+", label: "SAST Vulnerability Checks" },
-              { value: "$79", label: "Pro Per Month" },
-              { value: "60s", label: "To First Scan Results" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-primary">{stat.value}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══ AI SECURITY AUDITOR PROMO ═══ */}
-      <section className="py-12 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="overflow-hidden rounded-3xl border border-primary/15 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_30%),linear-gradient(135deg,_rgba(15,23,42,1),_rgba(17,24,39,0.96))] p-8 text-white shadow-2xl shadow-primary/10 sm:p-10 lg:p-12">
-              <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-                <div>
-                  <Badge className="border-0 bg-white/10 text-white hover:bg-white/10">
-                    New Free Tool
-                  </Badge>
-                  <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                    Audit prompts, agent permissions, and LLM outputs with our AI Security Auditor.
-                  </h2>
-                  <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                    Run fast local checks or deeper server-backed AI analysis for prompt injection,
-                    data leakage, unsafe tool use, insecure output handling, and missing guardrails.
-                    Export a branded PDF report with findings, severity breakdown, and remediation guidance.
-                  </p>
-
-                  <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-300">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                      Prompt injection and jailbreak testing
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                      Deep AI workflow review mode
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                      Branded downloadable security report
-                    </span>
-                  </div>
-
-                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <Link href="/tools/ai-security-auditor">
-                      <Button size="lg" className="gap-2 rounded-xl bg-white text-slate-950 hover:bg-slate-100">
-                        Open AI Security Auditor
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link href="/blog/topic/ai-security">
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="gap-2 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                      >
-                        Explore AI security guides
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-
-                <Card className="border-white/10 bg-white/5 text-white shadow-none backdrop-blur">
-                  <CardContent className="p-6 sm:p-7">
-                    <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
-                      <div>
-                        <p className="text-sm font-medium text-slate-300">AI Auditor Snapshot</p>
-                        <p className="mt-1 text-2xl font-bold">What teams get from one run</p>
-                      </div>
-                      <div className="rounded-2xl bg-emerald-500/15 p-3 text-emerald-300">
-                        <Brain className="h-7 w-7" />
-                      </div>
-                    </div>
-
-                    <div className="mt-5 space-y-4 text-sm text-slate-300">
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                          Inputs
-                        </div>
-                        <p className="mt-2 leading-6">
-                          System prompts, user prompts, model outputs, connected tools, deployment notes, and control coverage.
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">
-                          Findings
-                        </div>
-                        <p className="mt-2 leading-6">
-                          OWASP-aligned findings for prompt injection, secrets leakage, excessive agency, unsafe output, and weak guardrails.
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">
-                          Output
-                        </div>
-                        <p className="mt-2 leading-6">
-                          Security score, remediation guidance, source-tagged findings, presets for common attack paths, and a client-ready PDF report.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══ SHIELDX PRODUCT PREVIEW ═══ */}
-      <section className="py-20 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[900px] rounded-full bg-primary/3 blur-3xl" />
-        </div>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Product Preview"
-            title="See ShieldX in Action"
-            description="A glimpse of the unified security workspace — scan secrets, dependencies, APIs, cloud configs, and logs from one dashboard."
-          />
-
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="mt-12"
-          >
-            {/* Browser Frame */}
-            <div className="mx-auto max-w-5xl rounded-2xl border border-border/60 shadow-2xl overflow-hidden bg-background">
-              {/* Title bar */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-muted border-b border-border">
-                <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-red-400" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                  <div className="h-3 w-3 rounded-full bg-green-400" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-4 py-1 text-xs text-muted-foreground font-mono">
-                    <Lock className="h-3 w-3 text-green-500" />
-                    securecodereviews.com/shieldx
-                  </div>
-                </div>
-              </div>
-
-              {/* Dashboard Content */}
-              <div className="p-6 space-y-5">
-                {/* Top bar */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-primary/10 p-2.5">
-                      <Shield className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold">ShieldX Workspace</h3>
-                      <p className="text-xs text-muted-foreground">Security posture overview</p>
-                    </div>
-                  </div>
-                  <Badge className="bg-emerald-600 text-white">Pro Plan</Badge>
-                </div>
-
-                {/* Score + Stats row */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <div className="col-span-2 md:col-span-1 rounded-xl border border-border bg-gradient-to-br from-emerald-500/10 to-transparent p-4 text-center">
-                    <div className="text-3xl font-bold text-emerald-500">8.4</div>
-                    <div className="text-xs text-muted-foreground mt-1">Security Score</div>
-                  </div>
-                  {[
-                    { label: "Secrets Found", value: "0", color: "text-emerald-500" },
-                    { label: "Vuln Dependencies", value: "3", color: "text-amber-500" },
-                    { label: "API Issues", value: "1", color: "text-blue-500" },
-                    { label: "Cloud Risks", value: "2", color: "text-red-500" },
-                  ].map((s) => (
-                    <div key={s.label} className="rounded-xl border border-border p-3 text-center">
-                      <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Simulated scan results */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Secrets Scanner Result */}
-                  <div className="rounded-xl border border-border p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Key className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm font-semibold">Secrets Scanner</span>
-                      <Badge variant="outline" className="ml-auto text-[10px] border-emerald-500/40 text-emerald-600">PASS</Badge>
-                    </div>
-                    <div className="space-y-1.5 text-xs">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> No API keys detected
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> No hardcoded passwords
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Entropy analysis clean
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dependency Scan Result */}
-                  <div className="rounded-xl border border-border p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm font-semibold">Dependency Audit</span>
-                      <Badge variant="outline" className="ml-auto text-[10px] border-amber-500/40 text-amber-600">3 CVEs</Badge>
-                    </div>
-                    <div className="space-y-1.5 text-xs">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> <span><strong className="text-foreground">lodash 4.17.20</strong> — CVE-2021-23337 (High)</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span><strong className="text-foreground">axios 0.21.4</strong> — CVE-2023-45857 (Med)</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span><strong className="text-foreground">node-fetch 2.6.1</strong> — CVE-2022-0235 (Med)</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* API Scanner Result */}
-                  <div className="rounded-xl border border-border p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm font-semibold">API Scanner</span>
-                      <Badge variant="outline" className="ml-auto text-[10px] border-blue-500/40 text-blue-600">1 Issue</Badge>
-                    </div>
-                    <div className="space-y-1.5 text-xs">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> CORS policies configured
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span>Rate limiting not detected</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Auth headers validated
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cloud Security Result */}
-                  <div className="rounded-xl border border-border p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Cloud className="h-4 w-4 text-red-500" />
-                      <span className="text-sm font-semibold">Cloud Security</span>
-                      <Badge variant="outline" className="ml-auto text-[10px] border-red-500/40 text-red-600">2 Risks</Badge>
-                    </div>
-                    <div className="space-y-1.5 text-xs">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> <span>S3 bucket public read enabled</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> <span>IAM wildcard policy detected</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> CloudTrail logging active
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom bar */}
-                <div className="flex items-center justify-between pt-2 border-t border-border text-[11px] text-muted-foreground">
-                  <span>Last scan: 2 minutes ago</span>
-                  <span className="flex items-center gap-1"><FileSearch className="h-3 w-3" /> 9 modules available · 4 scanned in 12s</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA below preview */}
-            <div className="mt-8 text-center">
-              <p className="text-muted-foreground mb-4">No signup required — try every module with built-in demo data</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link href="/shieldx">
-                  <Button size="lg" className="gap-2 rounded-xl shadow-lg shadow-primary/20">
-                    <Rocket className="h-5 w-5" />
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg" className="h-12 rounded-full bg-white px-7 text-slate-950 hover:bg-slate-100">
+                  <Link href="/shieldx">
                     Open ShieldX
-                  </Button>
-                </Link>
-                {/* Pricing link hidden until billing is live */}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-12 rounded-full border-white/15 bg-white/5 px-7 text-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/contact">Talk to SCRs</Link>
+                </Button>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
 
-      {/* ═══ WHY SHIELDX FOR STARTUPS ═══ */}
-      <section className="py-20 bg-muted/50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Why ShieldX"
-            title="Security That Developers Actually Ship With"
-            description="Built for teams that move fast. ShieldX replaces fragmented point tools with one platform — zero onboarding friction, real findings in seconds, not weeks."
-          />
+              <div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-300">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  No code-storage positioning
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  AI auditor and AppSec tooling in one brand
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  Platform plus expert review model
+                </span>
+              </div>
 
-          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
-            {[
-              {
-                icon: Zap,
-                title: "Results in 60 Seconds",
-                desc: "Paste code, click scan, get findings with code snippets, CWE/OWASP references, and exploit PoCs — no setup needed.",
-                highlight: "Instant Feedback",
-              },
-              {
-                icon: Fingerprint,
-                title: "80+ Vulnerability Checks",
-                desc: "AST-based taint analysis, inter-procedural tracking, and 25+ vulnerability categories — from SQL injection to prototype pollution.",
-                highlight: "Deep Analysis",
-              },
-              {
-                icon: Shield,
-                title: "14 Modules, One Platform",
-                desc: "Secrets, dependencies, SAST, API, cloud, logs, CI/CD, license compliance, security scoring, containers, IaC, SBOM, and compliance mapping — all in one workspace.",
-                highlight: "Complete Coverage",
-              },
-              {
-                icon: Lock,
-                title: "$79/mo vs $50K+ Stacks",
-                desc: "14 scanners for $79/mo flat — Snyk charges $25/dev/mo for just one. Your code is analyzed in memory and immediately discarded.",
-                highlight: "10x Cheaper",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card className="h-full border border-border shadow-lg hover:shadow-xl transition-shadow">
-                  <CardContent className="p-8">
-                    <Badge className="mb-4 bg-primary/10 text-primary border-0">{item.highlight}</Badge>
-                    <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3 text-primary">
-                      <item.icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {[
-              {
-                label: "Time to first run",
-                shieldx: "About 60 seconds",
-                traditional: "Often weeks of setup and handoff",
-              },
-              {
-                label: "Starting cost",
-                shieldx: "$79/mo flat — all 14 scanners",
-                traditional: "$25–$105/dev/mo per product",
-              },
-              {
-                label: "Who can run it",
-                shieldx: "Developers and startup teams",
-                traditional: "Dedicated AppSec or platform owners",
-              },
-            ].map((item) => (
-              <Card key={item.label} className="border border-border shadow-sm">
-                <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                  <div className="mt-4 space-y-3 text-sm">
-                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
-                      <div className="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                        ShieldX
-                      </div>
-                      <p className="mt-1 font-medium text-foreground">{item.shieldx}</p>
-                    </div>
-                    <div className="rounded-xl border border-border bg-muted/20 p-3">
-                      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Traditional Tools
-                      </div>
-                      <p className="mt-1 font-medium text-foreground">{item.traditional}</p>
-                    </div>
+              <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4">
+                {heroStats.map((stat) => (
+                  <div key={stat.label} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm">
+                    <div className="text-3xl font-semibold text-white">{stat.value}</div>
+                    <div className="mt-2 text-sm leading-6 text-slate-400">{stat.label}</div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+                ))}
+              </div>
+            </motion.div>
 
-      {/* ═══ HOW SHIELDX DIFFERS ═══ */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="What Sets Us Apart"
-            title="How ShieldX Differs From Other SAST Tools"
-            description="Most scanners solve one piece of the puzzle. ShieldX was built to replace the entire fragmented toolchain."
-          />
-
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                icon: Lock,
-                label: "vs Cloud-Based SAST Platforms",
-                title: "Zero Code Storage",
-                desc: "Your source code is analyzed in memory and immediately discarded. It never hits a database, never leaves your session. No vendor lock-in on your intellectual property.",
-              },
-              {
-                icon: Fingerprint,
-                label: "vs Pattern-Based Scanners",
-                title: "Full Taint Tracking With Visual Dataflow",
-                desc: "ShieldX traces data from user input to dangerous sink across functions and files — not just regex pattern matching. You see the exact path an attacker's payload travels.",
-              },
-              {
-                icon: Code,
-                label: "vs Code Quality Tools",
-                title: "Cross-File Analysis With Auto-Generated Fixes",
-                desc: "Every finding includes CWE/OWASP references, auto-generated fix code with effort estimates, and compliance mapping to SOC 2, PCI-DSS, and ISO 27001.",
-              },
-              {
-                icon: Zap,
-                label: "vs Every Other SAST Tool",
-                title: "Exploit PoC Generator",
-                desc: "ShieldX generates real exploit payloads showing exactly how attackers would exploit each vulnerability — with attack complexity, steps to reproduce, and verification commands. No other SAST tool does this.",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-              >
-                <Card className="h-full border border-border hover:border-primary/40 hover:shadow-lg transition-all duration-300">
-                  <CardContent className="p-7">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="inline-flex rounded-xl bg-primary/10 p-2.5 text-primary">
-                        <item.icon className="h-5 w-5" />
-                      </div>
-                      <Badge variant="outline" className="text-xs text-muted-foreground">{item.label}</Badge>
-                    </div>
-                    <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-muted/50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Platform"
-            title="Security Resources Beyond Scanning"
-            description="Research, learn, and stay ahead — a curated library of AppSec blogs, secure code patterns, vulnerability data, and expert services alongside ShieldX."
-          />
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {features.map((feature) => (
-              <motion.div key={feature.title} variants={itemVariants}>
-                <Link href={feature.href}>
-                  <Card className="h-full transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
-                    <CardContent className="p-6">
-                      <div className="mb-4 inline-flex rounded-lg bg-primary/10 p-3 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        <feature.icon className="h-6 w-6" />
-                      </div>
-                      <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                      <p className="text-muted-foreground text-sm">{feature.description}</p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            viewport={{ once: true }}
-            className="mt-10"
-          >
-            <Card className="overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-background to-cyan-500/5 shadow-lg">
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="max-w-2xl">
-                    <Badge className="mb-3 bg-cyan-100 text-cyan-900 hover:bg-cyan-100 dark:bg-cyan-500/15 dark:text-cyan-200">
-                      AI Security Auditor
-                    </Badge>
-                    <h3 className="text-2xl font-semibold tracking-tight">Audit prompts, outputs, and tool usage before they ship.</h3>
-                    <p className="mt-3 text-sm leading-7 text-muted-foreground sm:text-base">
-                      Use our free AI Security Auditor to review system prompts, model outputs, connected tools, and deployment notes for prompt injection,
-                      data leakage, unsafe tool calling, insecure output handling, and missing guardrails. Export findings as branded PDF, JSON, or CSV.
-                    </p>
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+            >
+              <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,20,31,0.95),rgba(7,16,26,0.94))] p-5 shadow-[0_40px_120px_-52px_rgba(34,211,238,0.45)] backdrop-blur-xl">
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                  <div>
+                    <div className="text-sm font-medium text-slate-200">Unified security control room</div>
+                    <div className="text-xs text-slate-400">Platform, tooling, review, and remediation in one flow</div>
                   </div>
-                  <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:min-w-[220px]">
-                    <Link href="/tools/ai-security-auditor">
-                      <Button size="lg" className="w-full gap-2">
-                        Open AI Auditor
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link href="/blog/topic/ai-security">
-                      <Button size="lg" variant="outline" className="w-full">
-                        Explore AI Security Content
-                      </Button>
-                    </Link>
+                  <Badge className="border border-emerald-400/20 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/10">
+                    Live posture
+                  </Badge>
+                </div>
+
+                <div className="mt-4 rounded-[1.6rem] border border-white/10 bg-[#091522] p-4">
+                  <div className="grid gap-4 md:grid-cols-[1.12fr_0.88fr]">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-white">Security pipeline</div>
+                          <div className="text-xs text-slate-400">What the team sees before release</div>
+                        </div>
+                        <Sparkles className="h-4 w-4 text-cyan-300" />
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        {workflowRows.map((row) => (
+                          <div
+                            key={row.label}
+                            className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-3 py-3"
+                          >
+                            <div className="text-sm text-slate-200">{row.label}</div>
+                            <div className={`rounded-full border px-2.5 py-1 text-xs ${toneClasses(row.tone)}`}>
+                              {row.status}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.08] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-cyan-200">AI Auditor</div>
+                        <div className="mt-2 text-xl font-semibold text-white">Prompt injection risk found</div>
+                        <p className="mt-2 text-sm leading-6 text-cyan-100/80">
+                          Deep review connected tool access, unsafe output rendering, and missing approval gates into one report.
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-slate-400">ShieldX</div>
+                        <div className="mt-2 text-xl font-semibold text-white">14 modules, one workspace</div>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">
+                          Code, cloud, dependencies, IaC, containers, compliance, SBOM, and CI/CD gates without juggling tools.
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-slate-400">SCR Services</div>
+                        <div className="mt-2 text-xl font-semibold text-white">Human review when automation is not enough</div>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">
+                          Pull in expert code review and testing for launches, audits, customer diligence, or complex attack paths.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <div className="mt-12 rounded-2xl border border-primary/15 bg-gradient-to-r from-primary/5 via-background to-transparent p-6 sm:p-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-2xl">
-                <p className="text-sm font-semibold text-primary">Start Here</p>
-                <h3 className="mt-1 text-2xl font-semibold tracking-tight">High-intent security guides we want Google to understand first</h3>
-                <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-                  These are the strongest blog targets for developer search intent, service relevance, and topical authority. They now get direct support from the homepage.
-                </p>
               </div>
-              <Link href="/blog">
-                <Button variant="outline" className="gap-2">
-                  Explore all articles
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+            </motion.div>
+          </div>
+
+          <div className="mt-12 flex flex-wrap gap-3 border-t border-white/10 pt-8 text-sm text-slate-400">
+            <span className="mr-2 text-slate-500">Built for:</span>
+            {marketChips.map((chip) => (
+              <span key={chip} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {chip}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#07131f] py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <Badge className="border border-white/10 bg-white/5 text-slate-200 hover:bg-white/5">
+              Operating model
+            </Badge>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              A platform you can run yourself, with expert backup when you need it.
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-slate-300">
+              The strongest version of the brand is not just a scanner. It is a complete AppSec operating layer with a clear path from self-serve tooling to higher-assurance expert review.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 lg:grid-cols-2">
+            {operatingModels.map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: index * 0.08 }}
+              >
+                <Card className="h-full rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-white shadow-[0_28px_90px_-52px_rgba(15,23,42,0.70)]">
+                  <CardContent className="p-8">
+                    <div className="text-sm font-medium uppercase tracking-[0.24em] text-cyan-200">{item.eyebrow}</div>
+                    <h3 className="mt-4 text-2xl font-semibold tracking-tight">{item.title}</h3>
+                    <p className="mt-4 text-base leading-7 text-slate-300">{item.description}</p>
+                    <div className="mt-6 space-y-3">
+                      {item.bullets.map((bullet) => (
+                        <div key={bullet} className="flex items-start gap-3 text-sm leading-6 text-slate-300">
+                          <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
+                          <span>{bullet}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="mt-8 rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                    >
+                      <Link href={item.href}>
+                        {item.cta}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#05101a] py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <Badge className="border border-white/10 bg-white/5 text-slate-200 hover:bg-white/5">
+                What makes the stack different
+              </Badge>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                Purpose-built around modern AppSec work, not recycled marketing categories.
+              </h2>
+            </div>
+            <p className="max-w-2xl text-base leading-7 text-slate-400">
+              Instead of splitting the story across unrelated pages and products, the homepage now frames SecureCodeReviews as one cohesive system: tools, platform, AI review, and human expertise.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {capabilities.map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.06 }}
+              >
+                <Card className="h-full rounded-[1.8rem] border border-white/10 bg-white/[0.03] text-white">
+                  <CardContent className="p-6">
+                    <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-3 text-cyan-200">
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mt-5 text-xl font-semibold tracking-tight">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-300">{item.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#07131f] py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
+            <div>
+              <Badge className="border border-white/10 bg-white/5 text-slate-200 hover:bg-white/5">
+                Built for modern security teams
+              </Badge>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                From overloaded to in control, without pretending one scanner solves everything.
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-slate-300">
+                The visual direction takes cues from a sharper enterprise cyber look, but the story is your own: practical AppSec tooling, AI-native workflows, and expert review paths designed for real delivery teams.
+              </p>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {featuredSeoGuides.map((guide) => (
-                <Link key={guide.href} href={guide.href}>
-                  <Card className="h-full border-border/70 transition-all hover:border-primary/40 hover:shadow-md">
-                    <CardContent className="p-5">
-                      <p className="text-base font-semibold leading-snug text-foreground">{guide.title}</p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{guide.summary}</p>
-                      <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
-                        Read guide
-                        <ArrowRight className="h-4 w-4" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+            <div className="grid gap-5 md:grid-cols-3">
+              {foundationCards.map((item) => (
+                <Card key={item.title} className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] text-white">
+                  <CardContent className="p-6">
+                    <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-3 text-cyan-200">
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mt-5 text-xl font-semibold tracking-tight">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-300">{item.description}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Case Studies / Sample Reports */}
-      <section className="py-20 bg-muted/50">
+      <section className="border-b border-white/10 bg-[#06111d] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Proven Impact"
-            title="Vulnerabilities Found. Breaches Prevented."
-            description="Real findings from real security engagements — the kind of issues ShieldX catches before attackers do."
-          />
-
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Building2,
-                title: "Fintech Startup — API Security Review",
-                severity: "Critical",
-                badge: "IDOR + Broken Auth",
-                findings: [
-                  "3 Critical IDOR vulnerabilities in payment endpoints",
-                  "JWT secret hard-coded in client-side JS bundle",
-                  "No rate limiting on password reset flow",
-                  "Admin panel exposed without authentication",
-                ],
-                outcome: "All critical issues remediated within 48 hours. Client passed SOC 2 audit the following quarter.",
-                stat: "12 vulnerabilities fixed",
-              },
-              {
-                icon: Cloud,
-                title: "SaaS Platform — Cloud Security Audit",
-                severity: "High",
-                badge: "AWS Misconfig",
-                findings: [
-                  "S3 buckets with public-read ACL containing PII",
-                  "IAM roles with overly permissive wildcard policies",
-                  "RDS instances accessible from public internet",
-                  "CloudTrail logging disabled in 2 regions",
-                ],
-                outcome: "Achieved CIS Benchmark Level 2 compliance. Reduced attack surface by 73%.",
-                stat: "73% attack surface reduction",
-              },
-              {
-                icon: Brain,
-                title: "AI Product — LLM Security Assessment",
-                severity: "Critical",
-                badge: "Prompt Injection",
-                findings: [
-                  "System prompt extractable via indirect injection",
-                  "No output filtering — PII leakage in responses",
-                  "RAG pipeline allowed document exfiltration",
-                  "API keys embedded in LLM context window",
-                ],
-                outcome: "Implemented guardrails, output filtering, and secure RAG architecture. Reduced prompt injection success rate from 67% to under 3%.",
-                stat: "67% → 3% injection rate",
-              },
-            ].map((study, i) => (
-              <motion.div
-                key={study.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card className="h-full hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="inline-flex rounded-lg bg-primary/10 p-2 text-primary">
-                        <study.icon className="h-5 w-5" />
-                      </div>
-                      <Badge variant={study.severity === "Critical" ? "destructive" : "secondary"}>
-                        {study.badge}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-lg">{study.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <ul className="space-y-2">
-                      {study.findings.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-orange-500" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="pt-3 border-t">
-                      <p className="text-sm text-muted-foreground mb-2"><strong className="text-foreground">Outcome:</strong> {study.outcome}</p>
-                      <Badge className="bg-emerald-600 text-white">{study.stat}</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-12 text-center"
-          >
-            <p className="text-muted-foreground mb-4">Want to see a full sample report with findings, severity scores, and remediation guidance?</p>
-            <Link href="/reports">
-              <Button variant="outline" className="gap-2">
-                <FileText className="h-4 w-4" />
-                View Sample Report
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-
-      {/* Why Choose Us */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <SectionHeading
-                badge="Why SCR"
-                title="Ship Secure Code Without Slowing Down"
-                description="One platform replaces fragmented tools — scan, learn, fix, and verify in a single workflow."
-                align="left"
-              />
-
-              <div className="mt-8 space-y-4">
-                  {[
-                    { icon: Fingerprint, text: "80+ AST-based SAST checks with taint analysis and exploit PoC generation" },
-                    { icon: Zap, text: "Scan results in under 60 seconds — no setup, no waiting" },
-                    { icon: CheckCircle2, text: "CWE/OWASP-mapped findings with actionable fix guidance" },
-                    { icon: Shield, text: "9 modules covering secrets, dependencies, APIs, cloud, and more" },
-                  ].map((item) => (
-                  <motion.div
-                    key={item.text}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    className="flex items-start gap-3"
-                  >
-                    <div className="mt-0.5 rounded-full bg-primary/10 p-1">
-                      <item.icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-muted-foreground">{item.text}</span>
-                  </motion.div>
-                ))}
+          <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-start">
+            <div className="rounded-[2rem] border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(8,28,38,0.92),rgba(5,19,29,0.94))] p-8 shadow-[0_36px_110px_-54px_rgba(34,211,238,0.38)]">
+              <Badge className="border border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/10">
+                Free AI Security Auditor
+              </Badge>
+              <h3 className="mt-4 text-3xl font-semibold tracking-tight text-white">
+                Audit prompts, model output, tool access, and deployment notes in one workflow.
+              </h3>
+              <p className="mt-4 text-base leading-8 text-slate-300">
+                This route becomes a stronger product surface when it inherits the same visual language as the homepage: darker atmosphere, clearer hierarchy, and a more premium enterprise feel.
+              </p>
+              <div className="mt-6 space-y-3 text-sm leading-6 text-slate-300">
+                <div className="flex gap-3">
+                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
+                  <span>Fast local mode plus deeper AI-backed workflow review</span>
+                </div>
+                <div className="flex gap-3">
+                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
+                  <span>Prompt injection, leakage, autonomy, and output-risk coverage</span>
+                </div>
+                <div className="flex gap-3">
+                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
+                  <span>Branded PDF, JSON, and CSV reporting</span>
+                </div>
               </div>
-
-              <div className="mt-8">
-                <Link href="/about">
-                  <Button variant="outline" className="gap-2">
-                    Learn More About Us
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild className="rounded-full bg-white text-slate-950 hover:bg-slate-100">
+                  <Link href="/tools/ai-security-auditor">
+                    Open AI Auditor
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/blog/topic/ai-security">Read AI security content</Link>
+                </Button>
               </div>
             </div>
 
-            {/* Visual card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <Card className="relative overflow-hidden">
-                <CardContent className="p-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm font-mono">
-                      <span className="text-muted-foreground">$</span>
-                      <span className="text-primary">scr analyze</span>
-                      <span>--deep-scan</span>
-                    </div>
-                    <div className="rounded-lg bg-muted p-4 font-mono text-sm space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>Scanning 247 files...</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>Analyzing dependencies...</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>Checking for known CVEs...</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-chart-5" />
-                        <span>Found 3 critical vulnerabilities</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-chart-4" />
-                        <span>Found 7 warnings</span>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2 text-primary font-semibold">
-                        <Shield className="h-4 w-4" />
-                        <span>Report generated successfully</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Security Insights Charts */}
-      <section className="py-20 bg-muted/50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Threat Landscape"
-            title="Why AppSec Can't Wait"
-            description="Real data from CVE databases and IBM breach reports — the threat landscape is accelerating, and the cost of doing nothing keeps rising."
-          />
-
-          <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Vulnerability Trends Chart */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <Card className="overflow-hidden border border-border shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="rounded-lg bg-primary/10 p-1.5">
-                        <BarChart3 className="h-4 w-4 text-primary" />
-                      </div>
-                      CVE Vulnerability Trends
-                    </CardTitle>
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2019–2024</span>
-                  </div>
-                  {/* Mini legend */}
-                  <div className="flex flex-wrap gap-3 mt-3">
-                    {[
-                      { label: "Critical", color: "bg-red-500" },
-                      { label: "High", color: "bg-amber-500" },
-                      { label: "Medium", color: "bg-blue-500" },
-                      { label: "Low", color: "bg-emerald-500" },
-                    ].map((l) => (
-                      <div key={l.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <span className={`h-2.5 w-2.5 rounded-full ${l.color}`} />
-                        {l.label}
-                      </div>
-                    ))}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4 pb-6">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={vulnerabilityTrends} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="gradCritical" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
-                          <stop offset="100%" stopColor="#ef4444" stopOpacity={0.02} />
-                        </linearGradient>
-                        <linearGradient id="gradHigh" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.35} />
-                          <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.02} />
-                        </linearGradient>
-                        <linearGradient id="gradMedium" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
-                        </linearGradient>
-                        <linearGradient id="gradLow" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
-                          <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} vertical={false} />
-                      <XAxis
-                        dataKey="year"
-                        fontSize={11}
-                        tick={{ fill: "hsl(var(--muted-foreground))" }}
-                        axisLine={{ stroke: "hsl(var(--border))" }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        fontSize={11}
-                        tick={{ fill: "hsl(var(--muted-foreground))" }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "12px",
-                          color: "hsl(var(--popover-foreground))",
-                          boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
-                          padding: "12px 16px",
-                          fontSize: "13px",
-                        }}
-                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                        labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600, marginBottom: 6, fontSize: 14 }}
-                        cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1, strokeDasharray: "4 4" }}
-                      />
-                      <Area type="monotone" dataKey="low" stroke="#10b981" strokeWidth={2} fill="url(#gradLow)" name="Low" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
-                      <Area type="monotone" dataKey="medium" stroke="#3b82f6" strokeWidth={2} fill="url(#gradMedium)" name="Medium" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
-                      <Area type="monotone" dataKey="high" stroke="#f59e0b" strokeWidth={2} fill="url(#gradHigh)" name="High" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
-                      <Area type="monotone" dataKey="critical" stroke="#ef4444" strokeWidth={2.5} fill="url(#gradCritical)" name="Critical" dot={false} activeDot={{ r: 5, strokeWidth: 2 }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                  {/* Trend insight */}
-                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                    <span>Critical CVEs increased <strong className="text-red-500">197%</strong> from 2019 to 2024 — nearly tripling in 5 years.</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Attack Vectors — Donut with Custom Legend */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card className="overflow-hidden border border-border shadow-lg h-full">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="rounded-lg bg-primary/10 p-1.5">
-                        <Shield className="h-4 w-4 text-primary" />
-                      </div>
-                      Top Attack Vectors
-                    </CardTitle>
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-2 pb-6">
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
-                    {/* Donut chart */}
-                    <div className="relative flex-shrink-0">
-                      <ResponsiveContainer width={220} height={220}>
-                        <PieChart>
-                          <defs>
-                            {attackVectors.map((entry, i) => (
-                              <linearGradient key={`pie-grad-${i}`} id={`pieGrad${i}`} x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
-                                <stop offset="100%" stopColor={entry.color} stopOpacity={0.7} />
-                              </linearGradient>
-                            ))}
-                          </defs>
-                          <Pie
-                            data={attackVectors}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={62}
-                            outerRadius={95}
-                            paddingAngle={4}
-                            dataKey="value"
-                            stroke="none"
-                            cornerRadius={6}
-                          >
-                            {attackVectors.map((_, index) => (
-                              <Cell key={`cell-${index}`} fill={`url(#pieGrad${index})`} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--popover))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: "12px",
-                              color: "hsl(var(--popover-foreground))",
-                              boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
-                              padding: "8px 14px",
-                              fontSize: "13px",
-                            }}
-                            itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                            labelStyle={{ color: "hsl(var(--popover-foreground))" }}
-                            formatter={(value) => [`${value}%`, "Share"]}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      {/* Center label */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-2xl font-bold">100%</span>
-                        <span className="text-[10px] text-muted-foreground">Total Attacks</span>
-                      </div>
-                    </div>
-
-                    {/* Custom legend */}
-                    <div className="flex-1 w-full space-y-2.5 min-w-0">
-                      {attackVectors.map((item) => (
-                        <div key={item.name} className="flex items-center gap-3 group">
-                          <div className="h-3 w-3 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium truncate">{item.name}</span>
-                              <span className="text-sm font-semibold tabular-nums">{item.value}%</span>
-                            </div>
-                            <div className="mt-1 h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                              <motion.div
-                                className="h-full rounded-full"
-                                style={{ backgroundColor: item.color }}
-                                initial={{ width: 0 }}
-                                whileInView={{ width: `${item.value * (100 / 28)}%` }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                              />
-                            </div>
-                          </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              {resources.map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.06 }}
+                >
+                  <Link href={item.href}>
+                    <Card className="h-full rounded-[1.8rem] border border-white/10 bg-white/[0.03] text-white transition-colors hover:border-cyan-400/30 hover:bg-white/[0.05]">
+                      <CardContent className="p-6">
+                        <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-3 text-cyan-200">
+                          <item.icon className="h-5 w-5" />
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Insight */}
-                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-emerald-500/5 border border-emerald-500/10 rounded-lg px-3 py-2">
-                    <Shield className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    <span><strong className="text-emerald-500">Injection attacks</strong> remain the top vector — affecting over 1 in 4 applications.</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Breach Cost by Industry — Horizontal Bar with gradient bars */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="lg:col-span-2"
-            >
-              <Card className="overflow-hidden border border-border shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-2">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="rounded-lg bg-primary/10 p-1.5">
-                        <BarChart3 className="h-4 w-4 text-primary" />
-                      </div>
-                      Average Data Breach Cost by Industry
-                    </CardTitle>
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">2024 — IBM Cost of a Data Breach Report</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4 pb-6">
-                  {/* Custom visual bars instead of basic Recharts */}
-                  <div className="space-y-4">
-                    {breachCosts.map((item, i) => {
-                      const maxCost = 9.77;
-                      const pct = (item.cost / maxCost) * 100;
-                      const isAverage = item.industry === "Average";
-                      return (
-                        <motion.div
-                          key={item.industry}
-                          initial={{ opacity: 0, x: -20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: i * 0.07 }}
-                          className={`group ${isAverage ? "pt-3 border-t border-dashed border-border" : ""}`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="w-24 sm:w-28 text-right">
-                              <span className={`text-sm font-medium ${isAverage ? "text-muted-foreground italic" : ""}`}>
-                                {item.industry}
-                              </span>
-                            </div>
-                            <div className="flex-1 flex items-center gap-3">
-                              <div className="flex-1 h-8 bg-muted/60 rounded-lg overflow-hidden relative">
-                                <motion.div
-                                  className="h-full rounded-lg flex items-center justify-end pr-3 relative overflow-hidden"
-                                  style={{ backgroundColor: item.fill }}
-                                  initial={{ width: 0 }}
-                                  whileInView={{ width: `${pct}%` }}
-                                  viewport={{ once: true }}
-                                  transition={{ duration: 0.8, delay: i * 0.07, ease: "easeOut" }}
-                                >
-                                  {/* Glossy overlay */}
-                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-                                  {pct > 35 && (
-                                    <span className="relative text-xs font-bold text-white drop-shadow-sm">
-                                      ${item.cost.toFixed(2)}M
-                                    </span>
-                                  )}
-                                </motion.div>
-                              </div>
-                              {pct <= 35 && (
-                                <span className="text-sm font-semibold tabular-nums" style={{ color: item.fill }}>
-                                  ${item.cost.toFixed(2)}M
-                                </span>
-                              )}
-                              {pct > 35 && <div className="w-16" />}
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                  {/* Insight */}
-                  <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground bg-red-500/5 border border-red-500/10 rounded-lg px-3 py-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                    <span>Healthcare breaches cost <strong className="text-red-500">$9.77M on average</strong> — nearly double the cross-industry mean of $4.88M.</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <Link href="/vulnerabilities">
-              <Button variant="outline" className="gap-2">
-                Explore Full Vulnerability Dashboard
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+                        <h3 className="mt-5 text-xl font-semibold tracking-tight">{item.title}</h3>
+                        <p className="mt-3 text-sm leading-7 text-slate-300">{item.description}</p>
+                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-cyan-200">
+                          Explore
+                          <ArrowRight className="h-4 w-4" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <Badge className="mb-4 bg-primary/10 text-primary border-0">Start Scanning Now</Badge>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Your Code Has Vulnerabilities. Find Them Before Attackers Do.
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              14 scanners. 80+ checks. Exploit PoC generation, SBOM generation, and compliance mapping. $79/mo flat — not per developer, not per product. Try ShieldX free or request Pro access.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/shieldx">
-                <Button size="lg" className="gap-2 text-base px-8 h-12 rounded-xl shadow-lg shadow-primary/20">
-                  <Rocket className="h-5 w-5" />
-                  Try ShieldX Free
+      <section className="bg-[#040b14] py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-[2.4rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_24%),linear-gradient(135deg,_rgba(8,17,29,1),_rgba(9,22,35,0.98))] p-10 text-white shadow-[0_40px_120px_-60px_rgba(34,211,238,0.42)] sm:p-12">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div className="max-w-3xl">
+                <Badge className="border border-white/10 bg-white/5 text-slate-200 hover:bg-white/5">
+                  Start here
+                </Badge>
+                <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Bring the site into a more premium enterprise posture without losing your AppSec identity.
+                </h2>
+                <p className="mt-4 text-lg leading-8 text-slate-300">
+                  The homepage now establishes the visual system. From here, the same direction can be extended across tools, services, blog surfaces, and product pages until the whole brand feels consistent.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+                <Button asChild size="lg" className="rounded-full bg-white text-slate-950 hover:bg-slate-100">
+                  <Link href="/contact">Request a security review</Link>
                 </Button>
-              </Link>
-              <Link href="/contact?subject=ShieldX+Pro+Subscription+Request">
-                <Button size="lg" variant="outline" className="gap-2 text-base px-8 h-12 rounded-xl">
-                  <Shield className="h-5 w-5" />
-                  Request Pro Access
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/shieldx">See ShieldX</Link>
                 </Button>
-              </Link>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>
