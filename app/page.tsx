@@ -61,7 +61,7 @@ const operatingModels = [
     bullets: [
       "Unified scanners for code, dependencies, cloud, containers, IaC, and CI/CD",
       "Fast triage with evidence, CWE and OWASP mapping, and remediation guidance",
-      "Exports and reports your team can use internally or share with customers and auditors",
+      "Exports and reports you can share with engineering teams, customers, and auditors",
     ],
     href: "/shieldx",
     cta: "Open ShieldX",
@@ -119,7 +119,7 @@ const foundationCards = [
     icon: Zap,
     title: "Fast enough for pre-launch review",
     description:
-      "Run a focused audit before demos, releases, customer diligence, or internal security review without setting up a heavyweight program first.",
+      "Run a focused audit before demos, releases, customer diligence, or formal security review without setting up a heavyweight program first.",
   },
   {
     icon: Lock,
