@@ -325,7 +325,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-b border-white/10 bg-[#07131f] py-20">
+      <section className="border-b border-white/10 bg-[linear-gradient(180deg,#06111d_0%,#07131f_48%,#05101a_100%)] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <Badge className="border border-white/10 bg-white/5 text-slate-200 hover:bg-white/5">
@@ -348,7 +348,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: index * 0.08 }}
               >
-                <Card className="h-full rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-white shadow-[0_28px_90px_-52px_rgba(15,23,42,0.70)]">
+                <Card className="h-full rounded-[2rem] border border-cyan-400/12 bg-[linear-gradient(180deg,rgba(9,18,31,0.96),rgba(8,22,36,0.98))] text-white shadow-[0_28px_90px_-52px_rgba(2,8,23,0.90)] backdrop-blur-xl">
                   <CardContent className="p-8">
                     <div className="text-sm font-medium uppercase tracking-[0.24em] text-cyan-200">{item.eyebrow}</div>
                     <h3 className="mt-4 text-2xl font-semibold tracking-tight">{item.title}</h3>
