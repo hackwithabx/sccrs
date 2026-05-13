@@ -348,14 +348,14 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: index * 0.08 }}
               >
-                <Card className="h-full rounded-[2rem] border border-cyan-400/12 bg-[linear-gradient(180deg,rgba(9,18,31,0.96),rgba(8,22,36,0.98))] text-white shadow-[0_28px_90px_-52px_rgba(2,8,23,0.90)] backdrop-blur-xl">
+                <Card className="h-full rounded-[2rem] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(10,20,34,0.98),rgba(8,22,36,1))] text-white shadow-[0_28px_90px_-52px_rgba(2,8,23,0.90)] backdrop-blur-xl">
                   <CardContent className="p-8">
                     <div className="text-sm font-medium uppercase tracking-[0.24em] text-cyan-200">{item.eyebrow}</div>
-                    <h3 className="mt-4 text-2xl font-semibold tracking-tight">{item.title}</h3>
-                    <p className="mt-4 text-base leading-7 text-slate-300">{item.description}</p>
+                    <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">{item.title}</h3>
+                    <p className="mt-4 text-base leading-7 text-slate-200">{item.description}</p>
                     <div className="mt-6 space-y-3">
                       {item.bullets.map((bullet) => (
-                        <div key={bullet} className="flex items-start gap-3 text-sm leading-6 text-slate-300">
+                        <div key={bullet} className="flex items-start gap-3 text-sm leading-6 text-slate-200">
                           <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
                           <span>{bullet}</span>
                         </div>
