@@ -350,12 +350,12 @@ export default function HomePage() {
               >
                 <Card className="h-full rounded-[2rem] border border-cyan-400/18 bg-[linear-gradient(180deg,rgba(10,20,34,0.98),rgba(8,22,36,1))] text-white shadow-[0_28px_90px_-52px_rgba(2,8,23,0.90)] backdrop-blur-xl">
                   <CardContent className="p-8">
-                    <div className="text-sm font-medium uppercase tracking-[0.24em] text-cyan-200">{item.eyebrow}</div>
+                    <div className="text-sm font-medium uppercase tracking-[0.24em] text-cyan-100">{item.eyebrow}</div>
                     <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">{item.title}</h3>
-                    <p className="mt-4 text-base leading-7 text-slate-200">{item.description}</p>
+                    <p className="mt-4 text-base leading-7 text-slate-100">{item.description}</p>
                     <div className="mt-6 space-y-3">
                       {item.bullets.map((bullet) => (
-                        <div key={bullet} className="flex items-start gap-3 text-sm leading-6 text-slate-200">
+                        <div key={bullet} className="flex items-start gap-3 text-sm leading-6 text-slate-100">
                           <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
                           <span>{bullet}</span>
                         </div>
@@ -364,7 +364,7 @@ export default function HomePage() {
                     <Button
                       asChild
                       variant="outline"
-                      className="mt-8 rounded-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                      className="mt-8 rounded-full border-white/20 bg-white text-slate-950 hover:bg-slate-100 hover:text-slate-950"
                     >
                       <Link href={item.href}>
                         {item.cta}
