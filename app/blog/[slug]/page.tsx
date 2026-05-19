@@ -15,12 +15,16 @@ import MarkdownRenderer from "@/components/markdown-renderer";
 import { ReadingProgress } from "@/components/reading-progress";
 import { TableOfContents } from "@/components/table-of-contents";
 import { ShareButtons } from "@/components/share-buttons";
+import {
+  buildPostDescription,
+  buildPostKeywords,
+  buildPostMeta,
+  DEFAULT_BLOG_OG_IMAGE,
+} from "@/lib/blog-seo";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }
-
-const DEFAULT_OG_IMAGE = "/og-image.png";
 
 function slugify(text: string) {
   return String(text)
@@ -70,17 +74,6 @@ function extractHeadingLinks(content: string) {
   return links;
 }
 
-function buildPostKeywords(post: { title: string; category: string; tags: string[] }) {
-  return [...new Set([
-    post.title,
-    post.category,
-    `${post.category} guide`,
-    `${post.category} best practices`,
-    "SecureCodeReviews blog",
-    ...post.tags,
-  ])];
-}
-
 export async function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
 }
@@ -90,14 +83,16 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   const post = blogPosts.find((p) => p.slug === slug);
   if (!post) return { title: "Post Not Found" };
 
-  const image = post.image || DEFAULT_OG_IMAGE;
+  const meta = buildPostMeta(post);
+  const image = post.image || meta.image;
   const lastModified = getPostLastModified(post);
-  const keywords = buildPostKeywords(post);
 
   return {
-    title: `${post.title} | SecureCodeReviews Blog`,
-    description: post.excerpt,
-    keywords,
+    title: {
+      absolute: meta.title,
+    },
+    description: meta.description,
+    keywords: meta.keywords,
     authors: [{ name: post.author }],
     creator: post.author,
     publisher: "SecureCodeReviews",
@@ -113,23 +108,30 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
         "max-video-preview": -1,
       },
     },
+    other: {
+      "article:published_time": post.date,
+      "article:modified_time": lastModified,
+      "article:section": post.category,
+      "article:tag": meta.keywords.slice(0, 12),
+      news_keywords: meta.keywords.slice(0, 10).join(", "),
+    },
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
+      title: meta.title,
+      description: meta.description,
       type: "article",
-      url: `https://securecodereviews.com/blog/${slug}`,
+      url: meta.url,
       siteName: "SecureCodeReviews",
       publishedTime: post.date,
       modifiedTime: lastModified,
       section: post.category,
       authors: [post.author],
-      tags: post.tags,
+      tags: meta.keywords,
       images: [{ url: image, width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
-      description: post.excerpt,
+      title: meta.title,
+      description: meta.description,
       images: [image],
     },
     alternates: {
@@ -146,7 +148,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
-  const image = post.image || DEFAULT_OG_IMAGE;
+  const metaDescription = buildPostDescription(post);
+  const image = post.image || DEFAULT_BLOG_OG_IMAGE;
   const headingLinks = extractHeadingLinks(post.content).slice(0, 8);
   const wordCount = estimateWordCount(post.content);
   const lastModified = getPostLastModified(post);
@@ -162,7 +165,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             "@context": "https://schema.org",
             "@type": "TechArticle",
             headline: post.title,
-            description: post.excerpt,
+            description: metaDescription,
             image: [`https://securecodereviews.com${image}`],
             author: {
               "@type": "Person",
@@ -333,6 +336,62 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <div className="prose prose-neutral dark:prose-invert max-w-none">
           <MarkdownRenderer content={post.content} />
         </div>
+
+        <Card className="mb-8 mt-8 border-border/70 bg-background/80">
+          <CardContent className="p-6 sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-2xl space-y-3">
+                <Badge variant="outline" className="w-fit">Editorial standards</Badge>
+                <h2 className="text-2xl font-semibold tracking-tight">Published by SecureCodeReviews</h2>
+                <p className="text-sm leading-6 text-muted-foreground sm:text-base">
+                  This article is part of our original AI security and cybersecurity content library. We show publish and update dates, keep company and policy pages public, and update important guidance when material changes affect readers.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border bg-background/80 p-3 text-sm text-muted-foreground">
+                    Named author: {post.author}
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-3 text-sm text-muted-foreground">
+                    Published: {new Date(post.date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-3 text-sm text-muted-foreground">
+                    {hasUpdatedDate
+                      ? `Updated: ${new Date(lastModified).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}`
+                      : "Update status: current publication version"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full max-w-sm rounded-2xl border bg-background/90 p-5 shadow-sm">
+                <p className="text-sm font-semibold">Questions or corrections?</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Review our editorial standards, learn more about the company, or contact us if a page needs clarification.
+                </p>
+                <div className="mt-4 space-y-3">
+                  <Link href="/editorial-policy">
+                    <Button variant="outline" className="w-full">Editorial Policy</Button>
+                  </Link>
+                  <Link href="/about">
+                    <Button variant="outline" className="w-full">About SecureCodeReviews</Button>
+                  </Link>
+                  <Link href="/contact?subject=Content+Question+or+Correction">
+                    <Button className="w-full gap-2">
+                      Contact the team
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <ArticleCta category={post.category} tags={post.tags} title={post.title} />
 

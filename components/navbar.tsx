@@ -2,60 +2,67 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { signOut, useSession } from "next-auth/react";
 import {
   ArrowRight,
   BookOpen,
-  Briefcase,
-  Info,
+  CreditCard,
   LayoutDashboard,
   LogOut,
-  Mail,
   Menu,
   Shield,
-  Wrench,
+  Sparkles,
   X,
 } from "lucide-react";
 
-interface NavLink {
+interface NavItem {
   href: string;
   label: string;
-  highlight?: boolean;
   matchAlso?: string[];
 }
 
-const navLinks: NavLink[] = [
-  { href: "/shieldx", label: "ShieldX", highlight: true },
-  { href: "/services", label: "Services" },
-  { href: "/tools", label: "Tools" },
-  { href: "/owasp", label: "Learn", matchAlso: ["/secure-code", "/cloud-security", "/vulnerabilities"] },
+const navItems: NavItem[] = [
+  {
+    href: "/products/ai-security-auditor",
+    label: "AI Auditor",
+    matchAlso: ["/tools/ai-security-auditor"],
+  },
+  {
+    href: "/products/shieldx",
+    label: "ShieldX",
+    matchAlso: ["/shieldx"],
+  },
+  {
+    href: "/pricing",
+    label: "Pricing",
+    matchAlso: ["/shieldx/pricing"],
+  },
+  {
+    href: "/learn",
+    label: "Learn",
+    matchAlso: ["/owasp", "/secure-code", "/cloud-security", "/vulnerabilities"],
+  },
   { href: "/blog", label: "Blog" },
-  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 
-const mobileIcons = {
-  "/shieldx": Shield,
-  "/services": Briefcase,
-  "/tools": Wrench,
-  "/owasp": BookOpen,
-  "/blog": BookOpen,
-  "/about": Info,
-  "/contact": Mail,
-};
+function isActivePath(pathname: string, item: NavItem) {
+  if (pathname === item.href) return true;
+  if (item.matchAlso?.some((entry) => pathname.startsWith(entry))) return true;
+  return item.href !== "/" && pathname.startsWith(item.href);
+}
 
 export function Navbar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { data: session } = useSession();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -65,16 +72,6 @@ export function Navbar() {
     };
   }, [mobileOpen]);
 
-  const isActive = useCallback(
-    (href: string, matchAlso?: string[]) => {
-      if (pathname === href) return true;
-      if (href !== "/" && pathname.startsWith(href)) return true;
-      if (matchAlso?.some((item) => pathname.startsWith(item))) return true;
-      return false;
-    },
-    [pathname]
-  );
-
   if (pathname.startsWith("/demos")) return null;
 
   return (
@@ -82,44 +79,40 @@ export function Navbar() {
       <header
         className={`sticky top-0 z-[120] w-full border-b transition-all duration-300 ${
           scrolled
-            ? "border-white/10 bg-[#07111d]/86 shadow-[0_12px_40px_-24px_rgba(0,0,0,0.75)] backdrop-blur-xl"
-            : "border-white/10 bg-[#07111d]/70 backdrop-blur-lg"
+            ? "border-slate-200/80 bg-white/80 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.28)] backdrop-blur-2xl"
+            : "border-transparent bg-white/55 backdrop-blur-xl"
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="group flex min-w-0 items-center gap-3">
-            <div className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
-              <Shield className="h-5 w-5 transition-transform group-hover:scale-110" />
+        <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-200/80 bg-white shadow-[0_12px_30px_-18px_rgba(20,101,255,0.42)]">
+              <Shield className="h-5 w-5 text-blue-700" />
             </div>
-            <span className="truncate text-lg font-semibold tracking-tight text-white sm:text-xl">
-              Secure<span className="text-cyan-300">Code</span>Reviews
-            </span>
+            <div className="min-w-0">
+              <div className="truncate text-lg font-semibold tracking-tight text-slate-950">
+                Secure<span className="text-blue-600">Code</span>Reviews
+              </div>
+              <div className="hidden items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 sm:flex">
+                <Sparkles className="h-3.5 w-3.5 text-cyan-600" />
+                AI Security Platform
+              </div>
+            </div>
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex">
-            {navLinks.map(({ href, label, highlight, matchAlso }) => {
-              const active = isActive(href, matchAlso);
-
+            {navItems.map((item) => {
+              const active = isActivePath(pathname, item);
               return (
                 <Link
-                  key={href}
-                  href={href}
-                  className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-full px-4 py-2 text-sm font-medium ${
                     active
-                      ? "bg-white/10 text-white"
-                      : highlight
-                        ? "text-cyan-200 hover:bg-cyan-400/10 hover:text-cyan-100"
-                        : "text-slate-300 hover:bg-white/5 hover:text-white"
+                      ? "bg-slate-950 text-white shadow-[0_18px_35px_-26px_rgba(15,23,42,0.45)]"
+                      : "text-slate-600 hover:bg-white hover:text-slate-950"
                   }`}
                 >
-                  {label}
-                  {active ? (
-                    <motion.span
-                      layoutId="nav-indicator"
-                      className="absolute inset-x-4 -bottom-[9px] h-px bg-cyan-300"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  ) : null}
+                  {item.label}
                 </Link>
               );
             })}
@@ -130,14 +123,14 @@ export function Navbar() {
               <div className="hidden items-center gap-2 lg:flex">
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-600 hover:bg-white hover:text-slate-950"
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-600 hover:bg-white hover:text-slate-950"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out
@@ -147,23 +140,23 @@ export function Navbar() {
               <div className="hidden items-center gap-2 lg:flex">
                 <Link
                   href="/auth/login"
-                  className="rounded-full px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 hover:bg-white hover:text-slate-950"
                 >
                   Sign in
                 </Link>
                 <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100"
+                  href="/contact?subject=AI+Security+Audit+Request"
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_24px_40px_-28px_rgba(15,23,42,0.65)] hover:bg-blue-700"
                 >
-                  Request review
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  Book audit
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             )}
 
             <button
               onClick={() => setMobileOpen((value) => !value)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-white/5 lg:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-900 shadow-sm lg:hidden"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -172,111 +165,101 @@ export function Navbar() {
         </div>
       </header>
 
-      <AnimatePresence>
-        {mobileOpen ? (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[130] bg-black/55 backdrop-blur-sm lg:hidden"
-              onClick={() => setMobileOpen(false)}
-            />
-
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 right-0 z-[140] flex h-[100svh] w-[min(86vw,330px)] flex-col overflow-hidden border-l border-white/10 bg-[#06111d]/96 shadow-2xl backdrop-blur-xl lg:hidden"
-            >
-              <div className="flex h-16 items-center justify-between border-b border-white/10 px-4 pt-[env(safe-area-inset-top)]">
-                <span className="text-lg font-semibold text-white">Navigation</span>
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/5"
-                  aria-label="Close menu"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-[130] lg:hidden">
+          <button
+            className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+          />
+          <div className="absolute inset-y-0 right-0 flex w-[min(88vw,360px)] flex-col border-l border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,248,255,0.98))] px-5 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-slate-950">Navigation</div>
+                <div className="text-xs text-slate-500">AI security, product, and learning paths</div>
               </div>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-              <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
-                <ul className="space-y-1">
-                  {navLinks.map(({ href, label, highlight, matchAlso }) => {
-                    const active = isActive(href, matchAlso);
-                    const Icon = mobileIcons[href as keyof typeof mobileIcons] || Shield;
+            <nav className="mt-6 flex-1 space-y-2 overflow-y-auto">
+              {navItems.map((item) => {
+                const active = isActivePath(pathname, item);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium ${
+                      active ? "bg-slate-950 text-white" : "bg-white/80 text-slate-700"
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                );
+              })}
+            </nav>
 
-                    return (
-                      <li key={href}>
-                        <Link
-                          href={href}
-                          onClick={() => setMobileOpen(false)}
-                          className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
-                            active
-                              ? "bg-white/10 text-white"
-                              : highlight
-                                ? "text-cyan-200 hover:bg-cyan-400/10"
-                                : "text-slate-300 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          {label}
-                          {active ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-300" /> : null}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </nav>
-
-              <div className="border-t border-white/10 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-                {session ? (
-                  <div className="space-y-2">
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-white hover:bg-white/5"
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setMobileOpen(false);
-                        signOut({ callbackUrl: "/" });
-                      }}
-                      className="flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Link
-                      href="/auth/login"
-                      onClick={() => setMobileOpen(false)}
-                      className="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white"
-                    >
-                      Sign in
-                    </Link>
-                    <Link
-                      href="/contact"
-                      onClick={() => setMobileOpen(false)}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950"
-                    >
-                      Request review
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        ) : null}
-      </AnimatePresence>
+            <div className="mt-5 space-y-2 border-t border-slate-200 pt-5">
+              {session ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-800"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
+                    className="flex w-full items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-800"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-800"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-800"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Pricing
+                  </Link>
+                  <Link
+                    href="/contact?subject=AI+Security+Audit+Request"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Book audit
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

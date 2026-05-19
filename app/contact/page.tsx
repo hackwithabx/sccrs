@@ -4,28 +4,22 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CheckCircle2,
+  Clock,
+  Crown,
+  Mail,
+  MapPin,
+  Send,
+  Shield,
+  Zap,
+} from "lucide-react";
+
+import { SectionHeading } from "@/components/section-heading";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SectionHeading } from "@/components/section-heading";
-import {
-  Mail,
-  Send,
-  CheckCircle2,
-  MapPin,
-  Clock,
-  MessageSquare,
-  Shield,
-  Crown,
-  Zap,
-} from "lucide-react";
 
 type SubscriptionPlan = "pro" | "enterprise";
 
@@ -77,9 +71,7 @@ function ContactPageInner() {
   const presetSubject =
     querySubject ||
     (isSubscriptionRequest
-      ? `ShieldX Subscription Request - ${
-          requestedPlan ? PLAN_LABELS[requestedPlan] : "Plan Inquiry"
-        }`
+      ? `ShieldX Subscription Request - ${requestedPlan ? PLAN_LABELS[requestedPlan] : "Plan Inquiry"}`
       : "");
 
   const presetMessage =
@@ -107,13 +99,13 @@ function ContactPageInner() {
     setError("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const res = await fetch("/api/contact", {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -126,293 +118,205 @@ function ContactPageInner() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
+      const data = await response.json();
+      if (!response.ok) {
         throw new Error(data.error || "Failed to send message");
       }
 
       setSubmitted(true);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again."
-      );
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const subscriptionLabel = requestedPlan ? PLAN_LABELS[requestedPlan] : "ShieldX";
 
   const contactInfo = [
     {
       icon: Mail,
-      label: "Email Us",
+      label: "Email",
       value: "support@securecodereviews.com",
       href: "mailto:support@securecodereviews.com",
     },
     {
       icon: Clock,
-      label: "Response Time",
+      label: "Response time",
       value: isSubscriptionRequest ? "Within 1 business day" : "Within 24 hours",
       href: null,
     },
     {
       icon: MapPin,
-      label: "Location",
-      value: "Remote-first, Worldwide",
+      label: "Coverage",
+      value: "Remote-first, worldwide",
       href: null,
     },
   ];
 
   return (
-    <div className="py-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          badge={isSubscriptionRequest ? "ShieldX Sales" : "Contact"}
-          title={isSubscriptionRequest ? "Request ShieldX Subscription" : "Get in Touch"}
-          description={
-            isSubscriptionRequest
-              ? "Tell us which ShieldX plan you want, who will use it, and when you want to start. We will reply with next steps for activation and billing."
-              : "Have a question about our services or need help with application security? We'd love to hear from you."
-          }
-        />
+    <div className="site-shell mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+      <div className="grid gap-8 lg:grid-cols-[0.98fr_1.02fr] lg:items-start">
+        <div className="space-y-6">
+          <SectionHeading
+            badge={isSubscriptionRequest ? "Sales" : "Contact"}
+            title={isSubscriptionRequest ? "Request a SecureCodeReviews plan" : "Talk to the security team"}
+            description={
+              isSubscriptionRequest
+                ? "Tell us which plan you need, who will use it, and what rollout timeline you are targeting."
+                : "Use this page for AI security audits, ShieldX subscriptions, cloud security reviews, and general support questions."
+            }
+          />
 
-        <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-1">
-            {contactInfo.map((item, i) => (
+          <div className="surface-card-strong rounded-[2rem] p-6">
+            <div className="text-sm font-semibold text-slate-950">Choose the right path</div>
+            <div className="mt-4 space-y-3">
+              {[
+                ["AI security audit", "Prompt injection, data leakage, unsafe output, and agent workflow review."],
+                ["ShieldX subscription", "Free, Pro, or Enterprise pricing conversations and onboarding."],
+                ["Cloud and DevSecOps review", "Delivery pipeline, cloud posture, and release security support."],
+              ].map(([title, description]) => (
+                <div key={title} className="rounded-[1.35rem] bg-white px-4 py-4 shadow-sm">
+                  <div className="text-sm font-semibold text-slate-950">{title}</div>
+                  <div className="mt-2 text-sm leading-7 text-slate-600">{description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {contactInfo.map((item, index) => (
               <motion.div
                 key={item.label}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: index * 0.06 }}
               >
-                <Card>
-                  <CardContent className="flex items-center gap-4 p-5">
-                    <div className="shrink-0 rounded-lg bg-primary/10 p-3 text-primary">
+                <Card className="surface-card h-full rounded-[1.7rem] border-0">
+                  <CardContent className="p-5">
+                    <div className="inline-flex rounded-2xl bg-blue-50 p-3 text-blue-700">
                       <item.icon className="h-5 w-5" />
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">{item.label}</p>
-                      {item.href ? (
-                        <a
-                          href={item.href}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {item.value}
-                        </a>
-                      ) : (
-                        <p className="font-medium">{item.value}</p>
-                      )}
-                    </div>
+                    <div className="mt-4 text-sm text-slate-500">{item.label}</div>
+                    {item.href ? (
+                      <a href={item.href} className="mt-2 block text-sm font-semibold text-slate-950 hover:text-blue-700">
+                        {item.value}
+                      </a>
+                    ) : (
+                      <div className="mt-2 text-sm font-semibold text-slate-950">{item.value}</div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-            >
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="space-y-3 p-5">
-                  <div className="flex items-center gap-2">
-                    {isSubscriptionRequest ? (
-                      <Crown className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Shield className="h-5 w-5 text-primary" />
-                    )}
-                    <span className="font-semibold">
-                      {isSubscriptionRequest
-                        ? "ShieldX Subscription Request"
-                        : "Enterprise Support"}
-                    </span>
-                  </div>
-
-                  {isSubscriptionRequest ? (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        This request will be marked as a ShieldX subscription inquiry
-                        so we can reply with the right onboarding and billing steps.
-                      </p>
-                      <div className="rounded-xl border border-primary/15 bg-background/80 p-4 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-muted-foreground">Requested plan</span>
-                          <span className="font-semibold text-foreground">
-                            {subscriptionLabel}
-                          </span>
-                        </div>
-                        <div className="mt-3 flex items-start gap-2 text-muted-foreground">
-                          <Zap className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                          <span>
-                            Add team size, billing email, and rollout timeline so we can
-                            process the request faster.
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        Need a dedicated security consultant, a custom assessment, or a
-                        larger ShieldX rollout? Reach out and we will tailor the right
-                        engagement for your team.
-                      </p>
-                      <a href="mailto:support@securecodereviews.com">
-                        <Button size="sm" variant="outline" className="mt-1 gap-2">
-                          <Mail className="h-4 w-4" />
-                          support@securecodereviews.com
-                        </Button>
-                      </a>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="lg:col-span-2"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  {isSubscriptionRequest ? "Request Subscription" : "Send Us a Message"}
-                </CardTitle>
-                <CardDescription>
-                  {isSubscriptionRequest
-                    ? "We will review your request and reply with plan guidance, activation details, and next billing steps."
-                    : "Fill out the form below and we will get back to you as soon as possible."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {submitted ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center space-y-4 py-12 text-center"
-                  >
-                    <div className="rounded-full bg-primary/10 p-4">
-                      <CheckCircle2 className="h-10 w-10 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-semibold">
-                      {isSubscriptionRequest
-                        ? "Subscription Request Sent"
-                        : "Message Sent Successfully"}
-                    </h3>
-                    <p className="max-w-md text-muted-foreground">
-                      {isSubscriptionRequest
-                        ? `Thanks for requesting ShieldX ${subscriptionLabel}. We will review it and respond to `
-                        : "Thank you for reaching out. Our team will review your message and respond to "}
-                      <span className="font-medium text-foreground">{email}</span>
-                      {isSubscriptionRequest
-                        ? " with the next steps."
-                        : " within 24 hours."}
-                    </p>
-                    <Button variant="outline" onClick={resetForm} className="mt-4">
-                      {isSubscriptionRequest
-                        ? "Send Another Subscription Request"
-                        : "Send Another Message"}
-                    </Button>
-                  </motion.div>
+          <Card className="surface-card rounded-[1.8rem] border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                {isSubscriptionRequest ? (
+                  <Crown className="h-4 w-4 text-blue-700" />
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    {isSubscriptionRequest && (
-                      <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-                        This form is prefilled for a{" "}
-                        <strong className="text-foreground">{subscriptionLabel}</strong>{" "}
-                        request so we can identify it quickly on our side.
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input
-                          id="name"
-                          placeholder="Your full name"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="subject">Subject</Label>
-                      <Input
-                        id="subject"
-                        placeholder="How can we help?"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="message">Message</Label>
-                      <Textarea
-                        id="message"
-                        placeholder="Tell us about your security needs..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        rows={7}
-                        required
-                      />
-                    </div>
-
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="w-full gap-2"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        "Sending..."
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4" />
-                          {isSubscriptionRequest ? "Send Subscription Request" : "Send Message"}
-                        </>
-                      )}
-                    </Button>
-
-                    {error && (
-                      <p className="text-center text-sm text-destructive">{error}</p>
-                    )}
-
-                    <p className="text-center text-xs text-muted-foreground">
-                      Or email us directly at{" "}
-                      <a
-                        href="mailto:support@securecodereviews.com"
-                        className="text-primary hover:underline"
-                      >
-                        support@securecodereviews.com
-                      </a>
-                    </p>
-                  </form>
+                  <Shield className="h-4 w-4 text-blue-700" />
                 )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                {isSubscriptionRequest ? "Subscription request details" : "What to include"}
+              </div>
+
+              {isSubscriptionRequest ? (
+                <div className="mt-4 rounded-[1.35rem] bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-slate-500">Requested plan</span>
+                    <span className="font-semibold text-slate-950">{subscriptionLabel}</span>
+                  </div>
+                  <div className="mt-4 flex items-start gap-2 text-sm leading-7 text-slate-600">
+                    <Zap className="mt-1 h-4 w-4 shrink-0 text-blue-700" />
+                    Add team size, rollout timing, and billing email to reduce back-and-forth and help us answer accurately.
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+                  <div className="rounded-[1.35rem] bg-white px-4 py-4 shadow-sm">
+                    Product or workflow being reviewed, stack details, and target timeline.
+                  </div>
+                  <div className="rounded-[1.35rem] bg-white px-4 py-4 shadow-sm">
+                    Primary concerns such as prompt injection, AI output security, cloud posture, or release readiness.
+                  </div>
+                  <div className="rounded-[1.35rem] bg-white px-4 py-4 shadow-sm">
+                    Whether you need software access, advisory help, or both.
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        <Card className="surface-card-strong rounded-[2rem] border-0">
+          <CardHeader>
+            <CardTitle className="text-2xl text-slate-950">
+              {submitted ? "Message received" : isSubscriptionRequest ? "Start the plan conversation" : "Send a request"}
+            </CardTitle>
+            <CardDescription className="text-slate-600">
+              {submitted
+                ? "We will reply using the email you provided."
+                : "The form routes general inquiries and subscription requests to the right internal path."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {submitted ? (
+              <div className="rounded-[1.6rem] bg-emerald-50 px-5 py-6 text-sm leading-7 text-emerald-900">
+                <div className="flex items-center gap-2 font-semibold">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Thanks. Your message has been submitted.
+                </div>
+                <p className="mt-3">
+                  We will review your request and reply with next steps. If this is a plan request, include any additional procurement or billing context in your email reply so onboarding moves faster.
+                </p>
+                <Button onClick={resetForm} variant="outline" className="mt-5 rounded-full border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-50">
+                  Send another request
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {error ? (
+                  <div className="rounded-[1.4rem] bg-rose-50 px-4 py-4 text-sm text-rose-800">
+                    {error}
+                  </div>
+                ) : null}
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full name</Label>
+                    <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" required className="rounded-[1rem] border-slate-200 bg-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Work email</Label>
+                    <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" required className="rounded-[1rem] border-slate-200 bg-white" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input id="subject" value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="How can we help?" required className="rounded-[1rem] border-slate-200 bg-white" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="message">Message</Label>
+                  <Textarea id="message" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Describe the product, security scope, team size, or billing request." required className="min-h-[220px] rounded-[1rem] border-slate-200 bg-white" />
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button type="submit" disabled={loading} className="rounded-full bg-slate-950 text-white hover:bg-blue-700">
+                    <Send className="mr-2 h-4 w-4" />
+                    {loading ? "Sending..." : "Send request"}
+                  </Button>
+                  <Button asChild variant="outline" className="rounded-full border-slate-200 bg-white hover:bg-slate-50">
+                    <a href="mailto:support@securecodereviews.com">Email directly</a>
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

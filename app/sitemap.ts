@@ -8,6 +8,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPages = [
     { url: `${baseUrl}`, changeFrequency: "weekly" as const, priority: 1.0 },
+    { url: `${baseUrl}/pricing`, changeFrequency: "weekly" as const, priority: 0.92 },
+    { url: `${baseUrl}/learn`, changeFrequency: "weekly" as const, priority: 0.88 },
+    { url: `${baseUrl}/products/ai-security-auditor`, changeFrequency: "weekly" as const, priority: 0.92 },
+    { url: `${baseUrl}/products/shieldx`, changeFrequency: "weekly" as const, priority: 0.92 },
     { url: `${baseUrl}/shieldx`, changeFrequency: "weekly" as const, priority: 0.95 },
     { url: `${baseUrl}/shieldx/pricing`, changeFrequency: "monthly" as const, priority: 0.85 },
     { url: `${baseUrl}/shieldx/docs`, changeFrequency: "monthly" as const, priority: 0.8 },
@@ -26,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/nodejs-security-guide`, changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${baseUrl}/tools/ai-security-auditor`, changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/contact`, changeFrequency: "monthly" as const, priority: 0.6 },
+    { url: `${baseUrl}/editorial-policy`, changeFrequency: "yearly" as const, priority: 0.45 },
     { url: `${baseUrl}/demos`, changeFrequency: "monthly" as const, priority: 0.5 },
     { url: `${baseUrl}/privacy-policy`, changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${baseUrl}/privacy-policy/no-code-storage`, changeFrequency: "yearly" as const, priority: 0.3 },

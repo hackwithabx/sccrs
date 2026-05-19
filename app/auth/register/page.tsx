@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AlertCircle, CheckCircle2, Shield, Sparkles, UserPlus } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, UserPlus, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -29,8 +30,8 @@ export default function RegisterPage() {
     { label: "Passwords match", pass: password === confirmPassword && password.length > 0 },
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
 
     if (password !== confirmPassword) {
@@ -46,15 +47,19 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, company: company.trim() || undefined }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          company: company.trim() || undefined,
+        }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      const data = await response.json();
+      if (!response.ok) {
         setError(data.error || "Registration failed");
       } else {
         router.push("/auth/login?registered=true");
@@ -67,31 +72,56 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-12rem)] py-12 px-4">
+    <div className="site-shell mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="grid w-full gap-6 lg:grid-cols-[1.02fr_0.98fr] lg:items-center"
       >
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 inline-flex rounded-full bg-primary/10 p-3">
-              <Shield className="h-8 w-8 text-primary" />
+        <Card className="surface-card-strong rounded-[2rem] border-0">
+          <CardContent className="p-8">
+            <div className="section-eyebrow">
+              <Sparkles className="h-3.5 w-3.5" />
+              Create workspace access
             </div>
-            <CardTitle className="text-2xl">Create Account</CardTitle>
-            <CardDescription>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight text-slate-950">Start with a cleaner security workspace.</h1>
+            <p className="mt-4 text-base leading-8 text-slate-600">
+              Create an account to save AI security audit history, access the redesigned dashboard, and move into paid plans when you need broader coverage.
+            </p>
+            <div className="mt-6 space-y-3 text-sm text-slate-700">
+              {[
+                "Run and save AI security audits",
+                "Access Free, Pro, and Enterprise paths",
+                "Prepare for exports, reporting, and ShieldX workflows",
+              ].map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-[1.35rem] bg-white px-4 py-4 shadow-sm">
+                  <Shield className="mt-1 h-4 w-4 shrink-0 text-blue-700" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="surface-card rounded-[2rem] border-0">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 inline-flex rounded-full bg-blue-50 p-3">
+              <Shield className="h-8 w-8 text-blue-700" />
+            </div>
+            <CardTitle className="text-2xl text-slate-950">Create account</CardTitle>
+            <CardDescription className="text-slate-600">
               Join SecureCodeReviews and secure your applications
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              {error ? (
+                <div className="flex items-center gap-2 rounded-[1rem] bg-rose-50 p-3 text-sm text-rose-800">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </div>
-              )}
+              ) : null}
 
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -100,8 +130,9 @@ export default function RegisterPage() {
                   type="text"
                   placeholder="Your full name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(event) => setName(event.target.value)}
                   required
+                  className="rounded-[1rem] border-slate-200 bg-white"
                 />
               </div>
 
@@ -112,19 +143,21 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   required
+                  className="rounded-[1rem] border-slate-200 bg-white"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company">Company / Organization <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Label htmlFor="company">Company / Organization <span className="font-normal text-muted-foreground">(optional)</span></Label>
                 <Input
                   id="company"
                   type="text"
                   placeholder="Your company name"
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  onChange={(event) => setCompany(event.target.value)}
+                  className="rounded-[1rem] border-slate-200 bg-white"
                 />
               </div>
 
@@ -135,8 +168,9 @@ export default function RegisterPage() {
                   type="password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   required
+                  className="rounded-[1rem] border-slate-200 bg-white"
                 />
               </div>
 
@@ -147,42 +181,28 @@ export default function RegisterPage() {
                   type="password"
                   placeholder="••••••••"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
                   required
+                  className="rounded-[1rem] border-slate-200 bg-white"
                 />
               </div>
 
-              {/* Password checks */}
-              {password && (
-                <div className="space-y-1">
+              {password ? (
+                <div className="space-y-1 rounded-[1rem] bg-slate-50 px-4 py-4">
                   {passwordChecks.map((check) => (
-                    <div
-                      key={check.label}
-                      className="flex items-center gap-2 text-xs"
-                    >
+                    <div key={check.label} className="flex items-center gap-2 text-xs">
                       {check.pass ? (
-                        <CheckCircle2 className="h-3 w-3 text-primary" />
+                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                       ) : (
-                        <div className="h-3 w-3 rounded-full border" />
+                        <div className="h-3 w-3 rounded-full border border-slate-300" />
                       )}
-                      <span
-                        className={
-                          check.pass ? "text-primary" : "text-muted-foreground"
-                        }
-                      >
-                        {check.label}
-                      </span>
+                      <span className={check.pass ? "text-emerald-700" : "text-slate-500"}>{check.label}</span>
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
 
-              <Button
-                type="submit"
-                className="w-full gap-2"
-                disabled={loading}
-                size="lg"
-              >
+              <Button type="submit" className="w-full gap-2 rounded-full bg-slate-950 text-white hover:bg-blue-700" disabled={loading} size="lg">
                 {loading ? (
                   "Creating account..."
                 ) : (
@@ -195,10 +215,7 @@ export default function RegisterPage() {
 
               <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link
-                  href="/auth/login"
-                  className="text-primary hover:underline font-medium"
-                >
+                <Link href="/auth/login" className="font-medium text-primary hover:underline">
                   Sign In
                 </Link>
               </p>

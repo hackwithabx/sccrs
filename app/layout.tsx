@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth-provider";
 import { Navbar } from "@/components/navbar";
@@ -8,14 +8,15 @@ import { GoogleAnalytics } from "@/components/google-analytics";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
-const geistSans = Geist({
+const siteSans = Space_Grotesk({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const siteMono = IBM_Plex_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 const ADSENSE_CLIENT_ID =
@@ -23,16 +24,18 @@ const ADSENSE_CLIENT_ID =
 
 export const metadata: Metadata = {
   title: {
-    default: "SecureCodeReviews | AI Security Auditor, ShieldX & AppSec Services",
+    default: "SecureCodeReviews | AI Security, LLM Security Audits & ShieldX",
     template: "%s | SecureCodeReviews",
   },
   description:
-    "AI Security Auditor for prompt injection and LLM risk review, plus ShieldX, secure code reviews, penetration testing, and broader AppSec services.",
+    "Secure AI systems before attackers find them. Audit LLM apps, agents, cloud infrastructure, and modern software delivery with the AI Security Auditor, ShieldX, and expert security reviews.",
   keywords: [
     "SecureCodeReviews",
     "Secure Code Reviews",
     "securecodereviews",
     "ShieldX",
+    "AI security platform",
+    "AI compliance",
     "SecureCodeReviews ShieldX",
     "application security",
     "AI security auditor",
@@ -84,23 +87,23 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://www.securecodereviews.com",
     siteName: "SecureCodeReviews",
-    title: "SecureCodeReviews | AI Security Auditor, ShieldX & AppSec Services",
+    title: "SecureCodeReviews | AI Security, LLM Security Audits & ShieldX",
     description:
-      "Audit prompts and LLM workflows with the AI Security Auditor, then expand into ShieldX, secure code review, penetration testing, and broader AppSec coverage.",
+      "Secure AI systems before attackers find them with LLM security audits, cloud security reviews, DevSecOps coverage, and premium AppSec workflows.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "SecureCodeReviews — Application Security Platform",
+        alt: "SecureCodeReviews - AI Security Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "SecureCodeReviews | AI Security Auditor, ShieldX & AppSec Services",
+    title: "SecureCodeReviews | AI Security, LLM Security Audits & ShieldX",
     description:
-      "AI Security Auditor for prompt injection and LLM risk review, plus ShieldX and broader AppSec services.",
+      "Protect LLM applications from prompt injection, data leakage, insecure tool use, and cloud security gaps.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -140,7 +143,7 @@ export default function RootLayout({
     url: "https://www.securecodereviews.com",
     logo: "https://www.securecodereviews.com/logo.png",
     description:
-      "Application security company behind the AI Security Auditor and ShieldX, offering prompt injection review, secure code assessments, penetration testing, and AppSec guidance.",
+      "AI security company behind the AI Security Auditor and ShieldX, offering prompt injection testing, LLM security audits, cloud security reviews, and broader AppSec guidance.",
     contactPoint: {
       "@type": "ContactPoint",
       email: "support@securecodereviews.com",
@@ -158,7 +161,7 @@ export default function RootLayout({
     "@type": "WebSite",
     name: "SecureCodeReviews",
     url: "https://www.securecodereviews.com",
-    description: "Application security platform featuring the AI Security Auditor, ShieldX, secure code review, penetration testing, and broader AppSec guidance.",
+    description: "AI security platform featuring the AI Security Auditor, ShieldX, LLM security reviews, cloud security assessments, and broader AppSec guidance.",
     publisher: { "@type": "Organization", name: "SecureCodeReviews" },
     potentialAction: {
       "@type": "SearchAction",
@@ -187,24 +190,36 @@ export default function RootLayout({
       {
         "@type": "SiteNavigationElement",
         position: 3,
-        name: "ShieldX",
-        url: "https://www.securecodereviews.com/shieldx",
+        name: "AI Security Auditor",
+        url: "https://www.securecodereviews.com/products/ai-security-auditor",
       },
       {
         "@type": "SiteNavigationElement",
         position: 4,
+        name: "ShieldX",
+        url: "https://www.securecodereviews.com/products/shieldx",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 5,
+        name: "Pricing",
+        url: "https://www.securecodereviews.com/pricing",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 6,
+        name: "Learn",
+        url: "https://www.securecodereviews.com/learn",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        position: 7,
         name: "Blog",
         url: "https://www.securecodereviews.com/blog",
       },
       {
         "@type": "SiteNavigationElement",
-        position: 5,
-        name: "Cloud Security",
-        url: "https://www.securecodereviews.com/cloud-security",
-      },
-      {
-        "@type": "SiteNavigationElement",
-        position: 6,
+        position: 8,
         name: "Contact",
         url: "https://www.securecodereviews.com/contact",
       },
@@ -222,8 +237,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <link rel="manifest" href="/site.webmanifest" />
         <link rel="alternate" type="application/rss+xml" title="SecureCodeReviews Blog" href="/feed.xml" />
-        <meta name="theme-color" content="#1e3a8a" />
-        <meta name="msapplication-TileColor" content="#1e3a8a" />
+        <meta name="theme-color" content="#f8fbff" />
+        <meta name="msapplication-TileColor" content="#f8fbff" />
         {ADSENSE_CLIENT_ID ? (
           <script
             async
@@ -233,7 +248,7 @@ export default function RootLayout({
         ) : null}
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${siteSans.variable} ${siteMono.variable} antialiased`}
       >
         <script
           type="application/ld+json"
@@ -250,8 +265,8 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="dark"
-            enableSystem
+            defaultTheme="light"
+            enableSystem={false}
             disableTransitionOnChange
           >
             <div className="flex min-h-screen flex-col">

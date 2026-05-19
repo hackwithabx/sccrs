@@ -24,13 +24,13 @@ export function SectionHeading({
       className={`space-y-4 ${align === "center" ? "text-center" : "text-left"}`}
     >
       {badge && (
-        <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+        <span className="section-eyebrow">
           {badge}
         </span>
       )}
-      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>
+      <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">{title}</h2>
       {description && (
-        <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+        <p className={`max-w-2xl text-lg leading-8 text-slate-600 ${align === "center" ? "mx-auto" : ""}`}>
           {description}
         </p>
       )}

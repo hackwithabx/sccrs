@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { ArrowRight, Calendar, CheckCircle2, Clock, Shield, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  buildTopicHubMeta,
+  DEFAULT_BLOG_OG_IMAGE,
+} from "@/lib/blog-seo";
 import {
   getPostLastModified,
   getPostsForTopicSlug,
@@ -31,28 +35,30 @@ export async function generateMetadata({ params }: TopicHubPageProps): Promise<M
   }
 
   const posts = getPostsForTopicSlug(slug);
-  const keywords = [...new Set([...hub.keywords, ...getTopTags(posts, 8), "SecureCodeReviews blog"])];
+  const meta = buildTopicHubMeta(hub, getTopTags(posts, 8));
 
   return {
-    title: `${hub.title} | SecureCodeReviews Blog`,
-    description: hub.description,
-    keywords,
+    title: {
+      absolute: meta.title,
+    },
+    description: meta.description,
+    keywords: meta.keywords,
     alternates: {
       canonical: `/blog/topic/${hub.slug}`,
     },
     openGraph: {
-      title: hub.title,
-      description: hub.description,
+      title: meta.title,
+      description: meta.description,
       type: "website",
-      url: `https://securecodereviews.com/blog/topic/${hub.slug}`,
+      url: meta.url,
       siteName: "SecureCodeReviews",
-      images: ["/og-image.png"],
+      images: [DEFAULT_BLOG_OG_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
-      title: hub.title,
-      description: hub.description,
-      images: ["/og-image.png"],
+      title: meta.title,
+      description: meta.description,
+      images: [DEFAULT_BLOG_OG_IMAGE],
     },
     robots: {
       index: true,
@@ -70,6 +76,8 @@ export default async function TopicHubPage({ params }: TopicHubPageProps) {
     notFound();
   }
 
+  const topTags = getTopTags(posts, 8);
+  const meta = buildTopicHubMeta(hub, topTags);
   const latestUpdate = new Date(getPostLastModified(posts[0])).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -84,10 +92,10 @@ export default async function TopicHubPage({ params }: TopicHubPageProps) {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "CollectionPage",
-            name: hub.title,
-            description: hub.description,
-            url: `https://securecodereviews.com/blog/topic/${hub.slug}`,
-            keywords: [...new Set([...hub.keywords, ...getTopTags(posts, 8)])].join(", "),
+            name: meta.title,
+            description: meta.description,
+            url: meta.url,
+            keywords: meta.keywords.join(", "),
             about: hub.keywords.map((keyword) => ({
               "@type": "Thing",
               name: keyword,
@@ -195,6 +203,75 @@ export default async function TopicHubPage({ params }: TopicHubPageProps) {
           </div>
         </div>
 
+        <Card className="mt-10 border-border/70 bg-background/90">
+          <CardContent className="p-6 sm:p-8">
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+              <div>
+                <Badge variant="outline" className="w-fit">Editorial standards</Badge>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Topic hubs are built for depth, not thin aggregation.
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                  This hub clusters original content around a specific security theme so users can evaluate a problem space, trace it back to named authors, and verify the company and publishing standards behind the site.
+                </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <User className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Named authors</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Each guide keeps visible authorship instead of anonymous list pages.</p>
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <Calendar className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Freshness signals</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Updated guides are labeled so readers know when advice changed.</p>
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <Shield className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Public accountability</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Editorial, company, legal, and contact pages stay visible from the hub.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-background/90 p-5 shadow-sm">
+                <p className="text-sm font-semibold">Review the site context</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  These links make it easier for readers and policy reviewers to verify how the content is produced.
+                </p>
+                <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    Editorial policy and publishing standards
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    About and contact pages for reviewer clarity
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    Consistent legal and product navigation
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link href="/editorial-policy">
+                    <Button variant="outline" className="w-full sm:w-auto">Editorial Policy</Button>
+                  </Link>
+                  <Link href="/about">
+                    <Button variant="outline" className="w-full sm:w-auto">About</Button>
+                  </Link>
+                  <Link href="/contact?subject=Content+Question+or+Correction">
+                    <Button className="w-full gap-2 sm:w-auto">
+                      Contact
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {posts.map((post) => {
             const lastModified = new Date(getPostLastModified(post)).toLocaleDateString("en-US", {
@@ -215,14 +292,20 @@ export default async function TopicHubPage({ params }: TopicHubPageProps) {
                     </div>
                     <h2 className="text-lg font-semibold leading-7">{post.title}</h2>
                     <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">{post.excerpt}</p>
-                    <div className="mt-5 flex items-center justify-between border-t pt-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {lastModified}
+                    <div className="mt-5 border-t pt-4">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <User className="h-3 w-3" />
+                        {post.author}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {post.readTime}
+                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {lastModified}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {post.readTime}
+                        </div>
                       </div>
                     </div>
                     <div className="mt-4 flex items-center gap-1 text-sm font-medium text-primary">

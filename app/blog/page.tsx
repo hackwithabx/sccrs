@@ -12,7 +12,7 @@ import { SectionHeading } from "@/components/section-heading";
 import { blogPosts } from "@/lib/blog-data";
 import { adSlots } from "@/lib/adsense-config";
 import { categoryHubs, featuredTopicHubs } from "@/lib/blog-taxonomy";
-import { ArrowRight, Brain, Calendar, Clock, Code, Search, Shield, X, ChevronDown, Tag } from "lucide-react";
+import { ArrowRight, Brain, Calendar, CheckCircle2, Clock, Code, Search, Shield, User, X, ChevronDown, Tag } from "lucide-react";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,16 +24,6 @@ export default function BlogPage() {
 
   // Close dropdown on outside click
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
-        setTagDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q") || "";
     const category = params.get("category");
@@ -42,6 +32,16 @@ export default function BlogPage() {
     if (q) setSearchQuery(q);
     if (category) setSelectedCategory(category);
     if (tag) setSelectedTag(tag);
+  }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setTagDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   const categories = useMemo(
@@ -217,6 +217,75 @@ export default function BlogPage() {
           </CardContent>
         </Card>
 
+        <Card className="mt-10 border-border/70 bg-background/90">
+          <CardContent className="p-6 sm:p-8">
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+              <div>
+                <Badge variant="outline" className="w-fit">Editorial standards</Badge>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Original technical content with visible trust signals.
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                  We publish named authors, visible publish and update dates, and clear company and policy pages so readers and reviewers can evaluate the site as a real security business rather than a thin affiliate or ad-only property.
+                </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <User className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Named authors</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Articles show who wrote them and when they were published.</p>
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <Calendar className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Update transparency</p>
+                    <p className="mt-1 text-xs text-muted-foreground">High-value guides surface updated dates when guidance changes.</p>
+                  </div>
+                  <div className="rounded-xl border bg-background/80 p-4">
+                    <Shield className="mb-2 h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Public trust pages</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Editorial, company, and contact pages are linked consistently.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-background/90 p-5 shadow-sm">
+                <p className="text-sm font-semibold">Review the trust pages</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  These pages explain who operates the site, how content is reviewed, and how to reach the team.
+                </p>
+                <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    Editorial policy and publishing standards
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    About, contact, privacy, and terms coverage
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    Consistent product and company navigation
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link href="/editorial-policy">
+                    <Button variant="outline" className="w-full sm:w-auto">Editorial Policy</Button>
+                  </Link>
+                  <Link href="/about">
+                    <Button variant="outline" className="w-full sm:w-auto">About</Button>
+                  </Link>
+                  <Link href="/contact">
+                    <Button className="w-full gap-2 sm:w-auto">
+                      Contact
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <HorizontalBannerAd slot={adSlots.blogIndexBanner} className="mt-10" />
 
         {/* Search & Filters */}
@@ -378,18 +447,24 @@ export default function BlogPage() {
                     <p className="text-sm text-muted-foreground mb-4 flex-1 line-clamp-3">
                       {post.excerpt}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(post.date).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                    <div className="border-t pt-4">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <User className="h-3 w-3" />
+                        {post.author}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {post.readTime}
+                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(post.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {post.readTime}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 mt-3 text-sm text-primary font-medium">
